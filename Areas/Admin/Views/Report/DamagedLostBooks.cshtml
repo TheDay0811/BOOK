@@ -1,0 +1,202 @@
+@model BOOK.Models.ViewModels.DamagedLostReportViewModel
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Báo Cáo Sách Mất/Hỏng & Đề Xuất Thanh Lý";
+}
+
+<div class="space-y-6">
+
+    <!-- BREADCRUMB & TIÊU ĐỀ -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <nav class="flex items-center gap-2 text-xs text-slate-500 mb-1">
+                <span>Báo cáo & Thống kê</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+                <span class="text-navy-800 font-bold">Thanh lý sách mất / hỏng</span>
+            </nav>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Báo Cáo Sách Hỏng, Mất & Thanh Lý Định Kỳ</h1>
+            <p class="text-xs text-slate-500 mt-0.5">Thống kê chi tiết các cuốn sách theo số kiểm soát phục vụ hội đồng thanh lý tài sản hàng năm.</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button onclick="alert('Đang xuất biên bản thanh lý định dạng Excel (.xlsx)...');" 
+                    class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow transition-all flex items-center gap-2">
+                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Xuất Excel Thanh Lý
+            </button>
+            <button onclick="window.print();" 
+                    class="px-4 py-2.5 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow transition-all flex items-center gap-2">
+                <i data-lucide="printer" class="w-4 h-4 text-amber-400"></i> In Biên Bản PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- 4 THẺ TỔNG KẾT THANH LÝ HÀNG NĂM -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tổng Sách Hỏng</span>
+                <h3 class="text-2xl font-black text-amber-600 mt-0.5">@Model.TotalDamagedCount cuốn</h3>
+                <span class="text-[11px] text-slate-500">Rách, ố vàng, hư bìa</span>
+            </div>
+            <div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tổng Sách Mất</span>
+                <h3 class="text-2xl font-black text-rose-600 mt-0.5">@Model.TotalLostCount cuốn</h3>
+                <span class="text-[11px] text-slate-500">Độc giả làm thất lạc</span>
+            </div>
+            <div class="w-11 h-11 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                <i data-lucide="x-circle" class="w-5 h-5"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Đã Thu Bồi Thường</span>
+                <h3 class="text-2xl font-black text-emerald-600 mt-0.5">@Model.TotalCompensationCollected.ToString("N0") đ</h3>
+                <span class="text-[11px] text-slate-500">Nộp vào quỹ tái bổ sung</span>
+            </div>
+            <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <i data-lucide="receipt" class="w-5 h-5"></i>
+            </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ước Tính Thanh Lý</span>
+                <h3 class="text-2xl font-black text-navy-800 mt-0.5">@Model.TotalLiquidationEstimatedValue.ToString("N0") đ</h3>
+                <span class="text-[11px] text-slate-500">Nguyên giá tài sản</span>
+            </div>
+            <div class="w-11 h-11 rounded-xl bg-blue-50 text-navy-800 flex items-center justify-center">
+                <i data-lucide="archive" class="w-5 h-5"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- BỘ LỌC TÌM KIẾM THEO NĂM & THỂ LOẠI -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-1.5">
+                <label class="font-bold text-slate-600">Năm báo cáo:</label>
+                <select class="py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:border-navy-800 focus:outline-none">
+                    <option selected>Năm 2026</option>
+                    <option>Năm 2025</option>
+                    <option>Năm 2024</option>
+                </select>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+                <label class="font-bold text-slate-600">Tình trạng:</label>
+                <select class="py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl font-bold focus:border-navy-800 focus:outline-none">
+                    <option selected>Tất cả (Hỏng & Mất)</option>
+                    <option>Chỉ sách [Hỏng]</option>
+                    <option>Chỉ sách [Mất]</option>
+                </select>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+                <label class="font-bold text-slate-600">Chuyên ngành:</label>
+                <select class="py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-navy-800 focus:outline-none">
+                    <option>Tất cả chuyên ngành</option>
+                    <option>Công Nghệ Thông Tin</option>
+                    <option>Kinh Tế & Quản Trị</option>
+                </select>
+            </div>
+        </div>
+
+        <button class="px-4 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl font-bold transition-colors">
+            Xem Báo Cáo
+        </button>
+    </div>
+
+    <!-- BẢNG DỮ LIỆU CHI TIẾT DANH MỤC THANH LÝ -->
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-6">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+            <div>
+                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="file-text" class="w-5 h-5 text-navy-800"></i>
+                    Bảng Kê Chi Tiết Tài Liệu Đề Xuất Thanh Lý
+                </h3>
+                <p class="text-xs text-slate-400">Danh mục được lập biên bản để trình Giám đốc Thư viện và Ban Giám hiệu phê duyệt.</p>
+            </div>
+            <span class="text-xs text-slate-500">Số lượng: <strong>@Model.Records.Count cuốn</strong></span>
+        </div>
+
+        <div class="overflow-x-auto rounded-2xl border border-slate-200">
+            <table class="w-full text-left text-xs text-slate-600">
+                <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
+                    <tr>
+                        <th class="py-3 px-4">Mã Sách</th>
+                        <th class="py-3 px-4">Số Kiểm Soát</th>
+                        <th class="py-3 px-4">Tên Tựa Sách</th>
+                        <th class="py-3 px-4">Tình Trạng</th>
+                        <th class="py-3 px-4">Ngày Ghi Nhận</th>
+                        <th class="py-3 px-4">Độc Giả Liên Quan</th>
+                        <th class="py-3 px-4">Bồi Thường</th>
+                        <th class="py-3 px-4">Mô Tả & Ghi Chú</th>
+                        <th class="py-3 px-4 text-right">Trạng Thái Thanh Lý</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                    @foreach (var rec in Model.Records)
+                    {
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="py-3 px-4 font-mono font-bold text-navy-800">@rec.BookCode</td>
+                            <td class="py-3 px-4 font-mono font-black text-sm text-slate-900">@rec.ControlNumber</td>
+                            <td class="py-3 px-4 font-bold text-slate-900 max-w-xs">
+                                <p class="truncate">@rec.BookTitle</p>
+                                <span class="text-[10px] text-slate-400 font-normal">Chuyên ngành: @rec.CategoryName</span>
+                            </td>
+                            <td class="py-3 px-4">
+                                @if (rec.ConditionStatus == "Hỏng")
+                                {
+                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                        ⚠️ Hỏng
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                                        ⛔ Mất
+                                    </span>
+                                }
+                            </td>
+                            <td class="py-3 px-4 text-slate-500">@rec.RecordedDate.ToString("dd/MM/yyyy")</td>
+                            <td class="py-3 px-4">
+                                <p class="font-bold text-slate-800">@rec.StudentName</p>
+                                <span class="text-[10px] font-mono text-slate-400">@rec.StudentCode</span>
+                            </td>
+                            <td class="py-3 px-4">
+                                @if (rec.CompensationStatus == "Đã bồi thường")
+                                {
+                                    <span class="font-bold text-emerald-700">
+                                        ✓ Đã bồi thường (@rec.CompensationAmount.ToString("N0") đ)
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="font-bold text-rose-600">
+                                        ✗ Chưa bồi thường (Thẻ đang khóa)
+                                    </span>
+                                }
+                            </td>
+                            <td class="py-3 px-4 text-slate-600 italic max-w-xs truncate">
+                                "@rec.Notes"
+                            </td>
+                            <td class="py-3 px-4 text-right">
+                                <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                    @rec.LiquidationStatus
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>

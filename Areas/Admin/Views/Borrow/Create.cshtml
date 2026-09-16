@@ -1,0 +1,349 @@
+@model BOOK.Models.ViewModels.CreateBorrowTicketViewModel
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Lập Phiếu Mượn Sách";
+}
+
+<div class="space-y-6">
+
+    <!-- BREADCRUMB & HEADER -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <nav class="flex items-center gap-2 text-xs text-slate-500 mb-1">
+                <a asp-area="Admin" asp-controller="Borrow" asp-action="Index" class="hover:underline">Quản lý mượn trả</a>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+                <span class="text-navy-800 font-bold">Lập phiếu mượn mới</span>
+            </nav>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Quầy Lập Phiếu Mượn Sách</h1>
+            <p class="text-xs text-slate-500 mt-0.5">Thủ thư kiểm tra thẻ độc giả, gán số kiểm soát bản sao và in phiếu xuất kho.</p>
+        </div>
+
+        <a asp-area="Admin" asp-controller="Borrow" asp-action="Index" 
+           class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-semibold transition-colors">
+            Danh Sách Mượn Trả
+        </a>
+    </div>
+
+    <!-- KHUNG QUY TẮC NGHIỆP VỤ BẮT BUỘC -->
+    <div class="bg-blue-50/80 border border-blue-200 rounded-2xl p-4 text-xs text-navy-900 space-y-1">
+        <p class="font-bold flex items-center gap-1.5 text-blue-800">
+            <i data-lucide="info" class="w-4 h-4 text-blue-600"></i> Các Ràng Buộc Nghiệp Vụ Mượn Sách Bắt Buộc:
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 pt-1 text-[11px] text-slate-700">
+            <div class="p-2 bg-white rounded-lg border border-blue-100">
+                <strong>1. Giới hạn số lượng:</strong> Tối đa <strong>03 cuốn sách</strong> trong một lần mượn.
+            </div>
+            <div class="p-2 bg-white rounded-lg border border-blue-100">
+                <strong>2. Hạn trả:</strong> Tối đa <strong>15 ngày</strong> kể từ ngày mượn.
+            </div>
+            <div class="p-2 bg-white rounded-lg border border-blue-100">
+                <strong>3. Kiểm tra thẻ:</strong> Nếu thẻ <strong>đang có sách chưa trả</strong> hoặc bị <strong>"Không sử dụng"</strong> thì <strong>KHÔNG ĐƯỢC mượn tiếp</strong>.
+            </div>
+        </div>
+    </div>
+
+    <form id="borrowTicketForm" onsubmit="handleBorrowSubmit(event)" class="space-y-6">
+        
+        <!-- BƯỚC 1: QUÉT / NHẬP SỐ THẺ THƯ VIỆN & KIỂM TRA ĐIỀU KIỆN -->
+        <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                <i data-lucide="scan-line" class="w-5 h-5 text-navy-800"></i>
+                Bước 1: Quét Mã Thẻ Thư Viện Độc Giả
+            </h3>
+
+            <div class="flex flex-col sm:flex-row gap-3">
+                <div class="relative flex-1">
+                    <i data-lucide="id-card" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+                    <input type="text" id="inputCardNumber" value="LIB-2026-1024" placeholder="Nhập hoặc quét mã thẻ: LIB-2026-XXXX..." 
+                           class="w-full pl-10 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none font-mono font-bold" />
+                </div>
+                <button type="button" onclick="lookupCard('valid')" class="px-4 py-2.5 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold transition-colors">
+                    Kiểm Tra Thẻ
+                </button>
+                <button type="button" onclick="lookupCard('hasUnreturned')" class="px-3 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl text-xs font-semibold" title="Thử test trường hợp chưa trả sách">
+                    Test: Thẻ Chưa Trả Sách
+                </button>
+                <button type="button" onclick="lookupCard('locked')" class="px-3 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 rounded-xl text-xs font-semibold" title="Thử test trường hợp thẻ bị khóa">
+                    Test: Thẻ "Không sử dụng"
+                </button>
+            </div>
+
+            <!-- POPUP THÔNG TIN THẺ & ĐIỀU KIỆN MƯỢN -->
+            <div id="cardResultPanel" class="p-5 rounded-2xl border transition-all space-y-3 bg-emerald-50/70 border-emerald-200">
+                <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 pb-3 border-b border-emerald-200/60">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-navy-800 text-white flex items-center justify-center font-bold text-sm">
+                            TH
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-sm" id="resStudentName">Trần Văn Hoàng</h4>
+                            <p class="text-xs text-slate-500">MSSV: <strong id="resStudentCode" class="font-mono">22110098</strong> • Khoa Công Nghệ Thông Tin</p>
+                        </div>
+                    </div>
+
+                    <!-- Badge Trạng thái thẻ -->
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-slate-500">Trạng thái thẻ:</span>
+                        <span id="resCardStatusBadge" class="px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            Sử dụng được
+                        </span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div>
+                        <span class="text-slate-500 block">Số thẻ:</span>
+                        <strong class="font-mono text-navy-900" id="resCardNum">LIB-2026-1024</strong>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 block">Hạn sử dụng thẻ:</span>
+                        <strong class="text-slate-800" id="resExpiryDate">20/09/2027</strong>
+                    </div>
+                    <div>
+                        <span class="text-slate-500 block">Tình trạng lưu thông hiện tại:</span>
+                        <span id="resBorrowState" class="font-bold text-emerald-700">0 cuốn đang mượn (Đủ điều kiện)</span>
+                    </div>
+                </div>
+
+                <!-- DÒNG CẢNH BÁO CHẶN KHI VI PHẠM RÀNG BUỘC -->
+                <div id="blockWarningBox" class="hidden p-3 rounded-xl bg-rose-100 border border-rose-300 text-rose-900 text-xs font-bold flex items-center gap-2">
+                    <i data-lucide="alert-octagon" class="w-5 h-5 text-rose-600 flex-shrink-0"></i>
+                    <span id="blockWarningText">Cảnh báo: Sinh viên đang có sách mượn chưa hoàn trả. Không được phép lập thêm phiếu mượn mới!</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- BƯỚC 2: CHỌN DANH SÁCH SÁCH & GÁN SỐ KIỂM SOÁT BẢN SAO -->
+        <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+                <div>
+                    <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <i data-lucide="book-check" class="w-5 h-5 text-navy-800"></i>
+                        Bước 2: Chọn Tựa Sách & Gán Số Kiểm Soát (Tối đa 3 cuốn)
+                    </h3>
+                    <p class="text-xs text-slate-400">Mỗi cuốn sách lấy ra khỏi kệ phải gán chính xác mã số kiểm soát vật lý.</p>
+                </div>
+                <span class="text-xs font-bold text-navy-800" id="selectedCounter">Đã chọn: 2 / 3 cuốn</span>
+            </div>
+
+            <!-- Bảng các cuốn sách chọn mượn -->
+            <div class="overflow-x-auto rounded-2xl border border-slate-200">
+                <table class="w-full text-left text-xs text-slate-600">
+                    <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
+                        <tr>
+                            <th class="py-3 px-4">STT</th>
+                            <th class="py-3 px-4">Mã Tựa Sách</th>
+                            <th class="py-3 px-4">Tên Sách</th>
+                            <th class="py-3 px-4">Gán Số Kiểm Soát (Bản Sao Vật Lý)</th>
+                            <th class="py-3 px-4">Vị Trí Kệ</th>
+                            <th class="py-3 px-4 text-right">Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="borrowItemsTable" class="divide-y divide-slate-200">
+                        <!-- Cuốn 1 -->
+                        <tr class="item-row">
+                            <td class="py-3 px-4 font-bold">1</td>
+                            <td class="py-3 px-4 font-mono font-bold text-navy-800">CS-001</td>
+                            <td class="py-3 px-4 font-bold text-slate-800">Thiết Kế Kiến Trúc Phần Mềm Doanh Nghiệp</td>
+                            <td class="py-3 px-4">
+                                <select class="p-1.5 bg-slate-50 border border-slate-200 rounded-lg font-mono font-bold text-navy-900">
+                                    <option value="001" selected>Số KS: 001 [Còn]</option>
+                                    <option value="002">Số KS: 002 [Còn]</option>
+                                </select>
+                            </td>
+                            <td class="py-3 px-4 text-slate-500">Tầng 2 - Dãy B4 - Kệ 03</td>
+                            <td class="py-3 px-4 text-right">
+                                <button type="button" onclick="removeItem(this)" class="p-1 text-slate-400 hover:text-rose-600">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </td>
+                        </tr>
+
+                        <!-- Cuốn 2 -->
+                        <tr class="item-row">
+                            <td class="py-3 px-4 font-bold">2</td>
+                            <td class="py-3 px-4 font-mono font-bold text-navy-800">AI-002</td>
+                            <td class="py-3 px-4 font-bold text-slate-800">Học Máy & Trí Tuệ Nhân Tạo Ứng Dụng</td>
+                            <td class="py-3 px-4">
+                                <select class="p-1.5 bg-slate-50 border border-slate-200 rounded-lg font-mono font-bold text-navy-900">
+                                    <option value="001" selected>Số KS: 001 [Còn]</option>
+                                    <option value="002">Số KS: 002 [Còn]</option>
+                                </select>
+                            </td>
+                            <td class="py-3 px-4 text-slate-500">Tầng 2 - Dãy AI - Kệ 01</td>
+                            <td class="py-3 px-4 text-right">
+                                <button type="button" onclick="removeItem(this)" class="p-1 text-slate-400 hover:text-rose-600">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Nút thêm dòng sách mượn (kiểm tra tối đa 3) -->
+            <div class="flex justify-start">
+                <button type="button" onclick="addNewItemRow()" id="btnAddItem"
+                        class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5">
+                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Thêm cuốn sách thứ 3
+                </button>
+            </div>
+        </div>
+
+        <!-- BƯỚC 3: THỜI HẠN & XÁC NHẬN IN PHIẾU -->
+        <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                <i data-lucide="calendar" class="w-5 h-5 text-navy-800"></i>
+                Bước 3: Thiết Lập Thời Hạn Mượn (Tối Đa 15 Ngày)
+            </h3>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Ngày lập phiếu mượn</label>
+                    <input type="text" readonly value="@DateTime.Today.ToString("dd/MM/yyyy")" 
+                           class="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-xl font-semibold text-slate-700" />
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">
+                        Hạn trả bắt buộc (Tối đa 15 ngày) <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="date" id="inputDueDate" required
+                           value="@DateTime.Today.AddDays(15).ToString("yyyy-MM-dd")"
+                           min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")"
+                           max="@DateTime.Today.AddDays(15).ToString("yyyy-MM-dd")"
+                           class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-navy-800 focus:outline-none font-bold text-navy-900" />
+                    <span class="text-[10px] text-slate-400 mt-1 block">Hệ thống chặn không cho phép vượt quá mốc 15 ngày theo quy định.</span>
+                </div>
+            </div>
+
+            <!-- Ghi chú thủ thư -->
+            <div class="text-xs">
+                <label class="block font-bold text-slate-700 uppercase mb-1">Ghi chú phiếu mượn</label>
+                <input type="text" placeholder="Tình trạng sách khi giao, dặn dò bảo quản..." class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl" />
+            </div>
+
+            <!-- Nút Hoàn tất -->
+            <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                <button type="reset" class="px-5 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">
+                    Làm Mới
+                </button>
+                <button type="submit" id="btnConfirmBorrow"
+                        class="px-7 py-3 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+                    <i data-lucide="printer" class="w-4 h-4 text-amber-400"></i> Xác Nhận Mượn & In Phiếu
+                </button>
+            </div>
+        </div>
+
+    </form>
+</div>
+
+@section Scripts {
+    <script>
+        let currentStatus = 'valid'; // valid, hasUnreturned, locked
+
+        function lookupCard(mode) {
+            currentStatus = mode;
+            const panel = document.getElementById('cardResultPanel');
+            const badge = document.getElementById('resCardStatusBadge');
+            const state = document.getElementById('resBorrowState');
+            const warningBox = document.getElementById('blockWarningBox');
+            const warningText = document.getElementById('blockWarningText');
+            const confirmBtn = document.getElementById('btnConfirmBorrow');
+
+            if (mode === 'valid') {
+                panel.className = "p-5 rounded-2xl border transition-all space-y-3 bg-emerald-50/70 border-emerald-200";
+                badge.className = "px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300";
+                badge.innerText = "Sử dụng được";
+                state.className = "font-bold text-emerald-700";
+                state.innerText = "0 cuốn đang mượn (Đủ điều kiện)";
+                warningBox.classList.add('hidden');
+                confirmBtn.disabled = false;
+                confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else if (mode === 'hasUnreturned') {
+                panel.className = "p-5 rounded-2xl border transition-all space-y-3 bg-rose-50/80 border-rose-300";
+                badge.className = "px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800";
+                badge.innerText = "Sử dụng được";
+                state.className = "font-bold text-rose-700";
+                state.innerText = "ĐANG CÓ 2 CUỐN CHƯA TRẢ";
+                warningBox.classList.remove('hidden');
+                warningText.innerText = "⛔ Ràng buộc số 3: Sinh viên đang có phiếu mượn chưa trả sách. KHÔNG ĐƯỢC PHÉP mượn tiếp!";
+                confirmBtn.disabled = true;
+                confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else if (mode === 'locked') {
+                panel.className = "p-5 rounded-2xl border transition-all space-y-3 bg-rose-50/80 border-rose-300";
+                badge.className = "px-3 py-1 rounded-full text-xs font-black bg-rose-200 text-rose-900 border border-rose-400";
+                badge.innerText = "Không sử dụng (Bị khóa)";
+                state.className = "font-bold text-rose-700";
+                state.innerText = "Thẻ bị khóa do làm mất/hỏng sách chưa bồi thường";
+                warningBox.classList.remove('hidden');
+                warningText.innerText = "⛔ Thẻ đang ở trạng thái 'Không sử dụng'. Phải bồi thường tài liệu để mở lại thẻ trước khi mượn!";
+                confirmBtn.disabled = true;
+                confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            lucide.createIcons();
+        }
+
+        function updateItemCount() {
+            const rows = document.querySelectorAll('#borrowItemsTable .item-row');
+            document.getElementById('selectedCounter').innerText = `Đã chọn: ${rows.length} / 3 cuốn`;
+            const btnAdd = document.getElementById('btnAddItem');
+            if (rows.length >= 3) {
+                btnAdd.disabled = true;
+                btnAdd.classList.add('opacity-40', 'cursor-not-allowed');
+            } else {
+                btnAdd.disabled = false;
+                btnAdd.classList.remove('opacity-40', 'cursor-not-allowed');
+            }
+        }
+
+        function removeItem(btn) {
+            btn.closest('tr').remove();
+            // Re-index STT
+            document.querySelectorAll('#borrowItemsTable .item-row').forEach((row, idx) => {
+                row.cells[0].innerText = idx + 1;
+            });
+            updateItemCount();
+        }
+
+        function addNewItemRow() {
+            const table = document.getElementById('borrowItemsTable');
+            const rows = table.querySelectorAll('.item-row');
+            if (rows.length >= 3) {
+                alert('Quy định thư viện: Mỗi lần mượn chỉ được tối đa 03 cuốn!');
+                return;
+            }
+
+            const tr = document.createElement('tr');
+            tr.className = "item-row";
+            tr.innerHTML = `
+                <td class="py-3 px-4 font-bold">${rows.length + 1}</td>
+                <td class="py-3 px-4 font-mono font-bold text-navy-800">SEC-004</td>
+                <td class="py-3 px-4 font-bold text-slate-800">Cơ Sở An Toàn Thông Tin & Mật Mã</td>
+                <td class="py-3 px-4">
+                    <select class="p-1.5 bg-slate-50 border border-slate-200 rounded-lg font-mono font-bold text-navy-900">
+                        <option value="001">Số KS: 001 [Còn]</option>
+                        <option value="003" selected>Số KS: 003 [Còn]</option>
+                    </select>
+                </td>
+                <td class="py-3 px-4 text-slate-500">Tầng 2 - Dãy CS - Kệ 05</td>
+                <td class="py-3 px-4 text-right">
+                    <button type="button" onclick="removeItem(this)" class="p-1 text-slate-400 hover:text-rose-600">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </td>
+            `;
+            table.appendChild(tr);
+            updateItemCount();
+            lucide.createIcons();
+        }
+
+        function handleBorrowSubmit(e) {
+            e.preventDefault();
+            if (currentStatus !== 'valid') {
+                alert('Không thể xuất phiếu: Thẻ độc giả không đủ điều kiện mượn sách!');
+                return;
+            }
+            alert('Lập phiếu mượn thành công! Hệ thống đã chuyển các cuốn sách sang trạng thái [Cho mượn] và kích hoạt lệnh in phiếu.');
+        }
+    </script>
+}

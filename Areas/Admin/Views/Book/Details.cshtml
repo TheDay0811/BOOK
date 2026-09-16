@@ -1,0 +1,261 @@
+@model BOOK.Models.ViewModels.BookTitleManageViewModel
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Quản Lý Bản Sao Sách - " + Model.Title;
+}
+
+<div class="space-y-6">
+
+    <!-- BREADCRUMBS & TIÊU ĐỀ -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <nav class="flex items-center gap-2 text-xs text-slate-500 mb-1">
+                <a asp-area="Admin" asp-controller="Book" asp-action="Index" class="hover:underline">Kho sách</a>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+                <span class="text-navy-800 font-bold">Chi tiết bản sao vật lý</span>
+            </nav>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Quản Lý Bản Sao & Số Kiểm Soát</h1>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button onclick="openAddCopyModal()" 
+                    class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow transition-all flex items-center gap-2">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i> Thêm Bản Sao (Sinh Số KS Tiếp Theo)
+            </button>
+            <a asp-area="Admin" asp-controller="Book" asp-action="Index" 
+               class="px-3.5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-semibold transition-colors">
+                Quay lại
+            </a>
+        </div>
+    </div>
+
+    <!-- KHUNG THÔNG TIN TỰA SÁCH & THỐNG KÊ TỔNG QUAN -->
+    <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+            <div class="lg:col-span-8 flex gap-5 items-start">
+                <img src="@Model.CoverImageUrl" alt="@Model.Title" class="w-20 h-28 object-cover rounded-xl border border-slate-200 shadow-sm flex-shrink-0" />
+                <div class="space-y-1.5">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-navy-100 text-navy-800">Mã sách: @Model.BookCode</span>
+                        <span class="text-xs text-slate-500 font-mono">ISBN: @Model.BookCode</span>
+                    </div>
+                    <h3 class="text-lg font-black text-slate-900 leading-tight">@Model.Title</h3>
+                    <p class="text-xs text-slate-600">Tác giả: <strong>@Model.Author</strong> • NXB: @Model.PublisherName (@Model.PublishYear)</p>
+                    <p class="text-xs text-blue-600 font-medium">Chuyên ngành: @Model.CategoryName</p>
+                </div>
+            </div>
+
+            <!-- THỐNG KÊ THEO 4 TRẠNG THÁI NGHIỆP VỤ -->
+            <div class="lg:col-span-4 grid grid-cols-2 gap-2 text-center text-xs">
+                <div class="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200">
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">Khả dụng [Còn]</span>
+                    <strong class="text-emerald-700 text-base font-black">@Model.AvailableCopies</strong> / @Model.TotalCopies cuốn
+                </div>
+                <div class="p-2.5 bg-blue-50 rounded-xl border border-blue-200">
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">[Cho mượn]</span>
+                    <strong class="text-blue-700 text-base font-black">@Model.BorrowedCopies</strong> cuốn
+                </div>
+                <div class="p-2.5 bg-amber-50 rounded-xl border border-amber-200">
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">[Hỏng]</span>
+                    <strong class="text-amber-700 text-base font-black">@Model.DamagedCopies</strong> cuốn
+                </div>
+                <div class="p-2.5 bg-rose-50 rounded-xl border border-rose-200">
+                    <span class="text-slate-500 block text-[10px] uppercase font-bold">[Mất]</span>
+                    <strong class="text-rose-700 text-base font-black">@Model.LostCopies</strong> cuốn
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BẢNG DANH SÁCH CUỐN SÁCH VẬT LÝ (THEO SỐ KIỂM SOÁT) -->
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-6">
+        <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+            <div>
+                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="barcode" class="w-5 h-5 text-navy-800"></i>
+                    Danh Sách Các Cuốn Sách Vật Lý (Theo Số Kiểm Soát)
+                </h3>
+                <p class="text-xs text-slate-400">Mỗi cuốn sách trong thư viện được gán một "Số kiểm soát" duy nhất để theo dõi lưu thông.</p>
+            </div>
+            <span class="text-xs text-slate-500">Tổng cộng: <strong>@Model.Copies.Count</strong> bản sao</span>
+        </div>
+
+        <div class="overflow-x-auto rounded-2xl border border-slate-200">
+            <table class="w-full text-left text-xs text-slate-600">
+                <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
+                    <tr>
+                        <th class="py-3 px-4">Số Kiểm Soát</th>
+                        <th class="py-3 px-4">Mã Sách</th>
+                        <th class="py-3 px-4">Tình Trạng Nghiệp Vụ</th>
+                        <th class="py-3 px-4">Vị Trí Kệ Lưu Trữ</th>
+                        <th class="py-3 px-4">Ghi Chú Chi Tiết</th>
+                        <th class="py-3 px-4 text-right">Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                    @foreach (var copy in Model.Copies)
+                    {
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <!-- Số kiểm soát -->
+                            <td class="py-3.5 px-4 font-mono font-black text-sm text-navy-800">
+                                @copy.ControlNumber
+                            </td>
+                            <td class="py-3.5 px-4 font-mono text-slate-500">
+                                @Model.BookCode
+                            </td>
+                            <!-- Trạng thái 4 loại: Còn, Cho mượn, Mất, Hỏng -->
+                            <td class="py-3.5 px-4">
+                                @if (copy.Status == "Còn")
+                                {
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Còn sách
+                                    </span>
+                                }
+                                else if (copy.Status == "Cho mượn")
+                                {
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                                        <i data-lucide="clock" class="w-3 h-3 text-blue-600"></i> Cho mượn
+                                    </span>
+                                }
+                                else if (copy.Status == "Hỏng")
+                                {
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                        <i data-lucide="alert-triangle" class="w-3 h-3 text-amber-600"></i> Hỏng
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                                        <i data-lucide="x-circle" class="w-3 h-3 text-rose-600"></i> Mất
+                                    </span>
+                                }
+                            </td>
+                            <td class="py-3.5 px-4 font-medium text-slate-700">
+                                @copy.ShelfLocation
+                            </td>
+                            <td class="py-3.5 px-4 text-slate-600 italic">
+                                "@copy.Notes"
+                            </td>
+                            <td class="py-3.5 px-4 text-right">
+                                <div class="flex items-center justify-end gap-1.5">
+                                    <button onclick="openUpdateStatusModal('@copy.ControlNumber', '@copy.Status', '@copy.Notes')" 
+                                            class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-navy-800 rounded-lg font-bold transition-colors">
+                                        Đổi tình trạng
+                                    </button>
+                                    <button onclick="if(confirm('Đề xuất thanh lý cuốn số kiểm soát @copy.ControlNumber?')) alert('Đã đưa vào danh sách đề xuất thanh lý hàng năm!');" 
+                                            class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg font-bold transition-colors">
+                                        Thanh lý
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- ================= MODAL THÊM BẢN SAO (SINH SỐ KIỂM SOÁT TIẾP THEO) ================= -->
+<div id="addCopyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/60 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden">
+        <div class="bg-navy-900 text-white p-5 flex items-center justify-between">
+            <h3 class="font-bold text-base flex items-center gap-2">
+                <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-400"></i> Thêm Bản Sao Mới Vào Kho
+            </h3>
+            <button onclick="closeAddCopyModal()" class="text-slate-400 hover:text-white p-1">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form onsubmit="event.preventDefault(); alert('Đã thêm thành công cuốn sách mới với Số kiểm soát 005!'); closeAddCopyModal();" class="p-6 space-y-4 text-xs">
+            <div>
+                <label class="block font-bold text-slate-700 uppercase mb-1">Số kiểm soát tự sinh tiếp theo</label>
+                <input type="text" readonly value="005" class="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-xl font-mono font-black text-navy-800 text-sm" />
+                <span class="text-[10px] text-slate-400">Tự động tăng tuần tự theo tựa sách này.</span>
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-700 uppercase mb-1">Trạng thái khởi tạo</label>
+                <input type="text" readonly value="Còn" class="w-full p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl font-bold text-emerald-800" />
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-700 uppercase mb-1">Vị trí kệ sách</label>
+                <input type="text" value="Tầng 2 - Dãy B4 - Kệ 03" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl" />
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-700 uppercase mb-1">Ghi chú tình trạng</label>
+                <input type="text" value="Sách nhập mới 100%, nguyên vẹn" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl" />
+            </div>
+
+            <div class="pt-3 border-t flex justify-end gap-2">
+                <button type="button" onclick="closeAddCopyModal()" class="px-4 py-2 text-slate-600 font-semibold hover:bg-slate-100 rounded-xl">Hủy</button>
+                <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow">
+                    Lưu Bản Sao
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ================= MODAL CẬP NHẬT TÌNH TRẠNG CUỐN SÁCH ================= -->
+<div id="updateStatusModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/60 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden">
+        <div class="bg-navy-900 text-white p-5 flex items-center justify-between">
+            <h3 class="font-bold text-base flex items-center gap-2">
+                <i data-lucide="edit-3" class="w-5 h-5 text-amber-400"></i> Cập Nhật Tình Trạng Bản Sao
+            </h3>
+            <button onclick="closeUpdateStatusModal()" class="text-slate-400 hover:text-white p-1">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form onsubmit="event.preventDefault(); alert('Đã cập nhật tình trạng thành công!'); closeUpdateStatusModal();" class="p-6 space-y-4 text-xs">
+            <div>
+                <label class="block font-bold text-slate-700 uppercase mb-1">Số kiểm soát</label>
+                <input type="text" id="modalControlNumber" readonly class="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-xl font-mono font-bold" />
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-700 uppercase mb-1">Tình trạng cuốn sách</label>
+                <select id="modalStatusSelect" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold">
+                    <option value="Còn">Còn (Sẵn sàng trong kho)</option>
+                    <option value="Cho mượn">Cho mượn (Đang có độc giả giữ)</option>
+                    <option value="Hỏng">Hỏng (Chờ sửa chữa / thanh lý)</option>
+                    <option value="Mất">Mất (Chờ bồi thường / thanh lý)</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-700 uppercase mb-1">Ghi chú tình trạng</label>
+                <textarea id="modalNotesText" rows="3" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl"></textarea>
+            </div>
+
+            <div class="pt-3 border-t flex justify-end gap-2">
+                <button type="button" onclick="closeUpdateStatusModal()" class="px-4 py-2 font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Hủy</button>
+                <button type="submit" class="px-5 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl font-bold">
+                    Cập Nhật
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openAddCopyModal() { document.getElementById('addCopyModal')?.classList.remove('hidden'); lucide.createIcons(); }
+        function closeAddCopyModal() { document.getElementById('addCopyModal')?.classList.add('hidden'); }
+
+        function openUpdateStatusModal(ctrlNum, status, notes) {
+            document.getElementById('modalControlNumber').value = ctrlNum;
+            document.getElementById('modalStatusSelect').value = status;
+            document.getElementById('modalNotesText').value = notes;
+            document.getElementById('updateStatusModal')?.classList.remove('hidden');
+            lucide.createIcons();
+        }
+        function closeUpdateStatusModal() { document.getElementById('updateStatusModal')?.classList.add('hidden'); }
+    </script>
+}

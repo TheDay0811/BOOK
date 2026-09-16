@@ -1,0 +1,334 @@
+@model BOOK.ViewModels.RegisterViewModel
+@{
+    ViewData["Title"] = "Đăng Ký Tài Khoản & Cấp Thẻ Thư Viện";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="min-h-[calc(100vh-14rem)] flex items-center justify-center py-10 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-5xl w-full bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-12 transition-all">
+
+        <!-- CỘT TRÁI: MÔ PHỎNG THẺ THƯ VIỆN ĐIỆN TỬ TỰ SINH & QUYỀN LỢI ĐỘC GIẢ -->
+        <div class="lg:col-span-5 bg-gradient-to-br from-navy-950 via-navy-900 to-navy-800 text-white p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden">
+            <!-- Background Glow Decoration -->
+            <div class="absolute -bottom-24 -left-24 w-72 h-72 bg-blue-600/20 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="absolute -top-24 -right-24 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="relative z-10 space-y-5">
+                <!-- Branding Header -->
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-xl bg-white/10 backdrop-blur border border-white/20 text-white flex items-center justify-center shadow-lg">
+                        <i data-lucide="book-marked" class="w-6 h-6 text-amber-400"></i>
+                    </div>
+                    <div>
+                        <span class="text-[11px] uppercase tracking-widest font-bold text-blue-300 block">Thư Viện Trung Tâm</span>
+                        <h3 class="text-base font-black text-white tracking-wider">SMART<span class="text-amber-400">LIB</span></h3>
+                    </div>
+                </div>
+
+                <div class="pt-1">
+                    <h2 class="text-xl sm:text-2xl font-black leading-snug text-white">
+                        Cấp Thẻ Độc Giả Sinh Viên
+                    </h2>
+                    <p class="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                        Hệ thống tự động liên kết tài khoản và cấp <span class="text-amber-300 font-semibold">Thẻ Thư Viện Điện Tử</span> chuẩn định dạng <code class="bg-white/10 px-1.5 py-0.5 rounded text-amber-300 font-mono text-[11px]">LIB-{MSSV}</code> có hiệu lực 01 năm.
+                    </p>
+                </div>
+
+                <!-- DIGITAL CARD PREVIEW (MÔ PHỎNG THẺ THƯ VIỆN THỰC TẾ) -->
+                <div class="mt-4 p-5 rounded-2xl bg-gradient-to-tr from-navy-900/90 via-blue-900/80 to-navy-800/90 border border-amber-400/40 shadow-2xl backdrop-blur-md relative overflow-hidden space-y-4 group hover:border-amber-400/60 transition-all">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-amber-400/5 rounded-full blur-xl pointer-events-none"></div>
+
+                    <!-- Card Header -->
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[9px] uppercase tracking-widest text-amber-300 font-bold block">Thẻ Độc Giả Sinh Viên</span>
+                            <span class="text-sm sm:text-base font-mono font-black text-white tracking-wider" id="previewCardNum">
+                                @(string.IsNullOrWhiteSpace(Model.StudentCode) ? "LIB-22110098" : $"LIB-{Model.StudentCode.Trim().ToUpper()}")
+                            </span>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-400/20 text-emerald-300 border border-emerald-400/40 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            @Model.CardStatus
+                        </span>
+                    </div>
+
+                    <!-- Chip & Wireless Icon Simulation -->
+                    <div class="flex items-center justify-between py-1">
+                        <div class="w-9 h-7 rounded-md bg-gradient-to-br from-amber-300 to-amber-500 border border-amber-200/50 shadow-inner flex items-center justify-center">
+                            <div class="w-6 h-4 border border-amber-700/30 rounded-sm grid grid-cols-2 gap-0.5 p-0.5">
+                                <div class="bg-amber-600/30 rounded-xs"></div>
+                                <div class="bg-amber-600/30 rounded-xs"></div>
+                            </div>
+                        </div>
+                        <i data-lucide="wifi" class="w-5 h-5 text-white/40 rotate-90"></i>
+                    </div>
+
+                    <!-- Member Info Preview -->
+                    <div class="pt-1">
+                        <span class="text-[9px] text-slate-400 block uppercase tracking-wider font-semibold">Họ và tên độc giả</span>
+                        <h4 class="text-sm sm:text-base font-bold text-white tracking-wide truncate mt-0.5" id="previewName">
+                            @(string.IsNullOrWhiteSpace(Model.FullName) ? "Nguyễn Văn A" : Model.FullName)
+                        </h4>
+                        <span class="text-xs text-blue-200 font-mono block mt-0.5" id="previewStudentCode">
+                            MSSV: @(string.IsNullOrWhiteSpace(Model.StudentCode) ? "22110098" : Model.StudentCode)
+                        </span>
+                    </div>
+
+                    <!-- Dates & Validity -->
+                    <div class="pt-2 border-t border-white/10 flex justify-between items-center text-[10px] text-slate-300">
+                        <div>
+                            <span class="text-slate-400 block text-[9px]">Ngày cấp:</span>
+                            <strong class="text-white">@Model.CardIssueDate.ToString("dd/MM/yyyy")</strong>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-slate-400 block text-[9px]">Hết hạn (1 năm):</span>
+                            <strong class="text-amber-300 font-bold">@Model.CardExpiryDate.ToString("dd/MM/yyyy")</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BUSINESS RULES / QUY ĐỊNH BẢO VỆ THẺ -->
+                <div class="p-3.5 rounded-xl bg-white/5 border border-white/10 text-[11px] text-slate-300 space-y-2">
+                    <p class="font-bold text-amber-300 flex items-center gap-1.5">
+                        <i data-lucide="shield-alert" class="w-4 h-4 text-amber-400 flex-shrink-0"></i> 
+                        Quy định mượn trả & Hiệu lực thẻ:
+                    </p>
+                    <ul class="space-y-1.5 text-slate-300 text-[11px] pl-1">
+                        <li class="flex items-start gap-1.5">
+                            <span class="text-amber-400 font-bold">•</span>
+                            <span>Mỗi lần mượn tối đa <strong>3 cuốn sách</strong>, thời hạn mượn <strong>15 ngày</strong>.</span>
+                        </li>
+                        <li class="flex items-start gap-1.5">
+                            <span class="text-amber-400 font-bold">•</span>
+                            <span>Thẻ sẽ tự động bị khóa sang <strong>"Không sử dụng"</strong> nếu làm mất/hỏng sách hoặc quá hạn thẻ.</span>
+                        </li>
+                        <li class="flex items-start gap-1.5">
+                            <span class="text-amber-400 font-bold">•</span>
+                            <span>Hoàn tất thủ tục <strong>"Bồi thường tài liệu"</strong> để mở khóa lại trạng thái <strong>"Sử dụng được"</strong>.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="pt-4 text-[10px] text-slate-400 flex items-center gap-1.5">
+                <i data-lucide="info" class="w-3.5 h-3.5 text-blue-400 flex-shrink-0"></i>
+                <span>Mỗi sinh viên chỉ được cấp duy nhất một thẻ thư viện trong suốt khóa đào tạo.</span>
+            </div>
+        </div>
+
+        <!-- CỘT PHẢI: FORM ĐĂNG KÝ TÀI KHOẢN & LIÊN KẾT THẺ -->
+        <div class="lg:col-span-7 p-8 sm:p-10 bg-white flex flex-col justify-center">
+            <div class="space-y-5">
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-wider text-blue-600 block">Biểu mẫu trực tuyến</span>
+                    <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight mt-1">Đăng Ký Tài Khoản & Nhận Thẻ</h2>
+                    <p class="text-xs text-slate-500 mt-1">
+                        Điền đầy đủ thông tin sinh viên để hệ thống tự động khởi tạo Thẻ thư viện điện tử.
+                    </p>
+                </div>
+
+                <!-- Validation Summary -->
+                <div asp-validation-summary="ModelOnly" class="p-3 text-xs text-rose-800 bg-rose-50 border border-rose-200 rounded-xl" style="@(ViewData.ModelState.IsValid ? "display:none;" : "")"></div>
+
+                <form asp-controller="Account" asp-action="Register" method="post" class="space-y-4" id="registerForm" novalidate>
+                    @Html.AntiForgeryToken()
+
+                    <!-- Hidden Fields để bảo toàn thông tin Thẻ thư viện -->
+                    <input type="hidden" asp-for="CardNumber" id="hiddenCardNumber" />
+                    <input type="hidden" asp-for="CardIssueDate" />
+                    <input type="hidden" asp-for="CardExpiryDate" />
+                    <input type="hidden" asp-for="CardStatus" />
+
+                    <!-- DÒNG 1: Họ tên & MSSV -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label asp-for="FullName" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Họ và tên sinh viên <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <i data-lucide="user" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                                <input asp-for="FullName" id="inputFullName" placeholder="Ví dụ: Trần Văn Hoàng" 
+                                       class="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:ring-1 focus:ring-navy-800 focus:outline-none transition-all" />
+                            </div>
+                            <span asp-validation-for="FullName" class="text-[11px] text-rose-600 mt-1 block"></span>
+                        </div>
+
+                        <div>
+                            <label asp-for="StudentCode" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Mã số sinh viên (MSSV) <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <i data-lucide="hash" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                                <input asp-for="StudentCode" id="inputStudentCode" placeholder="Ví dụ: 22110098" 
+                                       class="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:ring-1 focus:ring-navy-800 focus:outline-none font-mono transition-all" />
+                            </div>
+                            <span asp-validation-for="StudentCode" class="text-[11px] text-rose-600 mt-1 block"></span>
+                        </div>
+                    </div>
+
+                    <!-- DÒNG 2: Email & Số điện thoại -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label asp-for="Email" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Địa chỉ Email sinh viên <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <i data-lucide="mail" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                                <input asp-for="Email" type="email" placeholder="student@university.edu.vn" 
+                                       class="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:ring-1 focus:ring-navy-800 focus:outline-none transition-all" />
+                            </div>
+                            <span asp-validation-for="Email" class="text-[11px] text-rose-600 mt-1 block"></span>
+                        </div>
+
+                        <div>
+                            <label asp-for="PhoneNumber" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Số điện thoại liên hệ <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <i data-lucide="phone" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                                <input asp-for="PhoneNumber" type="tel" placeholder="0912 345 678" 
+                                       class="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:ring-1 focus:ring-navy-800 focus:outline-none font-mono transition-all" />
+                            </div>
+                            <span asp-validation-for="PhoneNumber" class="text-[11px] text-rose-600 mt-1 block"></span>
+                        </div>
+                    </div>
+
+                    <!-- DÒNG 3: Mật khẩu & Xác nhận mật khẩu kèm nút ẩn/hiện -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label asp-for="Password" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Mật khẩu đăng nhập <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <i data-lucide="lock" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                                <input asp-for="Password" type="password" id="inputPassword" placeholder="Tối thiểu 6 ký tự" 
+                                       class="w-full pl-9 pr-10 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:ring-1 focus:ring-navy-800 focus:outline-none transition-all" />
+                                <button type="button" onclick="togglePasswordVisibility('inputPassword', 'iconPassword')" 
+                                        class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 focus:outline-none" title="Ẩn/Hiện mật khẩu">
+                                    <i data-lucide="eye" id="iconPassword" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="Password" class="text-[11px] text-rose-600 mt-1 block"></span>
+                        </div>
+
+                        <div>
+                            <label asp-for="ConfirmPassword" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Xác nhận lại mật khẩu <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <i data-lucide="shield-check" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                                <input asp-for="ConfirmPassword" type="password" id="inputConfirmPassword" placeholder="Nhập lại mật khẩu" 
+                                       class="w-full pl-9 pr-10 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:ring-1 focus:ring-navy-800 focus:outline-none transition-all" />
+                                <button type="button" onclick="togglePasswordVisibility('inputConfirmPassword', 'iconConfirmPassword')" 
+                                        class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 focus:outline-none" title="Ẩn/Hiện mật khẩu">
+                                    <i data-lucide="eye" id="iconConfirmPassword" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <span asp-validation-for="ConfirmPassword" class="text-[11px] text-rose-600 mt-1 block"></span>
+                        </div>
+                    </div>
+
+                    <!-- CHECKBOX ĐIỀU KHOẢN NỘI QUY -->
+                    <div class="pt-1">
+                        <label class="flex items-start gap-2.5 text-xs text-slate-600 cursor-pointer select-none">
+                            <input asp-for="AcceptTerms" class="w-4 h-4 text-navy-800 rounded border-slate-300 focus:ring-navy-800 mt-0.5 cursor-pointer" />
+                            <span>
+                                Tôi đã đọc và cam kết tuân thủ <strong>Nội quy thư viện</strong>: mượn tối đa 3 cuốn/lần, hoàn trả trong 15 ngày và chịu trách nhiệm bồi thường nếu làm mất hoặc hỏng sách.
+                            </span>
+                        </label>
+                        <span asp-validation-for="AcceptTerms" class="text-[11px] text-rose-600 mt-1 block"></span>
+                    </div>
+
+                    <!-- NÚT ĐĂNG KÝ VÀ CẤP THẺ -->
+                    <div class="pt-2">
+                        <button type="submit" 
+                                class="w-full py-3 px-4 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 group">
+                            <i data-lucide="id-card" class="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform"></i> 
+                            <span>Đăng Ký Tài Khoản & Kích Hoạt Thẻ Thư Viện</span>
+                        </button>
+                    </div>
+
+                    <!-- CHUYỂN HƯỚNG SANG ĐĂNG NHẬP -->
+                    <div class="text-center text-xs text-slate-500 pt-1">
+                        Đã có tài khoản sinh viên? 
+                        <a asp-controller="Account" asp-action="Login" class="font-bold text-navy-800 hover:text-blue-600 hover:underline">
+                            Đăng nhập tại đây
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Cập nhật realtime thông tin hiển thị trên Thẻ Thư Viện điện tử mô phỏng
+        function syncCardPreview() {
+            const nameInput = document.getElementById('inputFullName');
+            const codeInput = document.getElementById('inputStudentCode');
+            const previewName = document.getElementById('previewName');
+            const previewCode = document.getElementById('previewStudentCode');
+            const previewCard = document.getElementById('previewCardNum');
+            const hiddenCardNumber = document.getElementById('hiddenCardNumber');
+
+            const name = nameInput ? nameInput.value.trim() : '';
+            const code = codeInput ? codeInput.value.trim() : '';
+
+            if (previewName) {
+                previewName.innerText = name || 'Nguyễn Văn A';
+            }
+
+            if (previewCode) {
+                previewCode.innerText = 'MSSV: ' + (code || '22110098');
+            }
+
+            const cardNumber = code ? ('LIB-' + code.toUpperCase()) : 'LIB-22110098';
+            if (previewCard) {
+                previewCard.innerText = cardNumber;
+            }
+
+            if (hiddenCardNumber) {
+                hiddenCardNumber.value = code ? ('LIB-' + code.toUpperCase()) : '';
+            }
+        }
+
+        // Lắng nghe sự kiện gõ phím để cập nhật preview realtime
+        document.addEventListener('DOMContentLoaded', function () {
+            const nameInput = document.getElementById('inputFullName');
+            const codeInput = document.getElementById('inputStudentCode');
+
+            if (nameInput) {
+                nameInput.addEventListener('input', syncCardPreview);
+            }
+            if (codeInput) {
+                codeInput.addEventListener('input', syncCardPreview);
+            }
+
+            // Kích hoạt cập nhật lần đầu nếu đã có dữ liệu sẵn
+            syncCardPreview();
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        });
+
+        // Hàm bật/tắt hiển thị mật khẩu
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (!input || !icon) return;
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.setAttribute('data-lucide', 'eye-off');
+            } else {
+                input.type = 'password';
+                icon.setAttribute('data-lucide', 'eye');
+            }
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        }
+    </script>
+}

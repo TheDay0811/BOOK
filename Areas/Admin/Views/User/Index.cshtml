@@ -1,0 +1,152 @@
+@model List<BOOK.Areas.Admin.Controllers.SystemUserViewModel>
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Quản Lý Tài Khoản & Phân Quyền";
+}
+
+<div class="space-y-6">
+
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <nav class="flex items-center gap-2 text-xs text-slate-500 mb-1">
+                <span>Hệ thống & Bảo mật</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+                <span class="text-navy-800 font-bold">Người dùng & Phân quyền</span>
+            </nav>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Quản Lý Người Dùng & Phân Quyền</h1>
+        </div>
+
+        <button onclick="alert('Mở form cấp phát tài khoản nội bộ mới');" 
+                class="px-5 py-2.5 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+            <i data-lucide="user-plus" class="w-4 h-4 text-amber-400"></i> Cấp Tài Khoản Mới
+        </button>
+    </div>
+
+    <!-- Table Card -->
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-600">
+                <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
+                    <tr>
+                        <th class="py-3 px-4">Họ và Tên</th>
+                        <th class="py-3 px-4">Tên Đăng Nhập / MSSV</th>
+                        <th class="py-3 px-4">Email & Số Điện Thoại</th>
+                        <th class="py-3 px-4">Vai Trò (Role)</th>
+                        <th class="py-3 px-4">Trạng Thái</th>
+                        <th class="py-3 px-4 text-right">Thao Tác Quản Trị</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                    @foreach (var user in Model)
+                    {
+                        <tr class="hover:bg-slate-50/80 transition-colors">
+                            <td class="py-3.5 px-4 font-bold text-slate-900">
+                                @user.FullName
+                            </td>
+                            <td class="py-3.5 px-4 font-mono font-semibold text-navy-800">
+                                @user.Username
+                            </td>
+                            <td class="py-3.5 px-4">
+                                <p class="text-slate-800">@user.Email</p>
+                                <p class="text-slate-400 font-mono">@user.PhoneNumber</p>
+                            </td>
+                            <td class="py-3.5 px-4">
+                                @if (user.Role == "Admin")
+                                {
+                                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                                        👑 Quản Trị Viên
+                                    </span>
+                                }
+                                else if (user.Role == "Quản lý")
+                                {
+                                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                        ⭐ Quản Lý Thư Viện
+                                    </span>
+                                }
+                                else if (user.Role == "Thủ thư")
+                                {
+                                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                                        🛡️ Thủ Thư
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-700">
+                                        📖 Độc Giả
+                                    </span>
+                                }
+                            </td>
+                            <td class="py-3.5 px-4">
+                                @if (user.IsActive)
+                                {
+                                    <span class="inline-flex items-center gap-1 text-emerald-600 font-bold">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Hoạt động
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex items-center gap-1 text-rose-600 font-bold">
+                                        <span class="w-2 h-2 rounded-full bg-rose-500"></span> Đang bị khóa
+                                    </span>
+                                }
+                            </td>
+                            <td class="py-3.5 px-4 text-right">
+                                <div class="flex items-center justify-end gap-1.5">
+                                    <button onclick="changeRole(@user.Id, '@user.FullName')" 
+                                            class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold" title="Đổi vai trò">
+                                        Đổi Role
+                                    </button>
+
+                                    @if (user.IsActive)
+                                    {
+                                        <button onclick="toggleUserStatus(@user.Id, false)" 
+                                                class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg font-bold" title="Khóa tài khoản">
+                                            Khóa
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button onclick="toggleUserStatus(@user.Id, true)" 
+                                                class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg font-bold" title="Mở khóa tài khoản">
+                                            Mở Khóa
+                                        </button>
+                                    }
+
+                                    <button onclick="resetPassword(@user.Id, '@user.Username')" 
+                                            class="p-1 text-slate-400 hover:text-navy-800" title="Đặt lại mật khẩu">
+                                        <i data-lucide="key-round" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        function changeRole(id, name) {
+            const newRole = prompt('Chọn vai trò mới cho ' + name + ' (Độc giả / Thủ thư / Quản lý / Admin):', 'Thủ thư');
+            if (newRole) {
+                alert('Đã cập nhật vai trò của ' + name + ' thành: ' + newRole);
+            }
+        }
+
+        function toggleUserStatus(id, activate) {
+            const action = activate ? 'mở khóa' : 'khóa';
+            if (confirm('Bạn có chắc chắn muốn ' + action + ' tài khoản này?')) {
+                alert('Đã ' + action + ' tài khoản thành công!');
+            }
+        }
+
+        function resetPassword(id, username) {
+            if (confirm('Gửi email đặt lại mật khẩu mặc định cho ' + username + '?')) {
+                alert('Đã cấp lại mật khẩu tạm thời thành công!');
+            }
+        }
+    </script>
+}

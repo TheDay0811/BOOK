@@ -1,0 +1,332 @@
+@model BOOK.Models.ViewModels.AdminDashboardViewModel
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Tổng Quan Hệ Thống Thư Viện";
+}
+
+<div class="space-y-8">
+
+    <!-- TOP BREADCRUMBS & ACTION -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <nav class="flex items-center gap-2 text-xs text-slate-500 mb-1">
+                <span>Khu vực quản trị</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+                <span class="text-navy-800 font-bold">Tổng quan Dashboard</span>
+            </nav>
+            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Trung Tâm Điều Hành Thư Viện</h1>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <span class="text-xs text-slate-500 hidden sm:inline">Cập nhật lúc: <strong>@DateTime.Now.ToString("HH:mm - dd/MM/yyyy")</strong></span>
+            <a asp-area="Admin" asp-controller="Borrow" asp-action="Index" 
+               class="px-4 py-2.5 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+                <i data-lucide="arrow-left-right" class="w-4 h-4 text-amber-400"></i> Quầy Mượn Trả
+            </a>
+        </div>
+    </div>
+
+    <!-- 4 THẺ KPI THỐNG KÊ TRÊN CÙNG -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        
+        <!-- KPI 1: Tổng số đầu sách & bản sao -->
+        <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Kho Sách & Bản Sao</span>
+                <div class="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <i data-lucide="book-copy" class="w-5 h-5"></i>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-2xl sm:text-3xl font-black text-slate-900">@Model.KpiTotalBooks.Value</h3>
+                <p class="text-xs text-slate-500 mt-0.5">@Model.KpiTotalBooks.Subtext</p>
+            </div>
+            <div class="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-xs text-emerald-600 font-bold">
+                <i data-lucide="trending-up" class="w-4 h-4"></i>
+                <span>@Model.KpiTotalBooks.ChangeText</span>
+                <span class="text-slate-400 font-normal">so với tháng trước</span>
+            </div>
+        </div>
+
+        <!-- KPI 2: Sách đang được mượn -->
+        <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition-all space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Đang Lưu Thông</span>
+                <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <i data-lucide="book-open" class="w-5 h-5"></i>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-2xl sm:text-3xl font-black text-slate-900">@Model.KpiActiveBorrows.Value</h3>
+                <p class="text-xs text-slate-500 mt-0.5">@Model.KpiActiveBorrows.Subtext</p>
+            </div>
+            <div class="pt-2 border-t border-slate-100 flex items-center gap-1.5 text-xs text-emerald-600 font-bold">
+                <i data-lucide="trending-up" class="w-4 h-4"></i>
+                <span>@Model.KpiActiveBorrows.ChangeText</span>
+                <span class="text-slate-400 font-normal">so với tháng trước</span>
+            </div>
+        </div>
+
+        <!-- KPI 3: Phiếu mượn chờ duyệt (Màu vàng cảnh báo) -->
+        <div class="bg-white rounded-3xl border border-amber-200 p-6 shadow-sm hover:shadow-md transition-all space-y-3 bg-gradient-to-br from-white to-amber-50/40">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-amber-700 uppercase tracking-wider">Yêu Cầu Chờ Duyệt</span>
+                <div class="w-10 h-10 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center">
+                    <i data-lucide="clock-arrow-up" class="w-5 h-5"></i>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-2xl sm:text-3xl font-black text-amber-600">@Model.KpiPendingBorrows.Value</h3>
+                <p class="text-xs text-slate-500 mt-0.5">@Model.KpiPendingBorrows.Subtext</p>
+            </div>
+            <div class="pt-2 border-t border-amber-100 flex items-center gap-1 text-xs text-amber-700 font-bold">
+                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                <span>@Model.KpiPendingBorrows.ChangeText</span>
+            </div>
+        </div>
+
+        <!-- KPI 4: Sách quá hạn chưa trả (Màu đỏ cảnh báo) -->
+        <div class="bg-white rounded-3xl border border-rose-200 p-6 shadow-sm hover:shadow-md transition-all space-y-3 bg-gradient-to-br from-white to-rose-50/40">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-rose-700 uppercase tracking-wider">Quá Hạn Chưa Trả</span>
+                <div class="w-10 h-10 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center">
+                    <i data-lucide="alert-octagon" class="w-5 h-5"></i>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-2xl sm:text-3xl font-black text-rose-600">@Model.KpiOverdueBooks.Value</h3>
+                <p class="text-xs text-slate-500 mt-0.5">@Model.KpiOverdueBooks.Subtext</p>
+            </div>
+            <div class="pt-2 border-t border-rose-100 flex items-center gap-1 text-xs text-rose-700 font-bold">
+                <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                <span>@Model.KpiOverdueBooks.ChangeText</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- KHU VỰC BIỂU ĐỒ (CHART.JS) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Biểu đồ Đường: Xu Hướng Mượn & Trả 12 Tháng Qua -->
+        <div class="lg:col-span-8 bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                <div>
+                    <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <i data-lucide="line-chart" class="w-5 h-5 text-navy-800"></i>
+                        Xu Hướng Mượn & Trả Sách (12 Tháng Qua)
+                    </h3>
+                    <p class="text-xs text-slate-400">Thống kê số lượt bạn đọc mượn và hoàn trả tài liệu theo tháng</p>
+                </div>
+                <div class="flex items-center gap-3 text-xs">
+                    <span class="flex items-center gap-1.5 text-navy-800 font-semibold">
+                        <span class="w-3 h-3 rounded-full bg-navy-800"></span> Lượt Mượn
+                    </span>
+                    <span class="flex items-center gap-1.5 text-emerald-600 font-semibold">
+                        <span class="w-3 h-3 rounded-full bg-emerald-500"></span> Lượt Trả
+                    </span>
+                </div>
+            </div>
+
+            <div class="relative h-72 sm:h-80 w-full">
+                <canvas id="borrowTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Biểu đồ Tròn: Tỷ Lệ Sách Theo Thể Loại -->
+        <div class="lg:col-span-4 bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4 flex flex-col justify-between">
+            <div class="pb-2 border-b border-slate-100">
+                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="pie-chart" class="w-5 h-5 text-blue-600"></i>
+                    Cơ Cấu Sách Theo Chuyên Ngành
+                </h3>
+                <p class="text-xs text-slate-400">Tỷ lệ phân bổ đầu sách trong kho</p>
+            </div>
+
+            <div class="relative h-64 flex items-center justify-center">
+                <canvas id="categoryDistributionChart"></canvas>
+            </div>
+
+            <div class="pt-2 grid grid-cols-2 gap-2 text-[11px] text-slate-600 border-t border-slate-100">
+                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span> CNTT: 35%</div>
+                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Kinh tế: 25%</div>
+                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> AI & Data: 18%</div>
+                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> An ninh TT: 12%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BẢNG NHANH: TOP 5 YÊU CẦU MƯỢN MỚI CẦN DUYỆT GẤP -->
+    <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-100">
+            <div>
+                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="bell-ring" class="w-5 h-5 text-amber-500"></i>
+                    Yêu Cầu Mượn Sách Mới Nhất Cần Phê Duyệt (Top 5)
+                </h3>
+                <p class="text-xs text-slate-400">Độc giả đã đặt mượn trực tuyến và đang chờ thủ thư chuẩn bị sách tại quầy</p>
+            </div>
+
+            <a asp-area="Admin" asp-controller="Borrow" asp-action="Index" 
+               class="text-xs font-bold text-navy-800 hover:text-blue-600 flex items-center gap-1">
+                Xem toàn bộ 24 yêu cầu <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </a>
+        </div>
+
+        <div class="overflow-x-auto rounded-2xl border border-slate-200">
+            <table class="w-full text-left text-xs text-slate-600">
+                <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
+                    <tr>
+                        <th class="py-3 px-4">Mã Phiếu</th>
+                        <th class="py-3 px-4">Độc Giả (MSSV)</th>
+                        <th class="py-3 px-4">Tên Sách Mượn & ISBN</th>
+                        <th class="py-3 px-4">Thời Điểm Đặt</th>
+                        <th class="py-3 px-4">Hạn Đến Lấy</th>
+                        <th class="py-3 px-4">Độ Ưu Tiên</th>
+                        <th class="py-3 px-4 text-right">Phê Duyệt Nhanh</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                    @foreach (var item in Model.RecentPendingRequests)
+                    {
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="py-3.5 px-4 font-mono font-bold text-navy-800">@item.RequestCode</td>
+                            <td class="py-3.5 px-4">
+                                <p class="font-bold text-slate-900">@item.MemberName</p>
+                                <span class="text-slate-400 text-[11px]">MSSV: @item.MemberCode</span>
+                            </td>
+                            <td class="py-3.5 px-4 max-w-xs">
+                                <p class="font-semibold text-slate-800 truncate">@item.BookTitle</p>
+                                <span class="text-slate-400 text-[10px] font-mono">ISBN: @item.BookISBN</span>
+                            </td>
+                            <td class="py-3.5 px-4 text-slate-500">@item.RequestDate.ToString("HH:mm - dd/MM")</td>
+                            <td class="py-3.5 px-4 font-semibold text-amber-600">@item.PickupDueDate.ToString("dd/MM/yyyy")</td>
+                            <td class="py-3.5 px-4">
+                                @if (item.Priority == "Gấp")
+                                {
+                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                                        ⚡ Gấp
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700">
+                                        Bình thường
+                                    </span>
+                                }
+                            </td>
+                            <td class="py-3.5 px-4 text-right">
+                                <div class="flex items-center justify-end gap-1.5">
+                                    <button onclick="approveFast('@item.RequestCode')" 
+                                            class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-sm transition-colors flex items-center gap-1">
+                                        <i data-lucide="check" class="w-3.5 h-3.5"></i> Duyệt Nhanh
+                                    </button>
+                                    <button onclick="rejectFast('@item.RequestCode')" 
+                                            class="px-2.5 py-1.5 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 rounded-xl font-bold transition-colors">
+                                        Hủy
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        function approveFast(code) {
+            alert('Đã duyệt thành công phiếu mượn ' + code + '! Độc giả đã nhận được tin nhắn hẹn lấy sách tại quầy 1.');
+        }
+
+        function rejectFast(code) {
+            const reason = prompt('Nhập lý do từ chối yêu cầu ' + code + ':', 'Sách đang bảo trì / Thẻ độc giả cần gia hạn');
+            if (reason) {
+                alert('Đã từ chối yêu cầu ' + code + ' thành công.');
+            }
+        }
+
+        // ================= CHART.JS INITIALIZATION =================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Line Chart: Trend
+            const trendCtx = document.getElementById('borrowTrendChart')?.getContext('2d');
+            if (trendCtx) {
+                new Chart(trendCtx, {
+                    type: 'line',
+                    data: {
+                        labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyLabels)),
+                        datasets: [
+                            {
+                                label: 'Lượt Mượn',
+                                data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyBorrowCounts)),
+                                borderColor: '#1e3a8a',
+                                backgroundColor: 'rgba(30, 58, 138, 0.08)',
+                                fill: true,
+                                tension: 0.35,
+                                borderWidth: 2.5,
+                                pointBackgroundColor: '#1e3a8a',
+                                pointRadius: 4
+                            },
+                            {
+                                label: 'Lượt Trả',
+                                data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.MonthlyReturnCounts)),
+                                borderColor: '#10b981',
+                                backgroundColor: 'transparent',
+                                borderDash: [5, 5],
+                                tension: 0.35,
+                                borderWidth: 2,
+                                pointBackgroundColor: '#10b981',
+                                pointRadius: 3
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: '#f1f5f9' },
+                                ticks: { font: { family: 'Inter', size: 11 } }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { font: { family: 'Inter', size: 11 } }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Doughnut Chart: Categories Distribution
+            const catCtx = document.getElementById('categoryDistributionChart')?.getContext('2d');
+            if (catCtx) {
+                new Chart(catCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CategoryLabels)),
+                        datasets: [{
+                            data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CategoryBookCounts)),
+                            backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#6366f1', '#ec4899'],
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+}

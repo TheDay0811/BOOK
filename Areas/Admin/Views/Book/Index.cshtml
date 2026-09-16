@@ -1,0 +1,217 @@
+@model List<BOOK.Models.ViewModels.BookItemViewModel>
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Quản Lý Kho Sách & Đầu Sách";
+}
+
+<div class="space-y-6">
+
+    <!-- Header & Action -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <nav class="flex items-center gap-2 text-xs text-slate-500 mb-1">
+                <span>Quản lý dữ liệu</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+                <span class="text-navy-800 font-bold">Danh mục đầu sách</span>
+            </nav>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Quản Lý Kho Sách & Đầu Sách</h1>
+        </div>
+
+        <button onclick="openBookModal()" 
+                class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i> Thêm Sách Mới
+        </button>
+    </div>
+
+    <!-- Toolbar Filters -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2 w-full md:w-auto flex-1 max-w-md">
+            <div class="relative w-full">
+                <input type="text" placeholder="Tìm theo tên sách, tác giả, mã ISBN..." 
+                       class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none" />
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            <select class="py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-navy-800 focus:outline-none">
+                <option value="">Tất cả thể loại</option>
+                <option>Công Nghệ Thông Tin</option>
+                <option>Kinh Tế & Quản Trị</option>
+                <option>Khoa Học Dữ Liệu</option>
+                <option>An Toàn Thông Tin</option>
+            </select>
+
+            <select class="py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-navy-800 focus:outline-none">
+                <option value="">Tất cả tình trạng</option>
+                <option>Còn sách trong kho</option>
+                <option>Hết sách tạm thời</option>
+                <option>Đang bảo trì / phục hồi</option>
+            </select>
+
+            <button class="px-4 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl font-bold transition-colors">
+                Lọc
+            </button>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-600">
+                <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
+                    <tr>
+                        <th class="py-3 px-4">Ảnh Bìa</th>
+                        <th class="py-3 px-4">Mã ISBN</th>
+                        <th class="py-3 px-4">Tên Đầu Sách</th>
+                        <th class="py-3 px-4">Tác Giả & NXB</th>
+                        <th class="py-3 px-4">Thể Loại</th>
+                        <th class="py-3 px-4">Số Lượng (Còn / Tổng)</th>
+                        <th class="py-3 px-4">Tình Trạng</th>
+                        <th class="py-3 px-4 text-right">Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                    @foreach (var book in Model)
+                    {
+                        <tr class="hover:bg-slate-50/80 transition-colors">
+                            <td class="py-3 px-4">
+                                <img src="@book.CoverImageUrl" alt="Cover" class="w-10 h-14 object-cover rounded-lg shadow-sm border border-slate-200" />
+                            </td>
+                            <td class="py-3 px-4 font-mono font-bold text-slate-800">@book.ISBN</td>
+                            <td class="py-3 px-4 font-bold text-slate-900 max-w-xs">
+                                <p class="truncate">@book.Title</p>
+                                <span class="text-[11px] text-blue-600 font-normal">Kệ: @book.ShelfLocation</span>
+                            </td>
+                            <td class="py-3 px-4">
+                                <p class="font-semibold text-slate-800">@book.Author</p>
+                                <p class="text-slate-400">@book.PublisherName (@book.PublishYear)</p>
+                            </td>
+                            <td class="py-3 px-4">
+                                <span class="px-2.5 py-0.5 rounded-full font-semibold bg-blue-50 text-navy-800 border border-blue-100">
+                                    @book.CategoryName
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 font-bold text-slate-800">
+                                <span class="@(book.AvailableCopies > 0 ? "text-emerald-600" : "text-rose-600")">
+                                    @book.AvailableCopies
+                                </span> / @book.TotalCopies bản
+                            </td>
+                            <td class="py-3 px-4">
+                                @if (book.AvailableCopies > 0)
+                                {
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Còn sách
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold bg-rose-100 text-rose-800">
+                                        Hết sách
+                                    </span>
+                                }
+                            </td>
+                            <td class="py-3 px-4 text-right">
+                                <div class="flex items-center justify-end gap-1.5">
+                                    <button onclick="alert('Xem chi tiết sách #@book.Id')" class="p-1.5 text-slate-500 hover:text-navy-800 hover:bg-slate-100 rounded-lg" title="Xem chi tiết">
+                                        <i data-lucide="eye" class="w-4 h-4"></i>
+                                    </button>
+                                    <button onclick="alert('Chỉnh sửa sách #@book.Id')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title="Chỉnh sửa">
+                                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                    </button>
+                                    <button onclick="if(confirm('Bạn có chắc muốn xóa đầu sách này?')) alert('Đã xóa sách thành công!');" class="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg" title="Xóa">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="p-4 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-slate-500">
+            <span>Hiển thị <strong>1 - 5</strong> trên tổng số <strong>12.450</strong> đầu sách</span>
+            <div class="flex gap-1">
+                <button class="w-7 h-7 rounded-lg bg-navy-800 text-white font-bold">1</button>
+                <button class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-700">2</button>
+                <button class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-700">3</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ================= MODAL THÊM SÁCH MỚI ================= -->
+<div id="bookModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/60 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-2xl w-full overflow-hidden">
+        <div class="bg-navy-900 text-white p-5 flex items-center justify-between">
+            <h3 class="font-bold text-base flex items-center gap-2">
+                <i data-lucide="book-plus" class="w-5 h-5 text-amber-400"></i> Thêm Đầu Sách Mới Vào Kho
+            </h3>
+            <button onclick="closeBookModal()" class="text-slate-400 hover:text-white p-1">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form onsubmit="event.preventDefault(); alert('Đã thêm đầu sách mới thành công!'); closeBookModal();" class="p-6 space-y-4 text-xs">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Tên đầu sách <span class="text-rose-500">*</span></label>
+                    <input type="text" required placeholder="Ví dụ: Thiết Kế Kiến Trúc..." class="w-full p-2.5 bg-slate-50 border rounded-xl" />
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Mã ISBN <span class="text-rose-500">*</span></label>
+                    <input type="text" required placeholder="978-604-..." class="w-full p-2.5 bg-slate-50 border rounded-xl font-mono" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Tác giả</label>
+                    <input type="text" placeholder="Tên tác giả..." class="w-full p-2.5 bg-slate-50 border rounded-xl" />
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Thể loại / Chuyên ngành</label>
+                    <select class="w-full p-2.5 bg-slate-50 border rounded-xl">
+                        <option>Công Nghệ Thông Tin</option>
+                        <option>Kinh Tế & Quản Trị</option>
+                        <option>Khoa Học Dữ Liệu</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Nhà xuất bản</label>
+                    <input type="text" placeholder="NXB Bách Khoa..." class="w-full p-2.5 bg-slate-50 border rounded-xl" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Tổng số bản sao</label>
+                    <input type="number" min="1" value="5" class="w-full p-2.5 bg-slate-50 border rounded-xl" />
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Năm phát hành</label>
+                    <input type="number" value="2024" class="w-full p-2.5 bg-slate-50 border rounded-xl" />
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Vị trí kệ sách</label>
+                    <input type="text" placeholder="Tầng 2 - Kệ B4..." class="w-full p-2.5 bg-slate-50 border rounded-xl" />
+                </div>
+            </div>
+
+            <div class="pt-3 border-t flex justify-end gap-2">
+                <button type="button" onclick="closeBookModal()" class="px-4 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-xl">Hủy</button>
+                <button type="submit" class="px-5 py-2 font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow">Lưu Vào Kho</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openBookModal() { document.getElementById('bookModal')?.classList.remove('hidden'); lucide.createIcons(); }
+        function closeBookModal() { document.getElementById('bookModal')?.classList.add('hidden'); }
+    </script>
+}

@@ -1,0 +1,652 @@
+@model BOOK.ViewModels.MemberProfileViewModel
+@{
+    ViewData["Title"] = "Hồ Sơ Độc Giả & Quản Lý Mượn Trả";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <!-- BREADCRUMB -->
+    <nav class="flex text-xs text-slate-500 gap-2 items-center">
+        <a asp-controller="Home" asp-action="Index" class="hover:text-navy-800 transition-colors">Trang chủ</a>
+        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+        <a asp-controller="Account" asp-action="Profile" class="font-semibold text-navy-800">Cổng Độc Giả</a>
+        <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+        <span class="text-slate-400">Hồ sơ cá nhân & Thẻ thư viện</span>
+    </nav>
+
+    <!-- HEADER PROFILE BANNER -->
+    <div class="relative bg-gradient-to-r from-navy-950 via-navy-900 to-navy-800 text-white rounded-3xl p-6 sm:p-8 shadow-xl overflow-hidden">
+        <div class="absolute -right-16 -top-16 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute right-32 -bottom-16 w-48 h-48 bg-amber-400/10 rounded-full blur-2xl pointer-events-none"></div>
+
+        <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div class="flex items-center gap-5">
+                <div class="relative">
+                    <img src="@Model.AvatarUrl" alt="Avatar" 
+                         class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-amber-400/80 shadow-lg" />
+                    <span class="absolute -bottom-1 -right-1 p-1 rounded-lg bg-navy-900 border border-white/20 text-amber-400" title="Sinh viên chính quy">
+                        <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+                    </span>
+                </div>
+                <div class="space-y-1">
+                    <div class="flex flex-wrap items-center gap-2.5">
+                        <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight">@Model.FullName</h1>
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-white/10 text-amber-300 border border-white/20">
+                            MSSV: @Model.StudentCode
+                        </span>
+                    </div>
+                    <p class="text-xs sm:text-sm text-slate-300 flex items-center gap-2">
+                        <span>@Model.Faculty</span>
+                        <span class="text-slate-500">•</span>
+                        <span>Khóa đào tạo 2024 - 2028</span>
+                    </p>
+                    <div class="flex items-center gap-4 text-xs text-blue-200 pt-1">
+                        <span class="flex items-center gap-1.5">
+                            <i data-lucide="mail" class="w-3.5 h-3.5 text-slate-400"></i> @Model.Email
+                        </span>
+                        <span class="hidden sm:inline text-slate-500">•</span>
+                        <span class="hidden sm:flex items-center gap-1.5">
+                            <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i> @Model.PhoneNumber
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nút thao tác nhanh -->
+            <div class="flex flex-wrap items-center gap-3">
+                <button type="button" onclick="openModal('updateProfileModal')" 
+                        class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold border border-white/20 shadow-sm transition-all flex items-center gap-2">
+                    <i data-lucide="edit-3" class="w-4 h-4 text-amber-400"></i> Cập Nhật Thông Tin
+                </button>
+                <a asp-controller="Book" asp-action="Index" 
+                   class="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-navy-950 rounded-xl text-xs font-black shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+                    <i data-lucide="book-plus" class="w-4 h-4"></i> Mượn Thêm Sách
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD GRID 2 CỘT -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+        <!-- ================= CỘT TRÁI (4 COLS): THÔNG TIN TÀI KHOẢN & THẺ THƯ VIỆN ================= -->
+        <div class="lg:col-span-5 space-y-6">
+
+            <!-- CARD 1: THẺ THƯ VIỆN ĐIỆN TỬ (DIGITAL SMART CARD) -->
+            <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-5">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-navy-50 text-navy-800 flex items-center justify-center">
+                            <i data-lucide="id-card" class="w-4 h-4 text-blue-600"></i>
+                        </div>
+                        <h3 class="font-extrabold text-slate-900 text-sm">Thẻ Thư Viện Sinh Viên</h3>
+                    </div>
+                    <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Thẻ điện tử NFC</span>
+                </div>
+
+                <!-- GIAO DIỆN THẺ ATM / THẺ ĐỘC GIẢ SỐ CAO CẤP -->
+                <div class="p-6 rounded-2xl bg-gradient-to-tr from-navy-950 via-navy-900 to-blue-900 text-white border border-amber-400/40 shadow-2xl relative overflow-hidden space-y-5 group hover:shadow-navy-900/30 transition-all">
+                    <!-- Background Glow -->
+                    <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-amber-400/10 rounded-full blur-2xl pointer-events-none"></div>
+
+                    <!-- Top Card -->
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[9px] uppercase tracking-widest text-amber-300 font-bold block">Thư Viện Trung Tâm</span>
+                            <h4 class="text-base font-black text-white tracking-wider">SMART<span class="text-amber-400">LIB</span> CARD</h4>
+                        </div>
+                        @if (!Model.IsCardLocked)
+                        {
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-400/20 text-emerald-300 border border-emerald-400/40 flex items-center gap-1.5 shadow-sm">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                @Model.CardStatus.ToUpper()
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-rose-500/20 text-rose-300 border border-rose-400/40 flex items-center gap-1.5 shadow-sm">
+                                <i data-lucide="lock" class="w-3 h-3"></i>
+                                BỊ KHÓA
+                            </span>
+                        }
+                    </div>
+
+                    <!-- Chip & Contactless Simulation -->
+                    <div class="flex items-center justify-between py-1">
+                        <div class="w-10 h-8 rounded-md bg-gradient-to-br from-amber-300 to-amber-500 border border-amber-200/60 shadow-inner flex items-center justify-center">
+                            <div class="w-7 h-5 border border-amber-700/30 rounded-xs grid grid-cols-2 gap-0.5 p-0.5">
+                                <div class="bg-amber-600/30 rounded-xs"></div>
+                                <div class="bg-amber-600/30 rounded-xs"></div>
+                            </div>
+                        </div>
+                        <i data-lucide="wifi" class="w-5 h-5 text-white/40 rotate-90"></i>
+                    </div>
+
+                    <!-- Card Number (Font Mono) -->
+                    <div>
+                        <span class="text-[9px] text-slate-400 uppercase tracking-wider block">Mã số thẻ thư viện</span>
+                        <div class="text-lg sm:text-xl font-mono font-black text-amber-300 tracking-widest">
+                            @Model.CardNumber
+                        </div>
+                    </div>
+
+                    <!-- Cardholder & Dates -->
+                    <div class="pt-2 border-t border-white/10 flex justify-between items-end">
+                        <div>
+                            <span class="text-[9px] text-slate-400 uppercase tracking-wider block">Chủ thẻ sinh viên</span>
+                            <span class="text-sm font-bold text-white tracking-wide uppercase">@Model.FullName</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[9px] text-slate-400 block">Hạn dùng (1 năm):</span>
+                            <span class="text-xs font-mono font-bold text-amber-300">@Model.CardExpiryDate.ToString("dd/MM/yyyy")</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CẢNH BÁO NẾU THẺ BỊ KHÓA -->
+                @if (Model.IsCardLocked)
+                {
+                    <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 space-y-2 animate-shake">
+                        <div class="flex items-center gap-2 font-bold text-xs text-rose-900">
+                            <i data-lucide="alert-octagon" class="w-4 h-4 text-rose-600 flex-shrink-0"></i>
+                            <span>CẢNH BÁO: Thẻ thư viện đang bị khóa!</span>
+                        </div>
+                        <p class="text-xs leading-relaxed text-rose-700">
+                            Thẻ đang bị tạm khóa do có sách quá hạn hoặc đang chờ thủ tục giải quyết bồi thường tài liệu hỏng/mất. Vui lòng gặp Thủ thư tại quầy dịch vụ Tầng 1 để hoàn tất bồi thường và kích hoạt lại quyền mượn sách.
+                        </p>
+                    </div>
+                }
+                else
+                {
+                    <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-3">
+                        <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600 flex-shrink-0"></i>
+                        <span>Thẻ hợp lệ. Bạn được quyền mượn sách trực tiếp tại quầy hoặc đặt mượn giữ chỗ online.</span>
+                    </div>
+                }
+
+                <!-- THÔNG TIN TÀI KHOẢN CHI TIẾT -->
+                <div class="space-y-3 pt-2 text-xs">
+                    <h4 class="font-bold text-slate-800 uppercase tracking-wider text-[11px]">Chi tiết hồ sơ độc giả</h4>
+                    <div class="divide-y divide-slate-100 rounded-xl border border-slate-100 overflow-hidden">
+                        <div class="p-3 bg-slate-50/50 flex justify-between">
+                            <span class="text-slate-500">Mã số sinh viên:</span>
+                            <span class="font-mono font-bold text-slate-800">@Model.StudentCode</span>
+                        </div>
+                        <div class="p-3 flex justify-between">
+                            <span class="text-slate-500">Email học đường:</span>
+                            <span class="font-medium text-slate-800">@Model.Email</span>
+                        </div>
+                        <div class="p-3 bg-slate-50/50 flex justify-between">
+                            <span class="text-slate-500">Số điện thoại:</span>
+                            <span class="font-mono font-medium text-slate-800">@Model.PhoneNumber</span>
+                        </div>
+                        <div class="p-3 flex justify-between">
+                            <span class="text-slate-500">Ngày kích hoạt thẻ:</span>
+                            <span class="font-medium text-slate-800">@Model.CardIssueDate.ToString("dd/MM/yyyy")</span>
+                        </div>
+                        <div class="p-3 bg-slate-50/50 flex justify-between">
+                            <span class="text-slate-500">Phí phạt còn nợ:</span>
+                            <span class="font-bold @(Model.HasUnpaidFines ? "text-rose-600" : "text-emerald-600")">
+                                @Model.TotalUnpaidFines.ToString("N0") VNĐ
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-1">
+                    <button type="button" onclick="openModal('updateProfileModal')" 
+                            class="w-full py-2.5 px-4 rounded-xl border border-navy-800 text-navy-800 hover:bg-navy-50 text-xs font-bold transition-colors flex items-center justify-center gap-2">
+                        <i data-lucide="settings-2" class="w-4 h-4"></i> Cập Nhật Hồ Sơ & Thông Tin Liên Hệ
+                    </button>
+                </div>
+            </div>
+
+            <!-- BOX TÓM TẮT NỘI QUY MƯỢN TRẢ -->
+            <div class="bg-slate-100/70 rounded-3xl border border-slate-200 p-5 space-y-3 text-xs text-slate-600">
+                <div class="flex items-center gap-2 font-bold text-slate-800">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-blue-600"></i>
+                    <span>Quy định mượn trả theo Case Study:</span>
+                </div>
+                <ul class="space-y-2 text-[11px] leading-relaxed pl-1">
+                    <li class="flex items-start gap-2">
+                        <span class="text-navy-800 font-bold">•</span>
+                        <span>Mỗi lần mượn tối đa <strong>3 cuốn sách</strong>, thời hạn tối đa <strong>15 ngày</strong>.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-navy-800 font-bold">•</span>
+                        <span>Phải trả hết số sách đang giữ trước khi được mượn các cuốn sách mới.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <span class="text-navy-800 font-bold">•</span>
+                        <span>Nếu làm mất hoặc hư hỏng sách: Thẻ lập tức bị khóa, độc giả cần hoàn tất bồi thường tài liệu để kích hoạt lại thẻ.</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ================= CỘT PHẢI (7 COLS): QUẢN LÝ SÁCH ĐANG MƯỢN & LỊCH SỬ ================= -->
+        <div class="lg:col-span-7 space-y-8" id="activeLoans">
+
+            <!-- CARD 2: TIẾN ĐỘ & DANH SÁCH SÁCH ĐANG MƯỢN -->
+            <div class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-7 shadow-sm space-y-6">
+
+                <!-- Header & Thanh tiến độ mượn 3 cuốn -->
+                <div class="space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-blue-600 block">Tình trạng hiện tại</span>
+                            <h2 class="text-xl font-extrabold text-slate-900 tracking-tight">Sách Đang Mượn Giữ</h2>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-3 py-1 rounded-full text-xs font-black bg-navy-50 text-navy-800 border border-navy-200">
+                                Đang mượn: @Model.CurrentBorrowCount/@Model.MaxBorrowLimit cuốn
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="space-y-1.5">
+                        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                            <div class="bg-gradient-to-r from-blue-600 to-navy-800 h-2.5 rounded-full transition-all duration-500" 
+                                 style="width: @Model.BorrowPercentage%"></div>
+                        </div>
+                        <p class="text-[11px] text-slate-500 flex items-center justify-between">
+                            <span>Hạn mức tối đa: 3 cuốn/lần mượn</span>
+                            <span class="font-medium text-slate-700">Còn lại: @(Model.MaxBorrowLimit - Model.CurrentBorrowCount) suất mượn</span>
+                        </p>
+                    </div>
+
+                    @if (Model.CurrentBorrowCount > 0)
+                    {
+                        <div class="p-3 rounded-xl bg-blue-50/70 border border-blue-200/80 text-[11px] text-blue-900 flex items-center gap-2">
+                            <i data-lucide="info" class="w-4 h-4 text-blue-600 flex-shrink-0"></i>
+                            <span>Ràng buộc hệ thống: Bạn cần hoàn tất trả các cuốn sách này trước khi lập phiếu mượn tài liệu mới.</span>
+                        </div>
+                    }
+                </div>
+
+                <!-- BẢNG DANH SÁCH SÁCH ĐANG MƯỢN -->
+                @if (Model.ActiveLoans != null && Model.ActiveLoans.Count > 0)
+                {
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-200 bg-slate-50 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                                    <th class="py-3 px-3">Tài liệu & Bản sao</th>
+                                    <th class="py-3 px-3">Ngày mượn</th>
+                                    <th class="py-3 px-3">Hạn trả (15 ngày)</th>
+                                    <th class="py-3 px-3">Trạng thái hạn</th>
+                                    <th class="py-3 px-3 text-right">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @foreach (var item in Model.ActiveLoans)
+                                {
+                                    <tr class="hover:bg-slate-50/80 transition-colors">
+                                        <!-- Cột 1: Bìa & Thông tin sách -->
+                                        <td class="py-3 px-3">
+                                            <div class="flex items-center gap-3">
+                                                <img src="@item.CoverImageUrl" alt="@item.BookTitle" 
+                                                     class="w-10 h-14 object-cover rounded-lg shadow-xs border border-slate-200 flex-shrink-0" />
+                                                <div class="min-w-0 max-w-[200px]">
+                                                    <h5 class="font-bold text-slate-900 leading-snug truncate" title="@item.BookTitle">
+                                                        @item.BookTitle
+                                                    </h5>
+                                                    <p class="text-[11px] text-slate-500 truncate">@item.Author</p>
+                                                    <span class="inline-block mt-0.5 px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[10px] font-semibold">
+                                                        @item.DisplayCode
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </td>
+
+                                        <!-- Cột 2: Ngày mượn -->
+                                        <td class="py-3 px-3 text-slate-600 font-medium">
+                                            @item.BorrowDate.ToString("dd/MM/yyyy")
+                                        </td>
+
+                                        <!-- Cột 3: Hạn trả -->
+                                        <td class="py-3 px-3 font-semibold text-slate-800">
+                                            @item.DueDate.ToString("dd/MM/yyyy")
+                                        </td>
+
+                                        <!-- Cột 4: Tình trạng hạn -->
+                                        <td class="py-3 px-3">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border @item.DueStatusBadgeClass">
+                                                @if (item.IsOverdue)
+                                                {
+                                                    <i data-lucide="alert-circle" class="w-3 h-3"></i>
+                                                }
+                                                else if (item.IsNearDue)
+                                                {
+                                                    <i data-lucide="clock" class="w-3 h-3"></i>
+                                                }
+                                                else
+                                                {
+                                                    <i data-lucide="check" class="w-3 h-3"></i>
+                                                }
+                                                <span>@item.DueStatusText</span>
+                                            </span>
+                                            @if (item.RenewalCount > 0)
+                                            {
+                                                <span class="block text-[10px] text-slate-400 mt-0.5">Đã gia hạn: @item.RenewalCount lần</span>
+                                            }
+                                        </td>
+
+                                        <!-- Cột 5: Thao tác -->
+                                        <td class="py-3 px-3 text-right">
+                                            <div class="flex items-center justify-end gap-1.5">
+                                                @if (item.CanRenew)
+                                                {
+                                                    <button type="button" 
+                                                            onclick="openRenewModal(@item.BorrowId, '@item.BookTitle', '@item.DueDate.ToString("dd/MM/yyyy")')"
+                                                            class="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold transition-colors" 
+                                                            title="Yêu cầu gia hạn thêm 7 ngày">
+                                                        <i data-lucide="calendar-plus" class="w-4 h-4"></i>
+                                                    </button>
+                                                }
+                                                <button type="button" 
+                                                        onclick="openReportModal(@item.BorrowId, '@item.BookTitle', '@item.DisplayCode')"
+                                                        class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold transition-colors" 
+                                                        title="Báo mất hoặc hư hỏng sách">
+                                                    <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <!-- Trạng thái trống -->
+                    <div class="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-3">
+                        <div class="w-12 h-12 rounded-2xl bg-white text-slate-400 flex items-center justify-center mx-auto shadow-xs border border-slate-200">
+                            <i data-lucide="book-check" class="w-6 h-6 text-emerald-500"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm">Hiện tại bạn không giữ cuốn sách nào</h4>
+                            <p class="text-xs text-slate-500 mt-0.5">Hãy tra cứu hàng ngàn tựa sách học thuật và đặt mượn ngay hôm nay.</p>
+                        </div>
+                        <a asp-controller="Book" asp-action="Index" 
+                           class="inline-flex items-center gap-1.5 px-4 py-2 bg-navy-800 text-white rounded-xl text-xs font-bold shadow hover:bg-navy-900 transition-colors">
+                            <i data-lucide="search" class="w-3.5 h-3.5"></i> Khám phá kho sách
+                        </a>
+                    </div>
+                }
+            </div>
+
+            <!-- ================= CARD 3: TAB LỊCH SỬ MƯỢN TRẢ & BỒI THƯỜNG ================= -->
+            <div class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-7 shadow-sm space-y-6" id="history">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-500 block">Lưu trữ tra cứu</span>
+                        <h3 class="text-lg font-extrabold text-slate-900">Lịch Sử Mượn Trả & Hồ Sơ Bồi Thường</h3>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs">
+                        <span class="flex items-center gap-1 text-slate-600 font-medium">
+                            <i data-lucide="wallet" class="w-4 h-4 text-emerald-600"></i> Phạt đã nộp: <strong>@Model.TotalFinesPaid.ToString("N0") VNĐ</strong>
+                        </span>
+                    </div>
+                </div>
+
+                @if (Model.HistoryLoans != null && Model.HistoryLoans.Count > 0)
+                {
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-200 bg-slate-50 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                                    <th class="py-3 px-3">Tên sách & Số kiểm soát</th>
+                                    <th class="py-3 px-3">Thời gian mượn - trả</th>
+                                    <th class="py-3 px-3">Tình trạng khi trả</th>
+                                    <th class="py-3 px-3">Tiền phạt / Bồi thường</th>
+                                    <th class="py-3 px-3">Ghi chú</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @foreach (var item in Model.HistoryLoans)
+                                {
+                                    <tr class="hover:bg-slate-50/50 transition-colors">
+                                        <td class="py-3 px-3 font-semibold text-slate-900">
+                                            <div class="font-bold">@item.BookTitle</div>
+                                            <span class="text-[10px] text-slate-500 font-mono">@item.BookCode - Bản @item.ControlNumber</span>
+                                        </td>
+                                        <td class="py-3 px-3 text-slate-600">
+                                            <div>Mượn: @item.BorrowDate.ToString("dd/MM/yyyy")</div>
+                                            <div class="text-slate-500 text-[11px]">Trả: @item.ReturnDate.ToString("dd/MM/yyyy")</div>
+                                        </td>
+                                        <td class="py-3 px-3">
+                                            @if (item.ReturnCondition.Contains("Bình thường"))
+                                            {
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                    @item.ReturnCondition
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                                    @item.ReturnCondition
+                                                </span>
+                                            }
+                                        </td>
+                                        <td class="py-3 px-3">
+                                            @if (item.CompensationFee > 0)
+                                            {
+                                                <span class="font-bold text-rose-600">@item.CompensationFee.ToString("N0") VNĐ</span>
+                                                <span class="block text-[10px] text-emerald-600 font-semibold">@item.PaymentStatus</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-slate-400 font-medium">0 VNĐ (Miễn phí)</span>
+                                            }
+                                        </td>
+                                        <td class="py-3 px-3 text-slate-500 text-[11px]">
+                                            @item.Notes
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-xs text-slate-400 py-4 text-center">Chưa có bản ghi lịch sử mượn trả nào.</p>
+                }
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ================= MODAL 1: CẬP NHẬT THÔNG TIN CÁ NHÂN ================= -->
+<div id="updateProfileModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-150">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+            <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <i data-lucide="user-pen" class="w-5 h-5 text-blue-600"></i> Cập Nhật Thông Tin Độc Giả
+            </h3>
+            <button type="button" onclick="closeModal('updateProfileModal')" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form asp-controller="Account" asp-action="UpdateProfile" method="post" class="space-y-4 pt-4">
+            @Html.AntiForgeryToken()
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Họ và tên sinh viên</label>
+                <input asp-for="UpdateModel.FullName" value="@Model.FullName" required 
+                       class="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Mã sinh viên (MSSV)</label>
+                    <input asp-for="UpdateModel.StudentCode" value="@Model.StudentCode" readonly 
+                           class="w-full px-3.5 py-2 text-xs bg-slate-100 border border-slate-200 rounded-xl font-mono text-slate-500 cursor-not-allowed" />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Số điện thoại</label>
+                    <input asp-for="UpdateModel.PhoneNumber" value="@Model.PhoneNumber" required 
+                           class="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none font-mono" />
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Địa chỉ Email</label>
+                <input asp-for="UpdateModel.Email" value="@Model.Email" type="email" required 
+                       class="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none" />
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Khoa / Đơn vị quản lý</label>
+                <input asp-for="UpdateModel.Faculty" value="@Model.Faculty" required 
+                       class="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none" />
+            </div>
+
+            <div class="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
+                <button type="button" onclick="closeModal('updateProfileModal')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">Hủy bỏ</button>
+                <button type="submit" class="px-5 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow">Lưu thay đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ================= MODAL 2: GIA HẠN SÁCH MƯỢN ================= -->
+<div id="renewModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-150">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <i data-lucide="calendar-plus" class="w-5 h-5 text-emerald-600"></i> Yêu Cầu Gia Hạn Thêm 07 Ngày
+            </h3>
+            <button type="button" onclick="closeModal('renewModal')" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form asp-controller="Account" asp-action="ExtendBorrow" method="post" class="space-y-4 pt-3">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="borrowId" id="renewBorrowId" />
+
+            <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
+                <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Tựa sách gia hạn</span>
+                <h4 class="font-bold text-slate-900 text-xs truncate" id="renewBookTitle">...</h4>
+                <p class="text-[11px] text-slate-500">Hạn trả hiện tại: <strong class="text-amber-600 font-mono" id="renewCurrentDue">...</strong></p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Lý do xin gia hạn</label>
+                <select name="reason" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none">
+                    <option value="Đang phục vụ ôn thi kết thúc học phần">Đang phục vụ ôn thi kết thúc học phần</option>
+                    <option value="Nghiên cứu tài liệu cho đồ án / khóa luận tốt nghiệp">Nghiên cứu tài liệu cho đồ án / khóa luận tốt nghiệp</option>
+                    <option value="Chưa đọc xong chương tài liệu trọng tâm">Chưa đọc xong chương tài liệu trọng tâm</option>
+                    <option value="Lý do cá nhân khác">Lý do cá nhân khác</option>
+                </select>
+            </div>
+
+            <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-[11px] text-emerald-800 flex items-center gap-2">
+                <i data-lucide="check" class="w-4 h-4 text-emerald-600 flex-shrink-0"></i>
+                <span>Theo quy định, mỗi cuốn sách được gia hạn tối đa 2 lần nếu sách chưa có độc giả khác đặt trước.</span>
+            </div>
+
+            <div class="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+                <button type="button" onclick="closeModal('renewModal')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">Hủy</button>
+                <button type="submit" class="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow">Xác nhận gia hạn</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ================= MODAL 3: BÁO MẤT / BÁO HỎNG SÁCH ================= -->
+<div id="reportModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-150">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <i data-lucide="alert-triangle" class="w-5 h-5 text-rose-600"></i> Báo Cáo Mất / Hư Hỏng Tài Liệu
+            </h3>
+            <button type="button" onclick="closeModal('reportModal')" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form asp-controller="Account" asp-action="ReportDamageOrLost" method="post" class="space-y-4 pt-3">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="borrowId" id="reportBorrowId" />
+
+            <div class="p-3.5 bg-rose-50/70 rounded-2xl border border-rose-200 space-y-1">
+                <span class="text-[10px] text-rose-600 uppercase font-bold tracking-wider">Tài liệu gặp sự cố</span>
+                <h4 class="font-bold text-slate-900 text-xs truncate" id="reportBookTitle">...</h4>
+                <p class="text-[11px] text-slate-600 font-mono" id="reportBookCode">...</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Hình thức sự cố</label>
+                <select name="issueType" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none">
+                    <option value="Làm mất sách vật lý">Làm mất sách vật lý (Thất lạc)</option>
+                    <option value="Hư hỏng trang sách / Thấm nước">Hư hỏng trang sách / Thấm nước</option>
+                    <option value="Bung gáy / Rách bìa sách">Bung gáy / Rách bìa sách</option>
+                    <option value="Sự cố khác">Sự cố khác</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Mô tả tình trạng chi tiết</label>
+                <textarea name="description" rows="3" required placeholder="Vui lòng mô tả chi tiết hoàn cảnh xảy ra sự cố để thủ thư tiếp nhận giải quyết..." 
+                          class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none"></textarea>
+            </div>
+
+            <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-900 flex items-start gap-2">
+                <i data-lucide="shield-alert" class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5"></i>
+                <span>Theo quy định Case Study: Thẻ sẽ tạm khóa cho đến khi độc giả đến quầy thủ thư hoàn tất thủ tục bồi thường tài liệu.</span>
+            </div>
+
+            <div class="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+                <button type="button" onclick="closeModal('reportModal')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">Hủy</button>
+                <button type="submit" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow">Gửi thông báo sự cố</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('hidden');
+                if (window.lucide) lucide.createIcons();
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function openRenewModal(borrowId, bookTitle, currentDue) {
+            document.getElementById('renewBorrowId').value = borrowId;
+            document.getElementById('renewBookTitle').innerText = bookTitle;
+            document.getElementById('renewCurrentDue').innerText = currentDue;
+            openModal('renewModal');
+        }
+
+        function openReportModal(borrowId, bookTitle, bookCode) {
+            document.getElementById('reportBorrowId').value = borrowId;
+            document.getElementById('reportBookTitle').innerText = bookTitle;
+            document.getElementById('reportBookCode').innerText = bookCode;
+            openModal('reportModal');
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        });
+    </script>
+}

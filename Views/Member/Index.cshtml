@@ -1,0 +1,246 @@
+@model BOOK.Models.ViewModels.MemberPortalViewModel
+@{
+    ViewData["Title"] = "Cổng Thông Tin Độc Giả - Hồ Sơ & Mượn Trả";
+}
+
+<!-- MEMBER HERO BANNER -->
+<div class="bg-gradient-to-r from-navy-900 to-navy-800 text-white py-10 border-b border-navy-700">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white flex items-center justify-center font-bold text-2xl shadow-md">
+                    @Model.FullName.Substring(0, 1)
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-2xl font-bold">@Model.FullName</h1>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-400/20 text-emerald-300 border border-emerald-400/30">
+                            Thẻ Đang Hoạt Động
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-300 mt-1">
+                        Mã độc giả / MSSV: <strong class="font-mono text-white">@Model.MemberCode</strong> • @Model.Faculty
+                    </p>
+                </div>
+            </div>
+
+            <!-- Summary Badges -->
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="px-4 py-2 bg-navy-950/70 border border-navy-700 rounded-xl text-xs">
+                    <span class="text-slate-400 block">Đang mượn:</span>
+                    <strong class="text-white text-base">@Model.ActiveLoans.Count</strong> cuốn
+                </div>
+                <div class="px-4 py-2 bg-navy-950/70 border border-navy-700 rounded-xl text-xs">
+                    <span class="text-slate-400 block">Nợ phạt quá hạn:</span>
+                    <strong class="@(Model.LateFeeInfo.TotalUnpaidFine > 0 ? "text-rose-400" : "text-emerald-400") text-base">
+                        @Model.LateFeeInfo.TotalUnpaidFine.ToString("N0") VNĐ
+                    </strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    
+    <!-- SECTION 1: BOOKS CURRENTLY BORROWED -->
+    <div class="bg-white rounded-3xl border border-slate-200 p-6 lg:p-8 shadow-sm space-y-6">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div>
+                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="book-open" class="w-5 h-5 text-navy-800"></i>
+                    Sách Đang Mượn Về Nhà (@Model.ActiveLoans.Count / 3)
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Vui lòng theo dõi hạn trả để gia hạn trước ngày đến hạn</p>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto rounded-2xl border border-slate-200">
+            <table class="w-full text-left text-sm text-slate-600">
+                <thead class="bg-slate-50 text-xs uppercase font-bold text-slate-500 border-b border-slate-200">
+                    <tr>
+                        <th class="py-3 px-4">Tài Liệu</th>
+                        <th class="py-3 px-4">Ngày Mượn</th>
+                        <th class="py-3 px-4">Hạn Hoàn Trả</th>
+                        <th class="py-3 px-4">Tình Trạng</th>
+                        <th class="py-3 px-4 text-right">Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200">
+                    @if (Model.ActiveLoans != null && Model.ActiveLoans.Any())
+                    {
+                        foreach (var loan in Model.ActiveLoans)
+                        {
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="py-4 px-4 flex items-center gap-3">
+                                    <img src="@loan.CoverImageUrl" class="w-12 h-16 object-cover rounded-lg shadow-sm" alt="Bìa" />
+                                    <div>
+                                        <h5 class="font-bold text-slate-900 text-sm">@loan.BookTitle</h5>
+                                        <span class="text-xs text-slate-400 font-mono">ISBN: @loan.BookISBN</span>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-4 text-xs text-slate-600">@loan.BorrowDate.ToString("dd/MM/yyyy")</td>
+                                <td class="py-4 px-4 text-xs font-bold @(loan.IsOverdue ? "text-rose-600" : "text-navy-800")">
+                                    @loan.DueDate.ToString("dd/MM/yyyy")
+                                </td>
+                                <td class="py-4 px-4">
+                                    @if (loan.IsOverdue)
+                                    {
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                            <i data-lucide="alert-circle" class="w-3 h-3"></i> Quá hạn @loan.OverdueDays ngày
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Còn hạn
+                                        </span>
+                                    }
+                                </td>
+                                <td class="py-4 px-4 text-right">
+                                    <div class="flex items-center justify-end gap-2">
+                                        @if (loan.RenewalCount < 2)
+                                        {
+                                            <button onclick="requestRenewal(@loan.BorrowId)" 
+                                                    class="px-3 py-1.5 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-semibold shadow-sm transition-colors flex items-center gap-1">
+                                                <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i> Xin Gia Hạn (@(loan.RenewalCount)/2)
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-xs text-slate-400">Đã hết lượt gia hạn</span>
+                                        }
+                                        <button onclick="alert('Đã thông báo quầy thủ thư bạn sẽ đến trả sách trong ngày hôm nay.')" 
+                                                class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors">
+                                            Báo Trả Sách
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- SECTION 2: LATE FEES & VIETQR PAYMENT -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <!-- Left: Late Fees Details -->
+        <div class="lg:col-span-7 bg-white rounded-3xl border border-slate-200 p-6 lg:p-8 shadow-sm space-y-4">
+            <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <i data-lucide="receipt" class="w-5 h-5 text-rose-600"></i>
+                Chi Tiết Phí Phạt & Quá Hạn
+            </h3>
+            <p class="text-xs text-slate-500">
+                Khoản phạt được tính tự động dựa trên thời gian trễ hạn theo quy chế thư viện (2.000 VNĐ / ngày / cuốn).
+            </p>
+
+            <div class="p-4 rounded-2xl bg-rose-50/70 border border-rose-200 flex items-center justify-between">
+                <div>
+                    <span class="text-xs font-bold uppercase text-rose-700 tracking-wider">Tổng nợ phạt cần thanh toán</span>
+                    <h4 class="text-3xl font-black text-rose-600 mt-0.5">@Model.LateFeeInfo.TotalUnpaidFine.ToString("N0") VNĐ</h4>
+                </div>
+                <span class="px-3 py-1 bg-rose-200 text-rose-800 rounded-full text-xs font-bold">Chưa thanh toán</span>
+            </div>
+
+            <div class="space-y-2 pt-2 text-xs text-slate-600">
+                <div class="flex justify-between py-1.5 border-b border-slate-100">
+                    <span>Sách: Cấu Trúc Dữ Liệu & Giải Thuật Ứng Dụng</span>
+                    <span class="font-bold text-slate-800">4.000 VNĐ (Trễ 2 ngày)</span>
+                </div>
+            </div>
+
+            <p class="text-xs text-slate-400 italic pt-2">
+                * Lưu ý: Khi nợ phạt vượt quá 20.000 VNĐ hoặc trễ quá 14 ngày, quyền đặt mượn mới sẽ tự động tạm khóa.
+            </p>
+        </div>
+
+        <!-- Right: VietQR Payment Gateway -->
+        <div class="lg:col-span-5 bg-gradient-to-br from-navy-950 to-navy-900 text-white rounded-3xl p-6 lg:p-8 shadow-xl space-y-5 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs uppercase font-bold text-amber-400 tracking-wider">Thanh toán trực tuyến 24/7</span>
+                    <span class="px-2 py-0.5 rounded bg-blue-500/30 text-[10px] font-bold text-blue-300">VietQR Napas 247</span>
+                </div>
+                <h4 class="text-lg font-bold mt-2">Quét Mã QR Nộp Tiền Phạt</h4>
+                <p class="text-xs text-slate-300 mt-1">Sử dụng ứng dụng Banking ngân hàng bất kỳ để quét mã thanh toán tức thì.</p>
+            </div>
+
+            <!-- VietQR Code Graphic Mockup -->
+            <div class="bg-white p-4 rounded-2xl max-w-[200px] mx-auto shadow-lg text-center">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=vietqr_mock_fine_22110098" 
+                     alt="VietQR nộp phạt" class="w-full h-auto mx-auto rounded-lg" />
+                <span class="text-[10px] font-bold text-slate-800 block mt-2">NOPPHAT @Model.MemberCode</span>
+            </div>
+
+            <!-- Banking Info -->
+            <div class="bg-white/10 rounded-2xl p-3.5 space-y-1.5 text-xs">
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Ngân hàng:</span>
+                    <span class="font-bold text-white">Vietcombank</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Số tài khoản:</span>
+                    <span class="font-mono font-bold text-amber-300">102888666999</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Nội dung CK:</span>
+                    <span class="font-mono font-bold text-white">NOPPHAT @Model.MemberCode</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 3: PAST BORROWING HISTORY -->
+    <div class="bg-white rounded-3xl border border-slate-200 p-6 lg:p-8 shadow-sm space-y-6">
+        <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <i data-lucide="history" class="w-5 h-5 text-navy-800"></i>
+            Lịch Sử Mượn Trả Trong Quá Khứ
+        </h3>
+
+        <div class="overflow-x-auto rounded-2xl border border-slate-200">
+            <table class="w-full text-left text-sm text-slate-600">
+                <thead class="bg-slate-50 text-xs uppercase font-bold text-slate-500 border-b border-slate-200">
+                    <tr>
+                        <th class="py-3 px-4">Tên Sách</th>
+                        <th class="py-3 px-4">Ngày Mượn</th>
+                        <th class="py-3 px-4">Ngày Đã Trả</th>
+                        <th class="py-3 px-4">Phí Phạt Đã Thu</th>
+                        <th class="py-3 px-4">Trạng Thái</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 text-xs">
+                    @if (Model.BorrowHistory != null && Model.BorrowHistory.Any())
+                    {
+                        foreach (var history in Model.BorrowHistory)
+                        {
+                            <tr>
+                                <td class="py-3 px-4 font-bold text-slate-800">@history.BookTitle</td>
+                                <td class="py-3 px-4 text-slate-500">@history.BorrowDate.ToString("dd/MM/yyyy")</td>
+                                <td class="py-3 px-4 text-slate-500">@history.ReturnDate.ToString("dd/MM/yyyy")</td>
+                                <td class="py-3 px-4 font-mono font-semibold">@history.FinePaid.ToString("N0") VNĐ</td>
+                                <td class="py-3 px-4">
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold bg-slate-100 text-slate-700">
+                                        <i data-lucide="check" class="w-3 h-3 text-emerald-600"></i> @history.Status
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function requestRenewal(borrowId) {
+            const reason = prompt('Nhập lý do xin gia hạn (Ví dụ: Đang làm bài tập nhóm, cần thêm thời gian tham khảo):', 'Đang làm đồ án môn học');
+            if (reason) {
+                alert('Yêu cầu xin gia hạn mượn sách đã gửi đến Thủ thư. Vui lòng kiểm tra lại sau 2 giờ.');
+            }
+        }
+    </script>
+}

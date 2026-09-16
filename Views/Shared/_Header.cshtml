@@ -1,0 +1,347 @@
+@using System.Security.Claims
+
+@{
+    var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
+    var userName = User.Identity?.Name ?? "Độc giả";
+    var userEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "sinhvien@university.edu.vn";
+    var studentCode = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "24DH112970";
+    var cardStatus = User.FindFirst("CardStatus")?.Value ?? "Sử dụng được";
+    var cardNumber = User.FindFirst("CardNumber")?.Value ?? $"LIB-{studentCode}";
+    var isCardActive = cardStatus == "Sử dụng được";
+    var activeCount = User.FindFirst("ActiveLoansCount")?.Value ?? "2";
+    var isAdminOrLibrarian = User.IsInRole("Admin") || User.IsInRole("Librarian");
+}
+
+<!-- TOP ANNOUNCEMENT BAR -->
+<div class="bg-navy-950 text-slate-300 text-xs py-2 px-4 border-b border-navy-900 select-none">
+    <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
+        <div class="flex items-center gap-4">
+            <span class="flex items-center gap-1.5 font-medium text-emerald-400">
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                Giờ mở cửa: Thứ 2 - Thứ 7 (07:30 - 21:00) | CN (08:00 - 17:00)
+            </span>
+            <span class="hidden md:inline text-slate-600">|</span>
+            <span class="hidden md:flex items-center gap-1 text-slate-300">
+                <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i> Hotline: 1900 6868
+            </span>
+        </div>
+        <div class="flex items-center gap-4">
+            <a asp-area="Admin" asp-controller="Borrow" asp-action="Index" class="inline-flex items-center gap-1 text-amber-400 hover:text-amber-300 transition-colors font-medium">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Cổng Nghiệp Vụ Thủ Thư
+            </a>
+            <span class="text-slate-600">|</span>
+            <a asp-controller="Home" asp-action="Index" asp-fragment="rules" class="hover:text-white transition-colors">Nội quy mượn trả</a>
+            <span class="text-slate-600">|</span>
+            <a href="#help" onclick="alert('Vui lòng liên hệ quầy Thủ thư tại Tầng 1 hoặc gọi Hotline 1900 6868 để được trợ giúp.')" class="hover:text-white transition-colors">Trợ giúp</a>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN NAVBAR (STICKY TOP) -->
+<header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all duration-200">
+    <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-20">
+            
+            <!-- 1. LOGO & TÊN HỆ THỐNG -->
+            <div class="flex items-center gap-8">
+                <a asp-controller="Home" asp-action="Index" class="flex items-center gap-3 group">
+                    <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-navy-900 to-navy-700 text-white flex items-center justify-center shadow-md shadow-navy-900/20 group-hover:scale-105 transition-transform duration-200">
+                        <i data-lucide="book-open-check" class="w-6 h-6 text-amber-400"></i>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] uppercase tracking-widest font-bold text-navy-800">Thư Viện Trung Tâm</span>
+                        <span class="text-xl font-black tracking-tight text-slate-900 group-hover:text-navy-800 transition-colors">
+                            SMART<span class="text-blue-600">LIB</span>
+                        </span>
+                    </div>
+                </a>
+
+                <!-- 2. MENU ĐIỀU HƯỚNG CHÍNH GIỮA (DESKTOP) -->
+                <div class="hidden lg:flex items-center gap-1 font-medium text-sm text-slate-700">
+                    <a asp-controller="Home" asp-action="Index" 
+                       class="px-3.5 py-2 rounded-xl hover:bg-slate-100 hover:text-navy-800 transition-colors @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Home" && ViewContext.RouteData.Values["Action"]?.ToString() == "Index" ? "text-navy-800 font-bold bg-slate-100" : "")">
+                        Trang chủ
+                    </a>
+                    <a asp-controller="Book" asp-action="Index" 
+                       class="px-3.5 py-2 rounded-xl hover:bg-slate-100 hover:text-navy-800 transition-colors @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Book" ? "text-navy-800 font-bold bg-slate-100" : "")">
+                        Danh mục sách
+                    </a>
+                    <a asp-controller="Home" asp-action="Index" asp-fragment="featured" 
+                       class="px-3.5 py-2 rounded-xl hover:bg-slate-100 hover:text-navy-800 transition-colors">
+                        Sách nổi bật
+                    </a>
+                    <a asp-controller="Home" asp-action="Index" asp-fragment="rules" 
+                       class="px-3.5 py-2 rounded-xl hover:bg-slate-100 hover:text-navy-800 transition-colors">
+                        Quy định mượn trả
+                    </a>
+                    @if (isAuthenticated)
+                    {
+                        <a asp-controller="Account" asp-action="Profile" 
+                           class="px-3.5 py-2 rounded-xl hover:bg-slate-100 hover:text-navy-800 transition-colors flex items-center gap-1.5 @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Account" && ViewContext.RouteData.Values["Action"]?.ToString() == "Profile" ? "text-navy-800 font-bold bg-slate-100" : "")">
+                            <i data-lucide="user-check" class="w-4 h-4 text-blue-600"></i>
+                            Cổng Độc Giả
+                        </a>
+                    }
+                </div>
+            </div>
+
+            <!-- 3. THANH TÌM KIẾM NHANH (DESKTOP) -->
+            <div class="hidden md:flex flex-1 max-w-xs xl:max-w-sm mx-4">
+                <form asp-controller="Book" asp-action="Index" method="get" class="relative w-full">
+                    <input type="text" name="searchQuery" 
+                           placeholder="Tra cứu sách, tác giả, ISBN..." 
+                           class="w-full pl-9 pr-14 py-2 text-xs sm:text-sm bg-slate-100 border border-slate-200 rounded-full focus:bg-white focus:border-navy-800 focus:ring-2 focus:ring-navy-800/20 focus:outline-none transition-all placeholder:text-slate-400" />
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                        <i data-lucide="search" class="w-4 h-4"></i>
+                    </div>
+                    <button type="submit" class="absolute inset-y-1 right-1 px-3 bg-navy-800 hover:bg-navy-900 text-white rounded-full text-xs font-semibold transition-colors">
+                        Tìm
+                    </button>
+                </form>
+            </div>
+
+            <!-- 4. GÓC PHẢI HEADER: XỬ LÝ TRẠNG THÁI TÀI KHOẢN -->
+            <div class="flex items-center gap-3">
+                
+                @if (!isAuthenticated)
+                {
+                    <!-- KHI CHƯA ĐĂNG NHẬP -->
+                    <div class="hidden sm:flex items-center gap-2.5">
+                        <a asp-controller="Account" asp-action="Login" 
+                           class="px-4 py-2 text-xs sm:text-sm font-bold text-navy-800 border border-navy-800/30 hover:border-navy-800 hover:bg-navy-50 rounded-xl transition-all">
+                            Đăng nhập
+                        </a>
+                        <a asp-controller="Account" asp-action="Register" 
+                           class="px-4 py-2 text-xs sm:text-sm font-bold text-white bg-navy-800 hover:bg-navy-900 rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-1.5 group">
+                            <i data-lucide="id-card" class="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform"></i>
+                            <span>Đăng ký thẻ</span>
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <!-- KHI ĐÃ ĐĂNG NHẬP: BADGE TRẠNG THÁI THẺ THƯ VIỆN THU NHỎ -->
+                    <div class="hidden sm:flex items-center">
+                        @if (isCardActive)
+                        {
+                            <a asp-controller="Account" asp-action="Profile" 
+                               class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors" 
+                               title="Thẻ thư viện: @cardNumber">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span>Thẻ: Đang hoạt động</span>
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-controller="Account" asp-action="Profile" 
+                               class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition-colors" 
+                               title="Thẻ thư viện đang bị khóa">
+                                <i data-lucide="alert-triangle" class="w-3 h-3 text-rose-600"></i>
+                                <span>Thẻ: Bị tạm khóa</span>
+                            </a>
+                        }
+                    </div>
+
+                    <!-- THÔNG BÁO CHUÔNG -->
+                    <button class="relative p-2 text-slate-500 hover:text-navy-800 hover:bg-slate-100 rounded-xl transition-colors" title="Thông báo mượn trả">
+                        <i data-lucide="bell" class="w-5 h-5"></i>
+                        <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full"></span>
+                    </button>
+
+                    <!-- AVATAR + DROPDOWN MENU ĐỘC GIẢ -->
+                    <div class="relative" id="userMenuContainer">
+                        <button type="button" id="userMenuBtn" onclick="toggleUserDropdown(event)" 
+                                class="flex items-center gap-2 p-1.5 pl-2 rounded-2xl hover:bg-slate-100 border border-slate-200/80 transition-all focus:outline-none focus:ring-2 focus:ring-navy-800/20">
+                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" 
+                                 alt="Avatar" class="w-8 h-8 rounded-xl object-cover border border-slate-200 shadow-xs" />
+                            <div class="hidden xl:block text-left text-xs leading-tight pr-1">
+                                <span class="font-bold text-slate-800 block truncate max-w-[120px]">@userName</span>
+                                <span class="text-[10px] text-slate-400 font-mono">@studentCode</span>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 transition-transform duration-200" id="userMenuChevron"></i>
+                        </button>
+
+                        <!-- DROPDOWN CONTENT -->
+                        <div id="userDropdown" class="hidden absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-100 p-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                            <!-- Card Header Trong Dropdown -->
+                            <div class="p-3 bg-gradient-to-br from-navy-950 to-navy-800 text-white rounded-xl mb-2 relative overflow-hidden">
+                                <div class="absolute -right-4 -bottom-4 w-20 h-20 bg-blue-500/20 rounded-full blur-xl pointer-events-none"></div>
+                                <div class="flex items-center gap-3 relative z-10">
+                                    <div class="w-10 h-10 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center font-bold text-amber-400">
+                                        <i data-lucide="id-card" class="w-5 h-5"></i>
+                                    </div>
+                                    <div class="truncate">
+                                        <h4 class="font-bold text-xs truncate">@userName</h4>
+                                        <p class="text-[10px] text-blue-200 font-mono">@cardNumber</p>
+                                        <span class="inline-block px-2 py-0.5 mt-1 text-[9px] font-extrabold rounded-full @(isCardActive ? "bg-emerald-400/20 text-emerald-300 border border-emerald-400/30" : "bg-rose-400/20 text-rose-300 border border-rose-400/30")">
+                                            @(isCardActive ? "Thẻ hợp lệ" : "Thẻ bị khóa")
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Menu Links -->
+                            <div class="space-y-1 text-xs text-slate-700 font-medium">
+                                <a asp-controller="Account" asp-action="Profile" 
+                                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 hover:text-navy-800 transition-colors">
+                                    <i data-lucide="user-round" class="w-4 h-4 text-blue-600"></i>
+                                    <span>Hồ sơ & Thẻ thư viện</span>
+                                </a>
+
+                                <a asp-controller="Account" asp-action="Profile" asp-fragment="activeLoans"
+                                   class="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-slate-100 hover:text-navy-800 transition-colors">
+                                    <span class="flex items-center gap-2.5">
+                                        <i data-lucide="book-copy" class="w-4 h-4 text-amber-500"></i>
+                                        <span>Sách đang mượn</span>
+                                    </span>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                                        @activeCount/3 cuốn
+                                    </span>
+                                </a>
+
+                                <a asp-controller="Account" asp-action="Profile" asp-fragment="history"
+                                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 hover:text-navy-800 transition-colors">
+                                    <i data-lucide="history" class="w-4 h-4 text-slate-500"></i>
+                                    <span>Lịch sử mượn - trả</span>
+                                </a>
+
+                                <a href="javascript:void(0)" onclick="alert('Tính năng đổi mật khẩu đang được kết nối với Cổng định danh sinh viên SSO.')"
+                                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 hover:text-navy-800 transition-colors">
+                                    <i data-lucide="key-round" class="w-4 h-4 text-slate-500"></i>
+                                    <span>Đổi mật khẩu</span>
+                                </a>
+
+                                @if (isAdminOrLibrarian)
+                                {
+                                    <div class="border-t border-slate-100 my-1"></div>
+                                    <a asp-area="Admin" asp-controller="Home" asp-action="Index" 
+                                       class="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-amber-50 text-amber-900 font-bold hover:bg-amber-100 transition-colors">
+                                        <i data-lucide="layout-dashboard" class="w-4 h-4 text-amber-600"></i>
+                                        <span>Vào trang Quản trị (Admin)</span>
+                                    </a>
+                                }
+
+                                <div class="border-t border-slate-100 my-1"></div>
+
+                                <!-- Nút Đăng xuất an toàn qua POST CSRF -->
+                                <form asp-controller="Account" asp-action="Logout" method="post" class="w-full">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" 
+                                            class="w-full flex items-center gap-2.5 px-3 py-2 text-rose-600 hover:bg-rose-50 rounded-xl transition-colors font-semibold text-left">
+                                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                                        <span>Đăng xuất tài khoản</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- NÚT MOBILE HAMBURGER -->
+                <button type="button" id="mobileMenuBtn" onclick="toggleMobileMenu()" 
+                        class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors" title="Mở menu">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- MOBILE SEARCH BAR (HIỆN TRÊN ĐIỆN THOẠI) -->
+        <div class="pb-3 md:hidden">
+            <form asp-controller="Book" asp-action="Index" method="get" class="relative">
+                <input type="text" name="searchQuery" placeholder="Tra cứu sách, tác giả, ISBN..." 
+                       class="w-full pl-9 pr-4 py-2 text-xs bg-slate-100 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-navy-800" />
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+            </form>
+        </div>
+    </nav>
+
+    <!-- MOBILE MENU DRAWER -->
+    <div id="mobileMenu" class="hidden lg:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-5 space-y-2">
+        <a asp-controller="Home" asp-action="Index" class="block px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100">Trang chủ</a>
+        <a asp-controller="Book" asp-action="Index" class="block px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100">Danh mục sách</a>
+        <a asp-controller="Home" asp-action="Index" asp-fragment="featured" class="block px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100">Sách nổi bật</a>
+        <a asp-controller="Home" asp-action="Index" asp-fragment="rules" class="block px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100">Quy định mượn trả</a>
+
+        @if (!isAuthenticated)
+        {
+            <div class="pt-3 border-t border-slate-100 grid grid-cols-2 gap-2">
+                <a asp-controller="Account" asp-action="Login" class="py-2.5 text-center text-xs font-bold text-navy-800 border border-navy-800/30 rounded-xl">Đăng nhập</a>
+                <a asp-controller="Account" asp-action="Register" class="py-2.5 text-center text-xs font-bold text-white bg-navy-800 rounded-xl">Đăng ký thẻ</a>
+            </div>
+        }
+        else
+        {
+            <div class="pt-3 border-t border-slate-100 space-y-2">
+                <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" class="w-10 h-10 rounded-xl object-cover" />
+                    <div>
+                        <p class="text-xs font-bold text-slate-800">@userName</p>
+                        <p class="text-[11px] text-slate-500 font-mono">@cardNumber</p>
+                        <span class="inline-block text-[10px] font-bold @(isCardActive ? "text-emerald-600" : "text-rose-600")">
+                            @(isCardActive ? "● Thẻ đang hoạt động" : "● Thẻ bị khóa")
+                        </span>
+                    </div>
+                </div>
+
+                <a asp-controller="Account" asp-action="Profile" class="block px-3 py-2 rounded-xl text-xs font-semibold text-navy-800 hover:bg-slate-100 flex items-center justify-between">
+                    <span>Hồ sơ & Sách đang mượn</span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">@activeCount/3 cuốn</span>
+                </a>
+
+                @if (isAdminOrLibrarian)
+                {
+                    <a asp-area="Admin" asp-controller="Home" asp-action="Index" class="block px-3 py-2 rounded-xl text-xs font-bold text-amber-700 bg-amber-50">
+                        Cổng Quản Trị & Nghiệp Vụ
+                    </a>
+                }
+
+                <form asp-controller="Account" asp-action="Logout" method="post" class="w-full pt-1">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="w-full py-2 text-center text-xs font-bold text-rose-600 border border-rose-200 rounded-xl hover:bg-rose-50">
+                        Đăng xuất tài khoản
+                    </button>
+                </form>
+            </div>
+        }
+    </div>
+</header>
+
+<script>
+    // Hàm bật/tắt dropdown tài khoản độc giả
+    function toggleUserDropdown(event) {
+        if (event) event.stopPropagation();
+        const dropdown = document.getElementById('userDropdown');
+        const chevron = document.getElementById('userMenuChevron');
+        if (!dropdown) return;
+
+        const isHidden = dropdown.classList.contains('hidden');
+        if (isHidden) {
+            dropdown.classList.remove('hidden');
+            if (chevron) chevron.classList.add('rotate-180');
+        } else {
+            dropdown.classList.add('hidden');
+            if (chevron) chevron.classList.remove('rotate-180');
+        }
+    }
+
+    // Đóng dropdown khi click ra ngoài
+    document.addEventListener('click', function (event) {
+        const container = document.getElementById('userMenuContainer');
+        const dropdown = document.getElementById('userDropdown');
+        const chevron = document.getElementById('userMenuChevron');
+        if (dropdown && !dropdown.classList.contains('hidden')) {
+            if (container && !container.contains(event.target)) {
+                dropdown.classList.add('hidden');
+                if (chevron) chevron.classList.remove('rotate-180');
+            }
+        }
+    });
+
+    // Hàm bật/tắt menu trên mobile
+    function toggleMobileMenu() {
+        const mobileMenu = document.getElementById('mobileMenu');
+        if (mobileMenu) {
+            mobileMenu.classList.toggle('hidden');
+        }
+    }
+</script>

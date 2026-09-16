@@ -1,8 +1,310 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Trang Chủ - Hệ Thống Thư Viện Hiện Đại";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<!-- HERO BANNER SECTION -->
+<div class="relative bg-gradient-to-br from-navy-950 via-navy-900 to-navy-800 text-white overflow-hidden">
+    <!-- Subtle Background Glow & Pattern -->
+    <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none"></div>
+    <div class="absolute -top-40 -right-40 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
+        <div class="max-w-3xl space-y-6">
+            <!-- Academic Pill Badge -->
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-semibold text-amber-300">
+                <i data-lucide="sparkles" class="w-4 h-4"></i> Cổng Thư Viện Học Thuật & Nghiên Cứu Số
+            </div>
+
+            <!-- Main Heading -->
+            <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.15]">
+                Khám Phá <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-amber-300">Tri Thức</span>,<br/>
+                Kiến Tạo Tương Lai.
+            </h1>
+
+            <p class="text-base sm:text-lg text-slate-300 font-normal leading-relaxed max-w-2xl">
+                Truy cập ngay kho tàng hơn 50.000 đầu sách in, giáo trình chuyên ngành và hàng triệu tài liệu nghiên cứu số hóa chất lượng cao.
+            </p>
+
+            <!-- BIG HERO SEARCH BAR -->
+            <div class="pt-4">
+                <form asp-controller="Book" asp-action="Index" method="get" 
+                      class="bg-white p-2 sm:p-2.5 rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col sm:flex-row items-center gap-2 border border-slate-200">
+                    <div class="relative flex-1 w-full">
+                        <i data-lucide="search" class="w-5 h-5 text-slate-400 absolute left-4 top-3.5 sm:top-3"></i>
+                        <input type="text" name="searchQuery" 
+                               placeholder="Tìm theo tên sách, tác giả, chuyên ngành, mã ISBN..." 
+                               class="w-full pl-12 pr-4 py-2.5 sm:py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none rounded-xl" />
+                    </div>
+                    <button type="submit" 
+                            class="w-full sm:w-auto px-7 py-3 bg-navy-800 hover:bg-navy-900 text-white rounded-xl sm:rounded-2xl font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                        <span>Tra Cứu Ngay</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4 text-amber-400"></i>
+                    </button>
+                </form>
+
+                <!-- Hot search suggestions -->
+                <div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                    <span class="font-semibold text-slate-300">Từ khóa gợi ý:</span>
+                    <a asp-controller="Book" asp-action="Index" asp-route-searchQuery="Kiến trúc phần mềm" class="hover:text-amber-300 underline decoration-slate-600">Kiến trúc phần mềm</a>
+                    <span>•</span>
+                    <a asp-controller="Book" asp-action="Index" asp-route-searchQuery="Trí tuệ nhân tạo" class="hover:text-amber-300 underline decoration-slate-600">Trí tuệ nhân tạo</a>
+                    <span>•</span>
+                    <a asp-controller="Book" asp-action="Index" asp-route-searchQuery="Quản trị" class="hover:text-amber-300 underline decoration-slate-600">Quản trị kinh doanh</a>
+                    <span>•</span>
+                    <a asp-controller="Book" asp-action="Index" asp-route-searchQuery="An toàn thông tin" class="hover:text-amber-300 underline decoration-slate-600">An toàn thông tin</a>
+                </div>
+            </div>
+
+            <!-- Quick Academic Stats -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-10 border-t border-white/10">
+                <div>
+                    <h3 class="text-2xl sm:text-3xl font-extrabold text-white">50.000+</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Đầu sách in lưu trữ</p>
+                </div>
+                <div>
+                    <h3 class="text-2xl sm:text-3xl font-extrabold text-white">120.000+</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Tài liệu số hóa</p>
+                </div>
+                <div>
+                    <h3 class="text-2xl sm:text-3xl font-extrabold text-amber-400">24/7</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Đặt mượn trực tuyến</p>
+                </div>
+                <div>
+                    <h3 class="text-2xl sm:text-3xl font-extrabold text-emerald-400">100%</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Tự động hóa số</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<!-- FEATURED CATEGORIES SECTION -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+        <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-blue-600">Chuyên ngành đào tạo</span>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">Danh Mục Tài Liệu Nổi Bật</h2>
+        </div>
+        <a asp-controller="Book" asp-action="Index" class="text-xs font-bold text-navy-800 hover:text-blue-600 flex items-center gap-1">
+            Xem tất cả chuyên ngành <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </a>
+    </div>
+
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <a asp-controller="Book" asp-action="Index" class="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-navy-800 shadow-sm hover:shadow-md transition-all text-center flex flex-col items-center">
+            <div class="w-12 h-12 rounded-xl bg-blue-50 text-navy-800 flex items-center justify-center group-hover:scale-110 transition-transform mb-3">
+                <i data-lucide="code-2" class="w-6 h-6"></i>
+            </div>
+            <h4 class="font-bold text-slate-900 text-xs sm:text-sm">Công Nghệ TT</h4>
+            <span class="text-[11px] text-slate-400 mt-1">1.250 đầu sách</span>
+        </a>
+
+        <a asp-controller="Book" asp-action="Index" class="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-navy-800 shadow-sm hover:shadow-md transition-all text-center flex flex-col items-center">
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center group-hover:scale-110 transition-transform mb-3">
+                <i data-lucide="brain-circuit" class="w-6 h-6"></i>
+            </div>
+            <h4 class="font-bold text-slate-900 text-xs sm:text-sm">Khoa Học DL</h4>
+            <span class="text-[11px] text-slate-400 mt-1">680 đầu sách</span>
+        </a>
+
+        <a asp-controller="Book" asp-action="Index" class="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-navy-800 shadow-sm hover:shadow-md transition-all text-center flex flex-col items-center">
+            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center group-hover:scale-110 transition-transform mb-3">
+                <i data-lucide="trending-up" class="w-6 h-6"></i>
+            </div>
+            <h4 class="font-bold text-slate-900 text-xs sm:text-sm">Kinh Tế & QT</h4>
+            <span class="text-[11px] text-slate-400 mt-1">2.400 đầu sách</span>
+        </a>
+
+        <a asp-controller="Book" asp-action="Index" class="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-navy-800 shadow-sm hover:shadow-md transition-all text-center flex flex-col items-center">
+            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center group-hover:scale-110 transition-transform mb-3">
+                <i data-lucide="shield-check" class="w-6 h-6"></i>
+            </div>
+            <h4 class="font-bold text-slate-900 text-xs sm:text-sm">An Toàn TT</h4>
+            <span class="text-[11px] text-slate-400 mt-1">450 đầu sách</span>
+        </a>
+
+        <a asp-controller="Book" asp-action="Index" class="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-navy-800 shadow-sm hover:shadow-md transition-all text-center flex flex-col items-center">
+            <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center group-hover:scale-110 transition-transform mb-3">
+                <i data-lucide="languages" class="w-6 h-6"></i>
+            </div>
+            <h4 class="font-bold text-slate-900 text-xs sm:text-sm">Ngoại Ngữ</h4>
+            <span class="text-[11px] text-slate-400 mt-1">890 đầu sách</span>
+        </a>
+
+        <a asp-controller="Book" asp-action="Index" class="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-navy-800 shadow-sm hover:shadow-md transition-all text-center flex flex-col items-center">
+            <div class="w-12 h-12 rounded-xl bg-cyan-50 text-cyan-700 flex items-center justify-center group-hover:scale-110 transition-transform mb-3">
+                <i data-lucide="book-heart" class="w-6 h-6"></i>
+            </div>
+            <h4 class="font-bold text-slate-900 text-xs sm:text-sm">KH Xã Hội</h4>
+            <span class="text-[11px] text-slate-400 mt-1">1.100 đầu sách</span>
+        </a>
+    </div>
+</section>
+
+<!-- NEW ARRIVALS & POPULAR SECTION -->
+<section id="featured" class="bg-white border-y border-slate-200 py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Mới cập nhật trong tháng</span>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">Tài Liệu & Sách Mới Tiếp Nhận</h2>
+            </div>
+            <a asp-controller="Book" asp-action="Index" class="text-xs font-bold text-navy-800 hover:text-blue-600 flex items-center gap-1">
+                Khám phá toàn bộ kho sách <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Book 1 -->
+            <div class="bg-slate-50 rounded-2xl border border-slate-200 p-4 hover:shadow-lg transition-all flex flex-col justify-between group">
+                <div>
+                    <div class="relative aspect-[3/4] rounded-xl overflow-hidden bg-slate-200 mb-3 shadow-sm">
+                        <img src="https://images.unsplash.com/photo-1532012164546-f432f2e3777a?w=400&auto=format&fit=crop&q=80" 
+                             alt="Sách" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                        <span class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            Còn 5 cuốn
+                        </span>
+                    </div>
+                    <span class="text-[11px] font-bold text-blue-600 uppercase">CNTT & Phần Mềm</span>
+                    <h4 class="font-bold text-sm text-slate-900 mt-1 line-clamp-2">
+                        <a asp-controller="Book" asp-action="Details" asp-route-id="1" class="hover:text-navy-800">
+                            Thiết Kế Kiến Trúc Phần Mềm Doanh Nghiệp
+                        </a>
+                    </h4>
+                    <p class="text-xs text-slate-500 mt-1">Martin Fowler & TS. Đặng Văn Nam</p>
+                </div>
+                <div class="pt-3 mt-3 border-t border-slate-200 flex items-center justify-between">
+                    <span class="text-[11px] text-slate-500 font-mono">Kệ: B4-03</span>
+                    <a asp-controller="Book" asp-action="Details" asp-route-id="1" 
+                       class="px-3 py-1.5 bg-navy-800 hover:bg-navy-900 text-white rounded-lg text-xs font-bold transition-colors">
+                        Chi tiết
+                    </a>
+                </div>
+            </div>
+
+            <!-- Book 2 -->
+            <div class="bg-slate-50 rounded-2xl border border-slate-200 p-4 hover:shadow-lg transition-all flex flex-col justify-between group">
+                <div>
+                    <div class="relative aspect-[3/4] rounded-xl overflow-hidden bg-slate-200 mb-3 shadow-sm">
+                        <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&auto=format&fit=crop&q=80" 
+                             alt="Sách" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                        <span class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            Còn 2 cuốn
+                        </span>
+                    </div>
+                    <span class="text-[11px] font-bold text-purple-600 uppercase">Trí Tuệ Nhân Tạo</span>
+                    <h4 class="font-bold text-sm text-slate-900 mt-1 line-clamp-2">
+                        <a asp-controller="Book" asp-action="Details" asp-route-id="2" class="hover:text-navy-800">
+                            Học Máy & Trí Tuệ Nhân Tạo Ứng Dụng
+                        </a>
+                    </h4>
+                    <p class="text-xs text-slate-500 mt-1">PGS. TS. Lương Chi Mai</p>
+                </div>
+                <div class="pt-3 mt-3 border-t border-slate-200 flex items-center justify-between">
+                    <span class="text-[11px] text-slate-500 font-mono">Kệ: AI-01</span>
+                    <a asp-controller="Book" asp-action="Details" asp-route-id="2" 
+                       class="px-3 py-1.5 bg-navy-800 hover:bg-navy-900 text-white rounded-lg text-xs font-bold transition-colors">
+                        Chi tiết
+                    </a>
+                </div>
+            </div>
+
+            <!-- Book 3 -->
+            <div class="bg-slate-50 rounded-2xl border border-slate-200 p-4 hover:shadow-lg transition-all flex flex-col justify-between group">
+                <div>
+                    <div class="relative aspect-[3/4] rounded-xl overflow-hidden bg-slate-200 mb-3 shadow-sm">
+                        <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&auto=format&fit=crop&q=80" 
+                             alt="Sách" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                        <span class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
+                            Hết sách
+                        </span>
+                    </div>
+                    <span class="text-[11px] font-bold text-amber-600 uppercase">Kinh Tế Chiến Lược</span>
+                    <h4 class="font-bold text-sm text-slate-900 mt-1 line-clamp-2">
+                        <a asp-controller="Book" asp-action="Details" asp-route-id="3" class="hover:text-navy-800">
+                            Quản Trị Chiến Lược & Chuyển Đổi Số
+                        </a>
+                    </h4>
+                    <p class="text-xs text-slate-500 mt-1">Michael Porter & GS. Vũ Minh Khương</p>
+                </div>
+                <div class="pt-3 mt-3 border-t border-slate-200 flex items-center justify-between">
+                    <span class="text-[11px] text-slate-500 font-mono">Kệ: KT-12</span>
+                    <a asp-controller="Book" asp-action="Details" asp-route-id="3" 
+                       class="px-3 py-1.5 bg-navy-800 hover:bg-navy-900 text-white rounded-lg text-xs font-bold transition-colors">
+                        Chi tiết
+                    </a>
+                </div>
+            </div>
+
+            <!-- Book 4 -->
+            <div class="bg-slate-50 rounded-2xl border border-slate-200 p-4 hover:shadow-lg transition-all flex flex-col justify-between group">
+                <div>
+                    <div class="relative aspect-[3/4] rounded-xl overflow-hidden bg-slate-200 mb-3 shadow-sm">
+                        <img src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&auto=format&fit=crop&q=80" 
+                             alt="Sách" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                        <span class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            Còn 7 cuốn
+                        </span>
+                    </div>
+                    <span class="text-[11px] font-bold text-teal-600 uppercase">Mật Mã & An Ninh</span>
+                    <h4 class="font-bold text-sm text-slate-900 mt-1 line-clamp-2">
+                        <a asp-controller="Book" asp-action="Details" asp-route-id="4" class="hover:text-navy-800">
+                            Cơ Sở An Toàn Thông Tin & Mật Mã
+                        </a>
+                    </h4>
+                    <p class="text-xs text-slate-500 mt-1">TS. Nguyễn Quốc Toàn</p>
+                </div>
+                <div class="pt-3 mt-3 border-t border-slate-200 flex items-center justify-between">
+                    <span class="text-[11px] text-slate-500 font-mono">Kệ: CS-05</span>
+                    <a asp-controller="Book" asp-action="Details" asp-route-id="4" 
+                       class="px-3 py-1.5 bg-navy-800 hover:bg-navy-900 text-white rounded-lg text-xs font-bold transition-colors">
+                        Chi tiết
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- HOW IT WORKS: 4 SIMPLE STEPS -->
+<section id="guide" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div class="text-center max-w-2xl mx-auto mb-12">
+        <span class="text-xs font-bold uppercase tracking-wider text-blue-600">Quy trình tiện lợi</span>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">4 Bước Đặt Mượn Sách Dễ Dàng</h2>
+        <p class="text-sm text-slate-500 mt-2">Tiết kiệm thời gian tra cứu và bảo đảm giữ sách ngay tại quầy</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 relative">
+        <div class="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm text-center space-y-3 relative">
+            <div class="w-12 h-12 rounded-2xl bg-blue-100 text-navy-800 flex items-center justify-center font-bold text-base mx-auto">
+                01
+            </div>
+            <h4 class="font-bold text-slate-900 text-base">Tra Cứu & Lọc Sách</h4>
+            <p class="text-xs text-slate-500 leading-relaxed">Tìm kiếm theo từ khóa, xem tình trạng số lượng bản sao và vị trí kệ sách tại thư viện.</p>
+        </div>
+
+        <div class="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm text-center space-y-3 relative">
+            <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-base mx-auto">
+                02
+            </div>
+            <h4 class="font-bold text-slate-900 text-base">Đặt Mượn Online</h4>
+            <p class="text-xs text-slate-500 leading-relaxed">Nhấn nút "Đặt mượn trực tuyến", chọn ngày hẹn lấy và cam kết tuân thủ nội quy.</p>
+        </div>
+
+        <div class="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm text-center space-y-3 relative">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-base mx-auto">
+                03
+            </div>
+            <h4 class="font-bold text-slate-900 text-base">Nhận Sách Tại Quầy</h4>
+            <p class="text-xs text-slate-500 leading-relaxed">Xuất trình thẻ độc giả (hoặc mã QR) tại Quầy Lưu Thông để thủ thư bàn giao sách.</p>
+        </div>
+
+        <div class="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm text-center space-y-3 relative">
+            <div class="w-12 h-12 rounded-2xl bg-purple-100 text-purple-800 flex items-center justify-center font-bold text-base mx-auto">
+                04
+            </div>
+            <h4 class="font-bold text-slate-900 text-base">Gia Hạn / Hoàn Trả</h4>
+            <p class="text-xs text-slate-500 leading-relaxed">Chủ động gia hạn trực tuyến trước hạn hoặc trả sách đúng quy định để tránh phí phạt.</p>
+        </div>
+    </div>
+</section>

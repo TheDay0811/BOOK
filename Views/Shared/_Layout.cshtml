@@ -1,49 +1,364 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="vi" class="h-full bg-slate-50">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - BOOK</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/BOOK.styles.css" asp-append-version="true" />
+    <title>@ViewData["Title"] - Hệ Thống Thư Viện Số Hiện Đại</title>
+
+    <!-- Google Fonts: Be Vietnam Pro & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            50: '#f0f4f9',
+                            100: '#e1e9f2',
+                            200: '#c3d3e6',
+                            300: '#95b3d4',
+                            400: '#618ec0',
+                            500: '#3d6ea8',
+                            600: '#2d568c',
+                            700: '#254572',
+                            800: '#1e3a8a', // Deep Navy Blue Brand
+                            900: '#0f1e40',
+                            950: '#091226',
+                        },
+                        amber: {
+                            500: '#f59e0b',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Be Vietnam Pro"', 'Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* Smooth scrolling and transitions */
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">BOOK</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                    </ul>
+<body class="min-h-full flex flex-col font-sans text-slate-800 antialiased bg-slate-50">
+
+    <!-- HEADER & NAVBAR DÙNG CHUNG -->
+    <partial name="_Header" />
+
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toastContainer" class="fixed top-24 right-5 z-50 flex flex-col gap-3 pointer-events-none">
+        @if (TempData["Success"] != null)
+        {
+            <div class="pointer-events-auto flex items-center gap-3 p-4 text-sm text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl shadow-lg animate-bounce-in">
+                <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-600 flex-shrink-0"></i>
+                <div>
+                    <p class="font-semibold">Thành công!</p>
+                    <p class="text-emerald-700">@TempData["Success"]</p>
                 </div>
             </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="pointer-events-auto flex items-center gap-3 p-4 text-sm text-rose-800 bg-rose-50 border border-rose-200 rounded-xl shadow-lg">
+                <i data-lucide="alert-circle" class="w-5 h-5 text-rose-600 flex-shrink-0"></i>
+                <div>
+                    <p class="font-semibold">Có lỗi xảy ra</p>
+                    <p class="text-rose-700">@TempData["Error"]</p>
+                </div>
+            </div>
+        }
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - BOOK - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <!-- MAIN BODY CONTENT -->
+    <main role="main" class="flex-1">
+        @RenderBody()
+    </main>
+
+    <!-- FLOATING CHAT WITH LIBRARIAN WIDGET -->
+    <div class="fixed bottom-6 right-6 z-50">
+        <!-- Floating Toggle Button -->
+        <button id="chatToggleBtn" onclick="toggleChatWindow()" 
+                class="group relative flex items-center gap-3 bg-navy-800 hover:bg-navy-900 text-white pl-4 pr-5 py-3.5 rounded-full shadow-2xl shadow-navy-900/40 hover:scale-105 active:scale-95 transition-all duration-200">
+            <span class="relative flex h-3 w-3">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            <div class="flex items-center gap-2">
+                <i data-lucide="message-square" class="w-5 h-5 text-amber-400"></i>
+                <span class="text-sm font-semibold tracking-wide">Trò chuyện cùng Thủ thư</span>
+            </div>
+        </button>
+
+        <!-- Slide-up Chat Window Modal -->
+        <div id="chatWindow" class="hidden absolute bottom-16 right-0 w-[380px] sm:w-[420px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col transition-all duration-300">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-navy-900 to-navy-800 text-white p-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&auto=format&fit=crop&q=80" 
+                             alt="Thủ thư tư vấn" class="w-10 h-10 rounded-full border-2 border-amber-400 object-cover" />
+                        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border border-white"></span>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm leading-tight">Thủ thư Trợ lý (Trực tuyến)</h4>
+                        <p class="text-xs text-slate-300">Hỗ trợ tra cứu & mượn sách 24/7</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1">
+                    <button onclick="toggleChatWindow()" class="p-1.5 text-slate-300 hover:text-white hover:bg-navy-700/50 rounded-lg">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages Area -->
+            <div id="chatMessages" class="p-4 h-80 overflow-y-auto space-y-3 bg-slate-50 text-sm">
+                <!-- Librarian Greeting -->
+                <div class="flex gap-2.5 items-start">
+                    <div class="w-7 h-7 rounded-full bg-navy-800 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
+                        TT
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm p-3 shadow-sm max-w-[85%]">
+                        <p class="text-slate-800">Xin chào Quý độc giả! Em là trợ lý thư viện số. Em có thể hỗ trợ Anh/Chị tìm tài liệu hoặc hướng dẫn gia hạn sách ngay bây giờ.</p>
+                        <span class="text-[10px] text-slate-400 mt-1 block">Vừa xong</span>
+                    </div>
+                </div>
+
+                <!-- Quick Action Chips -->
+                <div class="pt-1 flex flex-wrap gap-1.5 pl-9">
+                    <button onclick="sendQuickPrompt('Làm sao để đặt mượn sách trực tuyến?')" class="text-xs px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-navy-800 border border-slate-200 rounded-full transition-colors text-slate-600">
+                        📖 Cách mượn sách online?
+                    </button>
+                    <button onclick="sendQuickPrompt('Quy định tính phí phạt quá hạn thế nào?')" class="text-xs px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-navy-800 border border-slate-200 rounded-full transition-colors text-slate-600">
+                        💰 Biểu phí trễ hạn?
+                    </button>
+                    <button onclick="sendQuickPrompt('Tôi muốn gia hạn sách đang mượn')" class="text-xs px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-navy-800 border border-slate-200 rounded-full transition-colors text-slate-600">
+                        ⏳ Thủ tục gia hạn sách?
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Input Form -->
+            <div class="p-3 bg-white border-t border-slate-200">
+                <form id="chatForm" onsubmit="handleSendChat(event)" class="flex items-center gap-2">
+                    <input type="text" id="chatInput" placeholder="Nhập câu hỏi của bạn tại đây..." 
+                           class="flex-1 py-2 px-3 text-sm bg-slate-100 border border-transparent rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none transition-all placeholder:text-slate-400" />
+                    <button type="submit" class="p-2 bg-navy-800 hover:bg-navy-700 text-white rounded-xl shadow transition-colors">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-navy-950 text-slate-300 border-t border-navy-900 mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
+                <!-- Column 1: Brand & Introduction -->
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-navy-800 text-white flex items-center justify-center shadow">
+                            <i data-lucide="book-open-check" class="w-5 h-5 text-amber-400"></i>
+                        </div>
+                        <span class="text-xl font-bold tracking-tight text-white">SMART<span class="text-blue-400">LIB</span></span>
+                    </div>
+                    <p class="text-sm text-slate-400 leading-relaxed max-w-md">
+                        Hệ thống Thư viện Học thuật Hiện đại - Cung cấp trên 50.000 đầu sách in, giáo trình chuyên ngành và kho học liệu số phục vụ nghiên cứu, giảng dạy và học tập đỉnh cao.
+                    </p>
+                    <div class="flex items-center gap-3 pt-2">
+                        <a href="#" class="w-8 h-8 rounded-lg bg-navy-900 hover:bg-blue-600 text-slate-300 hover:text-white flex items-center justify-center transition-colors">
+                            <i data-lucide="facebook" class="w-4 h-4"></i>
+                        </a>
+                        <a href="#" class="w-8 h-8 rounded-lg bg-navy-900 hover:bg-rose-600 text-slate-300 hover:text-white flex items-center justify-center transition-colors">
+                            <i data-lucide="youtube" class="w-4 h-4"></i>
+                        </a>
+                        <a href="#" class="w-8 h-8 rounded-lg bg-navy-900 hover:bg-blue-400 text-slate-300 hover:text-white flex items-center justify-center transition-colors">
+                            <i data-lucide="globe" class="w-4 h-4"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Column 2: Quick Links -->
+                <div>
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-white mb-4">Tra Cứu Nhanh</h3>
+                    <ul class="space-y-2.5 text-sm text-slate-400">
+                        <li><a asp-controller="Book" asp-action="Index" class="hover:text-white transition-colors">Danh mục sách in</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Luận văn & Luận án</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Tạp chí khoa học</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Tài liệu tham khảo số</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Sách mới tiếp nhận</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 3: Reader Services -->
+                <div>
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-white mb-4">Dịch Vụ Độc Giả</h3>
+                    <ul class="space-y-2.5 text-sm text-slate-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Đăng ký làm thẻ thư viện</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Quy chế mượn & trả</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Gia hạn sách trực tuyến</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Đặt phòng tự học nhóm</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Tra cứu nợ phạt qua VietQR</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 4: Contact & Location -->
+                <div>
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-white mb-4">Liên Hệ & Hỗ Trợ</h3>
+                    <div class="space-y-3 text-sm text-slate-400">
+                        <p class="flex items-start gap-2.5">
+                            <i data-lucide="map-pin" class="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5"></i>
+                            <span>Khu Đô thị Đại học, Phường Linh Trung, TP. Thủ Đức, TP. Hồ Chí Minh</span>
+                        </p>
+                        <p class="flex items-center gap-2.5">
+                            <i data-lucide="mail" class="w-4 h-4 text-blue-400 flex-shrink-0"></i>
+                            <span>thuvien@university.edu.vn</span>
+                        </p>
+                        <p class="flex items-center gap-2.5">
+                            <i data-lucide="clock" class="w-4 h-4 text-amber-400 flex-shrink-0"></i>
+                            <span>T2 - T7: 07:30 - 21:00</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-navy-900 mt-12 pt-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-4">
+                <p>&copy; @DateTime.Now.Year Hệ Thống Quản Lý Thư Viện SmartLib. Thiết kế chuẩn ASP.NET Core 8 MVC & Tailwind CSS.</p>
+                <div class="flex gap-6">
+                    <a href="#" class="hover:text-slate-300">Chính sách bảo mật</a>
+                    <a href="#" class="hover:text-slate-300">Điều khoản sử dụng</a>
+                    <a href="#" class="hover:text-slate-300">Sơ đồ thư viện</a>
+                </div>
+            </div>
         </div>
     </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <!-- INTERACTIVE JAVASCRIPT LOGIC -->
+    <script>
+        // Init Lucide Icons
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+
+        // Mobile drawer toggle
+        const mobileBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        if (mobileBtn && mobileMenu) {
+            mobileBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
+
+        // Floating Chat Toggle
+        function toggleChatWindow() {
+            const chatWindow = document.getElementById('chatWindow');
+            if (chatWindow) {
+                chatWindow.classList.toggle('hidden');
+                if (!chatWindow.classList.contains('hidden')) {
+                    document.getElementById('chatInput')?.focus();
+                }
+            }
+        }
+
+        // Quick chat message prompt
+        function sendQuickPrompt(text) {
+            const input = document.getElementById('chatInput');
+            if (input) {
+                input.value = text;
+                handleSendChat(new Event('submit'));
+            }
+        }
+
+        function handleSendChat(e) {
+            e.preventDefault();
+            const input = document.getElementById('chatInput');
+            const messages = document.getElementById('chatMessages');
+            if (!input || !input.value.trim() || !messages) return;
+
+            const userText = input.value.trim();
+
+            // Append User bubble
+            const userBubble = document.createElement('div');
+            userBubble.className = "flex justify-end gap-2 items-start";
+            userBubble.innerHTML = `
+                <div class="bg-navy-800 text-white rounded-2xl rounded-tr-sm p-3 shadow-sm max-w-[85%]">
+                    <p>${escapeHtml(userText)}</p>
+                    <span class="text-[10px] text-blue-200 mt-1 block text-right">Vừa xong</span>
+                </div>
+            `;
+            messages.appendChild(userBubble);
+            input.value = '';
+            messages.scrollTop = messages.scrollHeight;
+
+            // Auto response after 700ms
+            setTimeout(() => {
+                const botBubble = document.createElement('div');
+                botBubble.className = "flex gap-2.5 items-start";
+                botBubble.innerHTML = `
+                    <div class="w-7 h-7 rounded-full bg-navy-800 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">TT</div>
+                    <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm p-3 shadow-sm max-w-[85%]">
+                        <p class="text-slate-800">Dạ, yêu cầu "<strong>${escapeHtml(userText)}</strong>" của bạn đã được ghi nhận. Bạn có thể nhấn nút "Đặt mượn trực tuyến" ngay tại trang Chi tiết sách hoặc liên hệ quầy mượn Tầng 1 nhé!</p>
+                        <span class="text-[10px] text-slate-400 mt-1 block">Vừa xong</span>
+                    </div>
+                `;
+                messages.appendChild(botBubble);
+                messages.scrollTop = messages.scrollHeight;
+                lucide.createIcons();
+            }, 700);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.innerText = text;
+            return div.innerHTML;
+        }
+
+        // Global Toast Notification Trigger
+        function showNotification(type, title, message) {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const isSuccess = type === 'success';
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto flex items-center gap-3 p-4 text-sm ${isSuccess ? 'text-emerald-800 bg-emerald-50 border-emerald-200' : 'text-rose-800 bg-rose-50 border-rose-200'} border rounded-xl shadow-lg transition-all transform duration-300`;
+            toast.innerHTML = `
+                <i data-lucide="${isSuccess ? 'check-circle-2' : 'alert-circle'}" class="w-5 h-5 ${isSuccess ? 'text-emerald-600' : 'text-rose-600'} flex-shrink-0"></i>
+                <div>
+                    <p class="font-semibold">${title}</p>
+                    <p>${message}</p>
+                </div>
+            `;
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+    </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

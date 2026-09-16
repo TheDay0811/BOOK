@@ -1,0 +1,487 @@
+@model BOOK.Models.ViewModels.LibrarianDashboardViewModel
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Nghiệp Vụ Thủ Thư - Quản Lý Mượn Trả";
+}
+
+<div class="space-y-6">
+
+    <!-- DASHBOARD HEADER & QUICK STATS -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Quản Lý Nghiệp Vụ Mượn - Trả</h1>
+            <p class="text-xs sm:text-sm text-slate-500 mt-1">Tiếp nhận yêu cầu trực tuyến, kiểm định sách tại quầy và xử lý quá hạn.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-xl text-xs font-semibold border border-emerald-200">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Ca trực: Sáng (07:30 - 15:30)
+            </span>
+        </div>
+    </div>
+
+    <!-- 4 KPI SUMMARY CARDS -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <!-- Card 1: Pending Borrows -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow transition-all flex items-center justify-between">
+            <div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Phiếu Chờ Duyệt</p>
+                <h3 class="text-2xl font-extrabold text-amber-600 mt-1">@Model.PendingBorrowsCount</h3>
+                <span class="text-[11px] text-slate-500">Yêu cầu mượn online</span>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                <i data-lucide="clock-arrow-up" class="w-6 h-6"></i>
+            </div>
+        </div>
+
+        <!-- Card 2: Today Returns -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow transition-all flex items-center justify-between">
+            <div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Đã Trả Hôm Nay</p>
+                <h3 class="text-2xl font-extrabold text-emerald-600 mt-1">@Model.TodayReturnsCount</h3>
+                <span class="text-[11px] text-slate-500">Quyển sách hoàn tất</span>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <i data-lucide="check-check" class="w-6 h-6"></i>
+            </div>
+        </div>
+
+        <!-- Card 3: Pending Renewals -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow transition-all flex items-center justify-between">
+            <div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Xin Gia Hạn</p>
+                <h3 class="text-2xl font-extrabold text-blue-600 mt-1">@Model.PendingRenewalsCount</h3>
+                <span class="text-[11px] text-slate-500">Đơn chờ xử lý</span>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <i data-lucide="rotate-cw" class="w-6 h-6"></i>
+            </div>
+        </div>
+
+        <!-- Card 4: Overdue Cases -->
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow transition-all flex items-center justify-between">
+            <div>
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Quá Hạn Chưa Trả</p>
+                <h3 class="text-2xl font-extrabold text-rose-600 mt-1">@Model.OverdueAlertsCount</h3>
+                <span class="text-[11px] text-rose-500 font-medium">Cần gửi thông báo</span>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                <i data-lucide="alert-octagon" class="w-6 h-6"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABS CONTROLLER -->
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+        <!-- Tab Navigation Bar -->
+        <div class="flex border-b border-slate-200 bg-slate-50/70 overflow-x-auto text-sm">
+            <button onclick="switchTab('tab-pending')" id="btn-tab-pending" 
+                    class="tab-button px-6 py-4 font-bold border-b-2 border-navy-800 text-navy-800 bg-white flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="inbox" class="w-4 h-4"></i>
+                Duyệt Phiếu Mượn Online
+                <span class="px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-800">@Model.PendingBorrowsCount</span>
+            </button>
+            <button onclick="switchTab('tab-return')" id="btn-tab-return" 
+                    class="tab-button px-6 py-4 font-semibold text-slate-600 border-b-2 border-transparent hover:text-slate-900 flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="scan-barcode" class="w-4 h-4"></i>
+                Quầy Tiếp Nhận Trả Sách
+            </button>
+            <button onclick="switchTab('tab-renewal')" id="btn-tab-renewal" 
+                    class="tab-button px-6 py-4 font-semibold text-slate-600 border-b-2 border-transparent hover:text-slate-900 flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="clock" class="w-4 h-4"></i>
+                Yêu Cầu Gia Hạn
+                <span class="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800">@Model.PendingRenewalsCount</span>
+            </button>
+            <button onclick="switchTab('tab-overdue')" id="btn-tab-overdue" 
+                    class="tab-button px-6 py-4 font-semibold text-slate-600 border-b-2 border-transparent hover:text-slate-900 flex items-center gap-2 whitespace-nowrap">
+                <i data-lucide="bell-ring" class="w-4 h-4 text-rose-500"></i>
+                Cảnh Báo Quá Hạn
+                <span class="px-2 py-0.5 rounded-full text-xs bg-rose-100 text-rose-800">@Model.OverdueAlertsCount</span>
+            </button>
+        </div>
+
+        <!-- TAB 1: DUYỆT PHIẾU MƯỢN ONLINE -->
+        <div id="tab-pending" class="tab-content p-6 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-base">Danh Sách Yêu Cầu Đang Chờ Duyệt</h3>
+                    <p class="text-xs text-slate-400">Kiểm tra tình trạng độc giả và phê duyệt giữ sách tại quầy mượn</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button class="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors">
+                        Làm mới danh sách
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table of Pending Borrows -->
+            <div class="overflow-x-auto rounded-2xl border border-slate-200">
+                <table class="w-full text-left text-sm text-slate-600">
+                    <thead class="bg-slate-50 text-xs uppercase font-bold text-slate-500 border-b border-slate-200">
+                        <tr>
+                            <th class="py-3 px-4">Mã Phiếu</th>
+                            <th class="py-3 px-4">Độc Giả (MSSV)</th>
+                            <th class="py-3 px-4">Tên Sách & ISBN</th>
+                            <th class="py-3 px-4">Ngày Yêu Cầu</th>
+                            <th class="py-3 px-4">Hạn Đến Nhận</th>
+                            <th class="py-3 px-4">Trạng Thái</th>
+                            <th class="py-3 px-4 text-right">Thao Tác</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        @if (Model.PendingRequests != null && Model.PendingRequests.Any())
+                        {
+                            foreach (var item in Model.PendingRequests)
+                            {
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3.5 px-4 font-mono font-bold text-navy-800 text-xs">@item.RequestCode</td>
+                                    <td class="py-3.5 px-4">
+                                        <p class="font-bold text-slate-900">@item.MemberName</p>
+                                        <p class="text-xs text-slate-400">Mã: @item.MemberCode • @item.MemberPhone</p>
+                                    </td>
+                                    <td class="py-3.5 px-4 max-w-xs">
+                                        <p class="font-semibold text-slate-800 truncate">@item.BookTitle</p>
+                                        <p class="text-xs text-slate-400 font-mono">ISBN: @item.BookISBN</p>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-xs text-slate-500">@item.RequestDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td class="py-3.5 px-4 text-xs font-semibold text-amber-600">@item.PickupDueDate.ToString("dd/MM/yyyy")</td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> @item.Status
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <button onclick="approveBorrowRequest('@item.RequestCode')" 
+                                                    class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-colors flex items-center gap-1">
+                                                <i data-lucide="check" class="w-3.5 h-3.5"></i> Duyệt
+                                            </button>
+                                            <button onclick="rejectBorrowRequest('@item.RequestCode')" 
+                                                    class="px-3 py-1.5 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 rounded-xl text-xs font-bold transition-colors">
+                                                Từ chối
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 2: QUẦY TIẾP NHẬN TRẢ SÁCH & ĐÁNH GIÁ TÌNH TRẠNG -->
+        <div id="tab-return" class="tab-content hidden p-6 space-y-6">
+            <!-- Search & Barcode Scan Bar -->
+            <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200">
+                <div class="max-w-2xl">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                        Quét Mã Vạch Sách hoặc Nhập Mã Phiếu Mượn
+                    </label>
+                    <div class="flex gap-2">
+                        <div class="relative flex-1">
+                            <input type="text" id="returnSearchInput" value="BR-2026-8801"
+                                   placeholder="Ví dụ: BR-2026-8801 hoặc ISBN 978-604-0-12345-6..." 
+                                   class="w-full pl-10 pr-3 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:border-navy-800 focus:outline-none" />
+                            <i data-lucide="scan" class="w-5 h-5 text-slate-400 absolute left-3 top-3"></i>
+                        </div>
+                        <button type="button" class="px-5 py-2.5 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-sm font-bold transition-colors flex items-center gap-1.5">
+                            <i data-lucide="search" class="w-4 h-4"></i> Tra Cứu
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Borrow Return Processing Card -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                <!-- Book and Borrower Details -->
+                <div class="lg:col-span-6 space-y-4 border-b lg:border-b-0 lg:border-r border-slate-200 pb-6 lg:pb-0 lg:pr-6">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold uppercase text-slate-400">Thông Tin Mượn</span>
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-navy-800">
+                            Mã phiếu: BR-2026-8801
+                        </span>
+                    </div>
+
+                    <div class="flex gap-4 items-start">
+                        <img src="https://images.unsplash.com/photo-1532012164546-f432f2e3777a?w=200&auto=format&fit=crop&q=80" 
+                             class="w-20 h-28 object-cover rounded-xl border border-slate-200 shadow-sm" alt="Bìa sách" />
+                        <div class="space-y-1">
+                            <h4 class="font-extrabold text-slate-900 text-base">Cấu Trúc Dữ Liệu & Giải Thuật Ứng Dụng</h4>
+                            <p class="text-xs text-slate-500">Tác giả: PGS. TS. Trần Minh Thái • NXB KHKT</p>
+                            <div class="pt-2 text-xs space-y-1">
+                                <p class="text-slate-600">Độc giả: <strong class="text-slate-900">Trần Văn Hoàng (MSSV: 22110098)</strong></p>
+                                <p class="text-slate-600">Ngày mượn: <strong>01/09/2026</strong> | Hạn trả: <strong>15/09/2026</strong></p>
+                                <p class="text-rose-600 font-bold flex items-center gap-1">
+                                    <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> Đã trễ hạn 02 ngày
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Condition Assessment & Fine Calculation -->
+                <div class="lg:col-span-6 space-y-4">
+                    <h4 class="font-bold text-sm text-slate-900 uppercase tracking-wider">Đánh Giá Tình Trạng Tài Liệu & Phạt</h4>
+
+                    <!-- Condition Radio Options -->
+                    <div class="space-y-2">
+                        <label class="flex items-center justify-between p-3 border rounded-xl hover:bg-slate-50 cursor-pointer border-emerald-300 bg-emerald-50/50">
+                            <div class="flex items-center gap-2.5">
+                                <input type="radio" name="bookCondition" value="intact" checked onchange="updateFineCalculation(0)"
+                                       class="w-4 h-4 text-emerald-600 focus:ring-emerald-500" />
+                                <div>
+                                    <span class="font-bold text-slate-900 text-xs">Sách nguyên vẹn (100%)</span>
+                                    <p class="text-[11px] text-slate-500">Không có dấu vết hư hại, rách, bẩn</p>
+                                </div>
+                            </div>
+                            <span class="text-xs font-bold text-emerald-700">0 VNĐ</span>
+                        </label>
+
+                        <label class="flex items-center justify-between p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer">
+                            <div class="flex items-center gap-2.5">
+                                <input type="radio" name="bookCondition" value="minor" onchange="updateFineCalculation(20000)"
+                                       class="w-4 h-4 text-navy-800 focus:ring-navy-800" />
+                                <div>
+                                    <span class="font-bold text-slate-900 text-xs">Hư hỏng nhẹ (Gấp nếp, viết bút chì nhẹ)</span>
+                                    <p class="text-[11px] text-slate-500">Phí phục hồi xử lý trang sách</p>
+                                </div>
+                            </div>
+                            <span class="text-xs font-bold text-amber-700">+20.000 VNĐ</span>
+                        </label>
+
+                        <label class="flex items-center justify-between p-3 border border-slate-200 rounded-xl hover:bg-slate-50 cursor-pointer">
+                            <div class="flex items-center gap-2.5">
+                                <input type="radio" name="bookCondition" value="major" onchange="updateFineCalculation(60000)"
+                                       class="w-4 h-4 text-rose-600 focus:ring-rose-600" />
+                                <div>
+                                    <span class="font-bold text-slate-900 text-xs">Hư hại nặng (Rách trang, thấm nước bẩn)</span>
+                                    <p class="text-[11px] text-slate-500">Thu phí bồi hoàn 50% giá trị sách</p>
+                                </div>
+                            </div>
+                            <span class="text-xs font-bold text-rose-700">+60.000 VNĐ</span>
+                        </label>
+                    </div>
+
+                    <!-- Total Fine Calculation Panel -->
+                    <div class="p-3 bg-slate-100 rounded-xl flex items-center justify-between text-xs">
+                        <div>
+                            <span class="text-slate-500">Phạt trễ hạn (2 ngày x 2.000đ): <strong class="text-slate-800">4.000đ</strong></span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-slate-500">Tổng tiền phạt:</span>
+                            <span id="totalFineDisplay" class="font-extrabold text-sm text-rose-600 ml-1">4.000 VNĐ</span>
+                        </div>
+                    </div>
+
+                    <!-- Confirm Action -->
+                    <div class="flex justify-end gap-2 pt-2">
+                        <button type="button" onclick="confirmReturn()" 
+                                class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow transition-all flex items-center gap-1.5">
+                            <i data-lucide="check-circle" class="w-4 h-4"></i> Xác Nhận Nhập Trả Vào Kho
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: XỬ LÝ GIA HẠN SÁCH -->
+        <div id="tab-renewal" class="tab-content hidden p-6 space-y-4">
+            <div class="pb-2">
+                <h3 class="font-bold text-slate-900 text-base">Đơn Xin Gia Hạn Sách Từ Độc Giả</h3>
+                <p class="text-xs text-slate-400">Mỗi độc giả được gia hạn tối đa 2 lần nếu sách chưa có người khác đặt trước</p>
+            </div>
+
+            <div class="overflow-x-auto rounded-2xl border border-slate-200">
+                <table class="w-full text-left text-sm text-slate-600">
+                    <thead class="bg-slate-50 text-xs uppercase font-bold text-slate-500 border-b border-slate-200">
+                        <tr>
+                            <th class="py-3 px-4">Độc Giả</th>
+                            <th class="py-3 px-4">Tên Sách</th>
+                            <th class="py-3 px-4">Hạn Trả Cũ</th>
+                            <th class="py-3 px-4">Hạn Đề Xuất Mới</th>
+                            <th class="py-3 px-4">Lượt Đã Gia Hạn</th>
+                            <th class="py-3 px-4">Lý Do Độc Giả</th>
+                            <th class="py-3 px-4 text-right">Quyết Định</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        @if (Model.RenewalRequests != null && Model.RenewalRequests.Any())
+                        {
+                            foreach (var ren in Model.RenewalRequests)
+                            {
+                                <tr class="hover:bg-slate-50">
+                                    <td class="py-3 px-4">
+                                        <p class="font-bold text-slate-900">@ren.MemberName</p>
+                                        <p class="text-xs text-slate-400">@ren.MemberCode</p>
+                                    </td>
+                                    <td class="py-3 px-4 font-semibold text-slate-800">@ren.BookTitle</td>
+                                    <td class="py-3 px-4 text-xs text-slate-500">@ren.CurrentDueDate.ToString("dd/MM/yyyy")</td>
+                                    <td class="py-3 px-4 text-xs font-bold text-blue-600">@ren.RequestedNewDueDate.ToString("dd/MM/yyyy")</td>
+                                    <td class="py-3 px-4 text-xs">
+                                        <span class="px-2 py-0.5 rounded-full font-bold bg-slate-100 text-slate-700">
+                                            @ren.TimesRenewed / @ren.MaxAllowedRenewals lần
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4 text-xs text-slate-600 italic max-w-xs truncate">"@ren.Reason"</td>
+                                    <td class="py-3 px-4 text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <button onclick="approveRenewal(@ren.RequestId)" 
+                                                    class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors">
+                                                Đồng ý (+14 ngày)
+                                            </button>
+                                            <button onclick="rejectRenewal(@ren.RequestId)" 
+                                                    class="px-2.5 py-1.5 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 rounded-xl text-xs font-bold transition-colors">
+                                                Từ chối
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 4: CẢNH BÁO QUÁ HẠN & XỬ LÝ VI PHẠM -->
+        <div id="tab-overdue" class="tab-content hidden p-6 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-base text-rose-700 flex items-center gap-2">
+                        <i data-lucide="alert-triangle" class="w-5 h-5 text-rose-600"></i>
+                        Danh Sách Độc Giả Quá Hạn Chưa Trả
+                    </h3>
+                    <p class="text-xs text-slate-400">Tự động tính lũy kế 2.000 VNĐ / ngày trễ hạn</p>
+                </div>
+                <button onclick="alert('Đã kích hoạt gửi email đồng loạt cho ' + @Model.OverdueAlertsCount + ' độc giả trễ hạn.');" 
+                        class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow transition-colors flex items-center gap-1.5">
+                    <i data-lucide="mail" class="w-4 h-4"></i> Gửi Email Nhắc Nhở Tất Cả
+                </button>
+            </div>
+
+            <div class="overflow-x-auto rounded-2xl border border-slate-200">
+                <table class="w-full text-left text-sm text-slate-600">
+                    <thead class="bg-rose-50/60 text-xs uppercase font-bold text-rose-900 border-b border-rose-200">
+                        <tr>
+                            <th class="py-3 px-4">Độc Giả</th>
+                            <th class="py-3 px-4">Liên Hệ (Email / SĐT)</th>
+                            <th class="py-3 px-4">Sách Quá Hạn</th>
+                            <th class="py-3 px-4">Hạn Trả Ban Đầu</th>
+                            <th class="py-3 px-4">Số Ngày Trễ</th>
+                            <th class="py-3 px-4">Tiền Phạt Tích Lũy</th>
+                            <th class="py-3 px-4 text-right">Biện Pháp Xử Lý</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        @if (Model.OverdueAlerts != null && Model.OverdueAlerts.Any())
+                        {
+                            foreach (var alert in Model.OverdueAlerts)
+                            {
+                                <tr class="hover:bg-rose-50/30">
+                                    <td class="py-3 px-4">
+                                        <p class="font-bold text-slate-900">@alert.MemberName</p>
+                                        <p class="text-xs text-slate-400">@alert.MemberCode</p>
+                                    </td>
+                                    <td class="py-3 px-4 text-xs">
+                                        <p class="text-slate-700 font-mono">@alert.MemberEmail</p>
+                                        <p class="text-slate-500">@alert.MemberPhone</p>
+                                    </td>
+                                    <td class="py-3 px-4 font-semibold text-slate-800">@alert.BookTitle</td>
+                                    <td class="py-3 px-4 text-xs text-slate-500">@alert.DueDate.ToString("dd/MM/yyyy")</td>
+                                    <td class="py-3 px-4">
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800">
+                                            +@alert.DaysOverdue ngày
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4 font-extrabold text-rose-600 text-sm">
+                                        @alert.AccumulatedFine.ToString("N0") VNĐ
+                                    </td>
+                                    <td class="py-3 px-4 text-right">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <button onclick="sendReminderEmail('@alert.MemberEmail')" 
+                                                    class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors" title="Gửi email nhắc nhở">
+                                                <i data-lucide="mail" class="w-4 h-4"></i>
+                                            </button>
+                                            <button onclick="lockMemberCard('@alert.MemberCode')" 
+                                                    class="px-2.5 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-xl text-xs font-bold transition-colors">
+                                                Khóa Thẻ
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Tab switching logic
+        function switchTab(tabId) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            // Remove active classes on buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('border-navy-800', 'text-navy-800', 'bg-white');
+                btn.classList.add('border-transparent', 'text-slate-600');
+            });
+
+            // Show current tab
+            const activeTab = document.getElementById(tabId);
+            if (activeTab) activeTab.classList.remove('hidden');
+
+            const activeBtn = document.getElementById('btn-' + tabId);
+            if (activeBtn) {
+                activeBtn.classList.remove('border-transparent', 'text-slate-600');
+                activeBtn.classList.add('border-navy-800', 'text-navy-800', 'bg-white');
+            }
+
+            lucide.createIcons();
+        }
+
+        // Live fine update
+        function updateFineCalculation(damageCost) {
+            const overdueFine = 4000; // 2 days x 2000
+            const total = overdueFine + damageCost;
+            document.getElementById('totalFineDisplay').innerText = total.toLocaleString('vi-VN') + ' VNĐ';
+        }
+
+        function confirmReturn() {
+            alert('Đã xác nhận thu hồi sách vào kho thành công. Biên lai đã gửi qua email độc giả.');
+            lucide.createIcons();
+        }
+
+        function approveBorrowRequest(code) {
+            alert('Đã duyệt phiếu mượn ' + code + '. Hệ thống đã phát hành mã nhận sách tại quầy cho độc giả.');
+        }
+
+        function rejectBorrowRequest(code) {
+            const reason = prompt('Nhập lý do từ chối phiếu ' + code + ':', 'Sách đang được bảo trì / thẻ độc giả quá hạn');
+            if (reason) {
+                alert('Đã từ chối phiếu ' + code + ' với lý do: ' + reason);
+            }
+        }
+
+        function approveRenewal(id) {
+            alert('Đã phê duyệt gia hạn thêm 14 ngày cho yêu cầu #' + id);
+        }
+
+        function rejectRenewal(id) {
+            alert('Đã từ chối gia hạn cho yêu cầu #' + id);
+        }
+
+        function sendReminderEmail(email) {
+            alert('Đã gửi email thông báo trễ hạn và biểu phí phạt đến ' + email);
+        }
+
+        function lockMemberCard(code) {
+            if (confirm('Bạn có chắc chắn muốn tạm khóa quyền mượn sách của độc giả ' + code + '?')) {
+                alert('Đã khóa thẻ ' + code + ' thành công.');
+            }
+        }
+    </script>
+}

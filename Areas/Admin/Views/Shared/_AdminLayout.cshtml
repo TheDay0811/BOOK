@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full bg-slate-100" id="htmlRoot">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Quản Trị Hệ Thống Thư Viện</title>
+
+    <!-- Google Fonts: Be Vietnam Pro & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            50: '#f0f4f9', 100: '#e1e9f2', 200: '#c3d3e6', 300: '#95b3d4',
+                            400: '#618ec0', 500: '#3d6ea8', 600: '#2d568c', 700: '#254572',
+                            800: '#1e3a8a', 900: '#0f1e40', 950: '#091226',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Be Vietnam Pro"', 'Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons & Chart.js -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .sidebar-transition { transition: width 0.25s ease-in-out; }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="min-h-full flex flex-col font-sans text-slate-800 antialiased bg-slate-100 selection:bg-navy-800 selection:text-white">
+
+    <div class="flex h-screen overflow-hidden">
+
+        <!-- ================= SIDEBAR CỐ ĐỊNH & THU GỌN ================= -->
+        <aside id="adminSidebar" 
+               class="sidebar-transition w-64 bg-navy-950 text-slate-300 flex flex-col flex-shrink-0 border-r border-navy-900 select-none z-30 fixed inset-y-0 left-0 lg:static lg:translate-x-0 -translate-x-full">
+            
+            <!-- Brand & Logo -->
+            <div class="h-20 flex items-center justify-between px-5 bg-navy-900 border-b border-navy-800">
+                <a asp-area="Admin" asp-controller="Home" asp-action="Index" class="flex items-center gap-3 group overflow-hidden">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white flex items-center justify-center shadow flex-shrink-0">
+                        <i data-lucide="book-open-check" class="w-5 h-5 text-amber-400"></i>
+                    </div>
+                    <div class="sidebar-text whitespace-nowrap">
+                        <span class="block text-[10px] uppercase font-bold tracking-widest text-blue-300">Cổng Quản Trị</span>
+                        <h2 class="text-base font-black text-white tracking-tight leading-none">SMART<span class="text-amber-400">LIB</span></h2>
+                    </div>
+                </a>
+
+                <!-- Mobile Close Button -->
+                <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Current User Badge (Sidebar) -->
+            <div class="p-3 mx-3 my-3 bg-navy-900/60 rounded-2xl border border-navy-800/80 flex items-center gap-3 overflow-hidden">
+                <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0 shadow">
+                    AD
+                </div>
+                <div class="sidebar-text overflow-hidden">
+                    <p class="text-xs font-bold text-white truncate">TS. Lê Quốc Hùng</p>
+                    <span class="inline-block text-[10px] font-semibold text-emerald-400">Quản Trị Viên Cấp Cao</span>
+                </div>
+            </div>
+
+            <!-- Sidebar Navigation Groups -->
+            <nav class="flex-1 px-3 space-y-5 overflow-y-auto text-xs py-2">
+                
+                <!-- Group 0: Tổng quan -->
+                <div>
+                    <a asp-area="Admin" asp-controller="Home" asp-action="Index" 
+                       class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-bold transition-colors @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Home" ? "bg-navy-800 text-white shadow-sm" : "text-slate-400 hover:text-white hover:bg-navy-900")">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4 text-amber-400 flex-shrink-0"></i>
+                        <span class="sidebar-text">Tổng Quan Dashboard</span>
+                    </a>
+                </div>
+
+                <!-- Group 1: Nghiệp vụ Mượn - Trả -->
+                <div class="space-y-1">
+                    <div class="sidebar-text text-[10px] font-bold text-slate-500 uppercase tracking-wider px-3 pb-1">
+                        Nghiệp Vụ Mượn - Trả
+                    </div>
+
+                    <a asp-area="Admin" asp-controller="Borrow" asp-action="Index" 
+                       class="flex items-center justify-between px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-navy-900 font-medium transition-colors">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="arrow-left-right" class="w-4 h-4 text-blue-400 flex-shrink-0"></i>
+                            <span class="sidebar-text">Quản lý Mượn / Trả</span>
+                        </div>
+                        <span class="sidebar-text px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                            24
+                        </span>
+                    </a>
+
+                    <a asp-area="Admin" asp-controller="Borrow" asp-action="Index" 
+                       class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-navy-900 transition-colors">
+                        <i data-lucide="scan-barcode" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i>
+                        <span class="sidebar-text">Quầy Thu Hồi & Đánh Giá</span>
+                    </a>
+
+                    <a asp-area="Admin" asp-controller="Borrow" asp-action="Index" 
+                       class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-navy-900 transition-colors">
+                        <i data-lucide="rotate-cw" class="w-4 h-4 text-purple-400 flex-shrink-0"></i>
+                        <span class="sidebar-text">Yêu Cầu Gia Hạn</span>
+                    </a>
+
+                    <a asp-area="Admin" asp-controller="Borrow" asp-action="Index" 
+                       class="flex items-center justify-between px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-navy-900 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-400 flex-shrink-0"></i>
+                            <span class="sidebar-text">Xử Lý Quá Hạn & Phạt</span>
+                        </div>
+                        <span class="sidebar-text px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                            18
+                        </span>
+                    </a>
+                </div>
+
+                <!-- Group 2: Quản lý Kho sách & Dữ liệu -->
+                <div class="space-y-1">
+                    <div class="sidebar-text text-[10px] font-bold text-slate-500 uppercase tracking-wider px-3 pb-1">
+                        Quản Lý Dữ Liệu
+                    </div>
+
+                    <a asp-area="Admin" asp-controller="Book" asp-action="Index" 
+                       class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-colors @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Book" ? "bg-navy-800 text-white" : "text-slate-400 hover:text-white hover:bg-navy-900")">
+                        <i data-lucide="book-copy" class="w-4 h-4 text-teal-400 flex-shrink-0"></i>
+                        <span class="sidebar-text">Kho Sách & Đầu Sách</span>
+                    </a>
+
+                    <a href="#categories" class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-navy-900 transition-colors">
+                        <i data-lucide="tags" class="w-4 h-4 text-indigo-400 flex-shrink-0"></i>
+                        <span class="sidebar-text">Thể Loại & Chuyên Ngành</span>
+                    </a>
+
+                    <a href="#publishers" class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-navy-900 transition-colors">
+                        <i data-lucide="building-2" class="w-4 h-4 text-cyan-400 flex-shrink-0"></i>
+                        <span class="sidebar-text">Tác Giả & Nhà Xuất Bản</span>
+                    </a>
+                </div>
+
+                <!-- Group 3: Báo cáo & Thống kê -->
+                <div class="space-y-1">
+                    <div class="sidebar-text text-[10px] font-bold text-slate-500 uppercase tracking-wider px-3 pb-1">
+                        Báo Cáo & Phân Tích
+                    </div>
+
+                    <a href="#stats" class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-navy-900 transition-colors">
+                        <i data-lucide="bar-chart-3" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i>
+                        <span class="sidebar-text">Báo Cáo Lượt Mượn Trả</span>
+                    </a>
+
+                    <a href="#topbooks" class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-navy-900 transition-colors">
+                        <i data-lucide="flame" class="w-4 h-4 text-amber-400 flex-shrink-0"></i>
+                        <span class="sidebar-text">Top Sách Mượn Nhiều</span>
+                    </a>
+                </div>
+
+                <!-- Group 4: Hệ thống & Tài khoản -->
+                <div class="space-y-1">
+                    <div class="sidebar-text text-[10px] font-bold text-slate-500 uppercase tracking-wider px-3 pb-1">
+                        Hệ Thống & Tài Khoản
+                    </div>
+
+                    <a asp-area="Admin" asp-controller="User" asp-action="Index" 
+                       class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-colors @(ViewContext.RouteData.Values["Controller"]?.ToString() == "User" ? "bg-navy-800 text-white" : "text-slate-400 hover:text-white hover:bg-navy-900")">
+                        <i data-lucide="users" class="w-4 h-4 text-pink-400 flex-shrink-0"></i>
+                        <span class="sidebar-text">Người Dùng & Phân Quyền</span>
+                    </a>
+
+                    <a href="#settings" class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-navy-900 transition-colors">
+                        <i data-lucide="sliders" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+                        <span class="sidebar-text">Cấu Hình Quy Định Mượn</span>
+                    </a>
+                </div>
+            </nav>
+
+            <!-- Bottom Action -->
+            <div class="p-3 border-t border-navy-900">
+                <a asp-area="" asp-controller="Home" asp-action="Index" 
+                   class="flex items-center justify-center gap-2 w-full py-2.5 px-3 bg-navy-900 hover:bg-navy-800 text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition-colors">
+                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+                    <span class="sidebar-text">Xem Cổng Công Cộng</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Sidebar Overlay on Mobile -->
+        <div id="sidebarOverlay" onclick="toggleSidebar()" class="hidden fixed inset-0 bg-navy-950/60 backdrop-blur-sm z-20 lg:hidden"></div>
+
+        <!-- ================= MAIN CONTENT WRAPPER ================= -->
+        <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+            
+            <!-- TOPBAR -->
+            <header class="h-20 bg-white border-b border-slate-200 px-4 sm:px-8 flex items-center justify-between flex-shrink-0 shadow-sm z-10">
+                
+                <!-- Left: Sidebar Toggle & Search -->
+                <div class="flex items-center gap-4">
+                    <button onclick="toggleSidebar()" class="p-2 text-slate-600 hover:text-navy-800 hover:bg-slate-100 rounded-xl transition-colors">
+                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    </button>
+
+                    <!-- Fast Global Search in Admin -->
+                    <div class="relative hidden md:block w-72">
+                        <input type="text" placeholder="Tìm theo mã thẻ, ISBN, tên sách..." 
+                               class="w-full pl-9 pr-3 py-2 text-xs bg-slate-100 border border-transparent rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none transition-all placeholder:text-slate-400" />
+                        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                    </div>
+                </div>
+
+                <!-- Right: Utilities & Profile Dropdown -->
+                <div class="flex items-center gap-3">
+                    
+                    <!-- Dark/Light Mode Toggle -->
+                    <button onclick="toggleDarkMode()" class="p-2 text-slate-500 hover:text-navy-800 hover:bg-slate-100 rounded-xl transition-colors" title="Chế độ giao diện">
+                        <i id="themeIcon" data-lucide="moon" class="w-5 h-5"></i>
+                    </button>
+
+                    <!-- Notification Bell with Dropdown -->
+                    <div class="relative">
+                        <button onclick="toggleNotificationDropdown()" class="relative p-2 text-slate-500 hover:text-navy-800 hover:bg-slate-100 rounded-xl transition-colors">
+                            <i data-lucide="bell" class="w-5 h-5"></i>
+                            <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full animate-pulse"></span>
+                        </button>
+
+                        <!-- Notification Dropdown Panel -->
+                        <div id="notificationDropdown" class="hidden absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50">
+                            <div class="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-900">Thông báo mới</span>
+                                <span class="text-[10px] font-semibold text-blue-600 cursor-pointer">Đánh dấu đã đọc</span>
+                            </div>
+                            <div class="divide-y divide-slate-100 max-h-64 overflow-y-auto text-xs">
+                                <div class="p-3 hover:bg-slate-50 transition-colors">
+                                    <p class="font-bold text-slate-800">Yêu cầu mượn mới #RQ-2026-0412</p>
+                                    <p class="text-[11px] text-slate-500">Độc giả Lê Thị Mai Linh vừa đặt mượn giáo trình.</p>
+                                    <span class="text-[10px] text-slate-400 mt-1 block">5 phút trước</span>
+                                </div>
+                                <div class="p-3 hover:bg-slate-50 transition-colors">
+                                    <p class="font-bold text-rose-600">Cảnh báo quá hạn</p>
+                                    <p class="text-[11px] text-slate-500">Độc giả Trần Văn Hoàng trễ hạn trả 2 ngày.</p>
+                                    <span class="text-[10px] text-slate-400 mt-1 block">1 giờ trước</span>
+                                </div>
+                            </div>
+                            <div class="p-2 border-t border-slate-100 text-center">
+                                <a asp-area="Admin" asp-controller="Borrow" asp-action="Index" class="text-xs font-bold text-navy-800 hover:underline">
+                                    Xem tất cả thông báo
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Profile & Logout Dropdown -->
+                    <div class="relative pl-3 border-l border-slate-200">
+                        <button onclick="toggleProfileDropdown()" class="flex items-center gap-3 p-1 rounded-xl hover:bg-slate-50 transition-colors">
+                            <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&auto=format&fit=crop&q=80" 
+                                 alt="Avatar" class="w-9 h-9 rounded-xl object-cover border border-slate-200" />
+                            <div class="hidden sm:block text-left">
+                                <p class="text-xs font-bold text-slate-900 leading-tight">TS. Lê Quốc Hùng</p>
+                                <span class="text-[10px] font-semibold text-blue-600">Admin Thư Viện</span>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 hidden sm:block"></i>
+                        </button>
+
+                        <!-- Profile Dropdown Menu -->
+                        <div id="profileDropdown" class="hidden absolute right-0 mt-3 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 text-xs">
+                            <div class="px-4 py-2 border-b border-slate-100">
+                                <p class="font-bold text-slate-900">TS. Lê Quốc Hùng</p>
+                                <p class="text-slate-400 text-[11px]">hung.lq@university.edu.vn</p>
+                            </div>
+                            <a href="#" class="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-slate-700">
+                                <i data-lucide="user" class="w-4 h-4 text-slate-400"></i> Hồ sơ cá nhân
+                            </a>
+                            <a href="#" class="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 text-slate-700">
+                                <i data-lucide="settings" class="w-4 h-4 text-slate-400"></i> Cài đặt tài khoản
+                            </a>
+                            <div class="border-t border-slate-100 my-1"></div>
+                            <form asp-area="" asp-controller="Account" asp-action="Logout" method="post" class="w-full">
+                                <button type="submit" class="w-full flex items-center gap-2 px-4 py-2.5 text-rose-600 hover:bg-rose-50 text-left font-bold transition-colors">
+                                    <i data-lucide="log-out" class="w-4 h-4"></i> Đăng xuất an toàn
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                </div>
+            </header>
+
+            <!-- MAIN DYNAMIC CONTENT -->
+            <main class="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIC (SIDEBAR COLLAPSE, DROPDOWNS, THEME) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('adminSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (window.innerWidth < 1024) {
+                sidebar.classList.toggle('-translate-x-full');
+                overlay.classList.toggle('hidden');
+            } else {
+                // Desktop collapse logic
+                sidebar.classList.toggle('w-64');
+                sidebar.classList.toggle('w-20');
+                document.querySelectorAll('.sidebar-text').forEach(el => el.classList.toggle('hidden'));
+            }
+        }
+
+        function toggleNotificationDropdown() {
+            document.getElementById('notificationDropdown')?.classList.toggle('hidden');
+            document.getElementById('profileDropdown')?.classList.add('hidden');
+        }
+
+        function toggleProfileDropdown() {
+            document.getElementById('profileDropdown')?.classList.toggle('hidden');
+            document.getElementById('notificationDropdown')?.classList.add('hidden');
+        }
+
+        // Close dropdowns on outside click
+        window.addEventListener('click', (e) => {
+            if (!e.target.closest('#notificationDropdown') && !e.target.closest('button[onclick="toggleNotificationDropdown()"]')) {
+                document.getElementById('notificationDropdown')?.classList.add('hidden');
+            }
+            if (!e.target.closest('#profileDropdown') && !e.target.closest('button[onclick="toggleProfileDropdown()"]')) {
+                document.getElementById('profileDropdown')?.classList.add('hidden');
+            }
+        });
+
+        function toggleDarkMode() {
+            const root = document.getElementById('htmlRoot');
+            const icon = document.getElementById('themeIcon');
+            root.classList.toggle('dark');
+            const isDark = root.classList.contains('dark');
+            icon.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+            lucide.createIcons();
+        }
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
