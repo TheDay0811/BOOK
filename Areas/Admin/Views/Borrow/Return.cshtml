@@ -1,220 +1,62 @@
 @model BOOK.Models.ViewModels.ReturnBookDeskViewModel
 @{
     Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
-    ViewData["Title"] = "Tiếp Nhận Trả Sách & Xử Lý Bồi Thường";
+    ViewData["Title"] = "Tiếp Nhận Trả Sách";
 }
 
 <div class="space-y-6">
+    <h1 class="text-2xl font-black text-slate-900">Quầy Nhận Trả Sách</h1>
 
-    <!-- BREADCRUMB & HEADER -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-            <nav class="flex items-center gap-2 text-xs text-slate-500 mb-1">
-                <a asp-area="Admin" asp-controller="Borrow" asp-action="Index" class="hover:underline">Quản lý mượn trả</a>
-                <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
-                <span class="text-navy-800 font-bold">Quầy tiếp nhận trả sách</span>
-            </nav>
-            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Quầy Nhận Trả Sách & Bồi Thường</h1>
-            <p class="text-xs text-slate-500 mt-0.5">Kiểm định tình trạng từng cuốn sách, tự động khóa thẻ khi mất/hỏng và mở lại khi bồi thường.</p>
-        </div>
+    @if (TempData["Error"] != null)
+    {
+        <div class="p-3 rounded-xl bg-rose-100 text-rose-800 text-sm font-bold">@TempData["Error"]</div>
+    }
 
-        <div class="flex items-center gap-2">
-            <span class="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-bold border border-blue-200">
-                Phiếu mượn: <strong>@Model.TicketCode</strong>
-            </span>
-        </div>
-    </div>
-
-    <!-- KHUNG THÔNG TIN ĐỘC GIẢ & TRẠNG THÁI THẺ THƯ VIỆN HIỆN TẠI -->
-    <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-col lg:flex-row justify-between lg:items-center gap-6">
-        <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-2xl bg-navy-800 text-white font-bold text-xl flex items-center justify-center flex-shrink-0 shadow">
-                @Model.StudentName.Substring(0, 1)
-            </div>
-            <div>
-                <h3 class="text-lg font-black text-slate-900">@Model.StudentName</h3>
-                <p class="text-xs text-slate-500 mt-0.5">
-                    MSSV: <strong class="font-mono text-slate-800">@Model.StudentCode</strong> • Số thẻ: <strong class="font-mono text-navy-800">@Model.CardNumber</strong>
-                </p>
-                <p class="text-[11px] text-slate-400">Hạn thẻ: @Model.CardExpiryDate.ToString("dd/MM/yyyy")</p>
-            </div>
-        </div>
-
-        <!-- Trạng thái thẻ thư viện (Động theo tình trạng trả sách) -->
-        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center gap-4">
-            <div>
-                <span class="text-[10px] text-slate-400 uppercase font-bold block">Trạng thái thẻ sau khi hoàn tất:</span>
-                <span id="finalCardStatusBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 mt-0.5">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    Sử dụng được
-                </span>
-            </div>
-
-            <div class="pl-4 border-l border-slate-200 text-right">
-                <span class="text-[10px] text-slate-400 uppercase font-bold block">Tổng tiền bồi thường:</span>
-                <span id="totalCompensationDisplay" class="text-base font-black text-slate-900">0 VNĐ</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- FORM XỬ LÝ TRẢ SÁCH TỪNG CUỐN -->
-    <form id="returnDeskForm" onsubmit="handleReturnSubmit(event)" class="space-y-6">
-
-        <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
-            <div class="pb-2 border-b border-slate-100 flex justify-between items-center">
-                <div>
-                    <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                        <i data-lucide="check-square" class="w-5 h-5 text-navy-800"></i>
-                        Danh Sách Các Cuốn Sách Đang Mượn Cần Tiếp Nhận
-                    </h3>
-                    <p class="text-xs text-slate-400">Thủ thư kiểm tra kỹ tình trạng vật lý của từng cuốn theo đúng Số kiểm soát.</p>
-                </div>
-                <span class="text-xs text-slate-500">Số lượng: <strong>@Model.BorrowedCopies.Count cuốn</strong></span>
-            </div>
-
-            <div class="space-y-4">
-                @for (int i = 0; i < Model.BorrowedCopies.Count; i++)
-                {
-                    var item = Model.BorrowedCopies[i];
-                    <div class="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-all space-y-3 item-card" data-index="@i">
-                        <div class="flex flex-col md:flex-row justify-between md:items-center gap-3">
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <span class="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-navy-100 text-navy-800">
-                                        Mã: @item.BookCode
-                                    </span>
-                                    <span class="px-2 py-0.5 rounded text-[11px] font-mono font-black bg-blue-600 text-white">
-                                        Số KS: @item.ControlNumber
-                                    </span>
-                                    <span class="text-xs text-slate-400">Hạn trả: @item.DueDate.ToString("dd/MM/yyyy")</span>
-                                </div>
-                                <h4 class="font-extrabold text-slate-900 text-sm mt-1">@item.BookTitle</h4>
-                            </div>
-
-                            <!-- Dropdown tình trạng trả -->
-                            <div class="flex items-center gap-2">
-                                <label class="text-xs font-bold text-slate-600 whitespace-nowrap">Tình trạng trả:</label>
-                                <select class="condition-select py-2 px-3 text-xs bg-white border border-slate-300 rounded-xl font-bold focus:border-navy-800 focus:outline-none"
-                                        onchange="onConditionChange(@i, this.value)">
-                                    <option value="Bình thường" selected>✓ Bình thường (Nguyên vẹn)</option>
-                                    <option value="Hỏng">⚠️ Hỏng (Rách bìa / Thấm nước)</option>
-                                    <option value="Mất">⛔ Mất sách</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- KHUNG BỒI THƯỜNG & KHÓA THẺ (CHỈ XUẤT HIỆN KHI CHỌN HỎNG HOẶC MẤT) -->
-                        <div id="damageBox-@i" class="hidden p-4 rounded-xl bg-rose-50 border border-rose-200 text-xs space-y-3 transition-all">
-                            <div class="flex items-start gap-2 text-rose-800 font-bold">
-                                <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5"></i>
-                                <span>
-                                    CẢNH BÁO RÀNG BUỘC: Sách bị <span id="conditionLabel-@i" class="uppercase text-rose-900 font-black">Hỏng</span>. 
-                                    Thẻ thư viện của sinh viên sẽ tự động chuyển sang trạng thái: 
-                                    <strong class="text-rose-900 underline">"KHÔNG SỬ DỤNG"</strong> trừ khi hoàn tất bồi thường ngay.
-                                </span>
-                            </div>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                                <div>
-                                    <label class="block font-bold text-slate-700 mb-1">Mô tả mức độ hư hại / mất</label>
-                                    <input type="text" id="desc-@i" placeholder="Ví dụ: Rách 10 trang mục lục, mất gáy..." 
-                                           class="w-full p-2 text-xs bg-white border border-slate-200 rounded-lg" />
-                                </div>
-                                <div>
-                                    <label class="block font-bold text-slate-700 mb-1">Số tiền bồi thường (VNĐ)</label>
-                                    <input type="number" id="fee-@i" value="85000" oninput="calculateTotalCompensation()" 
-                                           class="w-full p-2 text-xs bg-white border border-slate-200 rounded-lg font-bold text-rose-600 font-mono" />
-                                </div>
-                                <div class="flex items-end pb-1">
-                                    <label class="flex items-center gap-2 text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 p-2 rounded-lg w-full cursor-pointer select-none">
-                                        <input type="checkbox" id="comp-@i" onchange="calculateTotalCompensation()" class="w-4 h-4 text-emerald-600 rounded" />
-                                        <span>Đã thu tiền bồi thường</span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
-
-            <!-- TỔNG KẾT VÀ NÚT HOÀN TẤT -->
-            <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                <div class="text-xs text-slate-500">
-                    * Nếu còn bất kỳ cuốn sách nào bị [Hỏng/Mất] mà <strong>chưa tick "Đã thu tiền bồi thường"</strong>, thẻ thư viện sẽ lập tức bị <strong>KHÓA</strong>.
-                </div>
-
-                <div class="flex items-center gap-3">
-                    <a asp-area="Admin" asp-controller="Borrow" asp-action="Index" class="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">
-                        Hủy Bỏ
-                    </a>
-                    <button type="submit" 
-                            class="px-7 py-3 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2">
-                        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i> Hoàn Tất Nhận Trả Sách
-                    </button>
-                </div>
-            </div>
-        </div>
-
+    <form method="get" asp-action="Return" class="flex gap-3">
+        <input type="number" name="ticketCode" placeholder="Nhập mã phiếu mượn (số)" class="flex-1 p-2.5 border border-slate-300 rounded-xl font-mono" />
+        <button type="submit" class="px-4 py-2.5 bg-navy-800 text-white rounded-xl text-xs font-bold">Tra Cứu Phiếu</button>
     </form>
-</div>
 
-@section Scripts {
-    <script>
-        function onConditionChange(idx, val) {
-            const damageBox = document.getElementById('damageBox-' + idx);
-            const label = document.getElementById('conditionLabel-' + idx);
-            const feeInput = document.getElementById('fee-' + idx);
+    @if (!string.IsNullOrEmpty(Model.StudentName))
+    {
+        <div class="bg-white rounded-2xl border border-slate-200 p-4">
+            <p><strong>@Model.StudentName</strong> — MSSV @Model.StudentCode — Thẻ @Model.CardNumber</p>
+        </div>
 
-            if (val === 'Bình thường') {
-                damageBox.classList.add('hidden');
-                document.getElementById('comp-' + idx).checked = false;
-            } else {
-                damageBox.classList.remove('hidden');
-                label.innerText = val;
-                feeInput.value = val === 'Mất' ? 120000 : 60000;
-            }
-            calculateTotalCompensation();
-            lucide.createIcons();
-        }
+        <form method="post" asp-action="Return" class="space-y-4 bg-white p-6 rounded-2xl border border-slate-200">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="phieuMuonId" value="@Model.TicketCode" />
 
-        function calculateTotalCompensation() {
-            let total = 0;
-            let hasUncompensatedDamage = false;
-
-            const cards = document.querySelectorAll('.item-card');
-            cards.forEach((card, idx) => {
-                const select = card.querySelector('.condition-select');
-                if (select.value !== 'Bình thường') {
-                    const fee = parseFloat(document.getElementById('fee-' + idx)?.value) || 0;
-                    total += fee;
-                    const isCompensated = document.getElementById('comp-' + idx)?.checked;
-                    if (!isCompensated) {
-                        hasUncompensatedDamage = true;
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left border-b">
+                        <th class="py-2">Sách</th>
+                        <th>Số KS</th>
+                        <th>Tình trạng khi trả</th>
+                        <th>Tiền bồi thường</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.BorrowedCopies)
+                    {
+                        <tr class="border-b">
+                            <td class="py-2">@item.BookTitle</td>
+                            <td>@item.ControlNumber</td>
+                            <td>
+                                <input type="hidden" name="copyIds" value="@item.CopyId" />
+                                <select name="conditions" class="p-1.5 border border-slate-300 rounded-lg">
+                                    <option value="Bình thường">Bình thường</option>
+                                    <option value="Hỏng">Hỏng</option>
+                                    <option value="Mất">Mất</option>
+                                </select>
+                            </td>
+                            <td><input type="number" name="fees" value="0" class="p-1.5 border border-slate-300 rounded-lg w-28" /></td>
+                        </tr>
                     }
-                }
-            });
+                </tbody>
+            </table>
 
-            document.getElementById('totalCompensationDisplay').innerText = total.toLocaleString('vi-VN') + ' VNĐ';
-
-            // Cập nhật badge thẻ thư viện
-            const badge = document.getElementById('finalCardStatusBadge');
-            if (hasUncompensatedDamage) {
-                badge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-rose-100 text-rose-900 border border-rose-300 mt-0.5 animate-pulse";
-                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> Không sử dụng (Bị khóa do chưa đền bù)`;
-            } else {
-                badge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300 mt-0.5";
-                badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Sử dụng được`;
-            }
-        }
-
-        function handleReturnSubmit(e) {
-            e.preventDefault();
-            const badgeText = document.getElementById('finalCardStatusBadge').innerText;
-            if (badgeText.includes('Không sử dụng')) {
-                alert('Đã hoàn tất trả sách. Do độc giả có sách mất/hỏng chưa hoàn tất bồi thường, thẻ thư viện đã tự động chuyển sang trạng thái: [KHÔNG SỬ DỤNG].');
-            } else {
-                alert('Hoàn tất nhận trả sách thành công! Tất cả sách đã nhập lại kho hoặc đã bồi thường đủ. Thẻ thư viện duy trì trạng thái: [SỬ DỤNG ĐƯỢC].');
-            }
-        }
-    </script>
-}
+            <button type="submit" class="px-6 py-3 bg-navy-800 text-white rounded-xl font-bold">Xác Nhận Trả Sách</button>
+        </form>
+    }
+</div>

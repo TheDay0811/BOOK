@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-
+using System.Linq;
 namespace BOOK.Models.ViewModels
 {
     // ================= 1. REGISTER & LIBRARY CARD =================
@@ -180,7 +180,9 @@ namespace BOOK.Models.ViewModels
         public int TotalDamagedCount => Records.FindAll(r => r.ConditionStatus == "Hỏng").Count;
         public int TotalLostCount => Records.FindAll(r => r.ConditionStatus == "Mất").Count;
         public decimal TotalLiquidationEstimatedValue => Records.Count * 95000;
-        public decimal TotalCompensationCollected => 380000;
+        public decimal TotalCompensationCollected => Records
+        .Where(r => r.CompensationStatus == "Đã bồi thường")
+        .Sum(r => r.CompensationAmount);
 
         public List<DamagedLostBookRecordViewModel> Records { get; set; } = new();
     }

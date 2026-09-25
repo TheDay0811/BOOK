@@ -1,10 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using BOOK.Data;
+using BOOK.Models.Entities;
 using BOOK.Models.ViewModels;
 using BOOK.ViewModels;
 
@@ -12,6 +16,13 @@ namespace BOOK.Controllers
 {
     public class AccountController : Controller
     {
+        private readonly ApplicationDbContext _context;
+
+        public AccountController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
         // GET: /Account/Login
         [HttpGet]
         public IActionResult Login(string? returnUrl = null)
@@ -41,42 +52,30 @@ namespace BOOK.Controllers
 
             var username = model.UsernameOrEmail.Trim().ToLower();
 
-            string role = "Member";
-            string fullName = "Trần Văn Hoàng";
-            string studentCode = "24DH112970";
-            string email = "hoang.tv@student.university.edu.vn";
-            string cardNumber = "LIB-24DH112970";
-            string cardStatus = "Sử dụng được";
+            var taiKhoan = await _context.TaiKhoans
+                .Include(tk => tk.TheThuVien)
+                .FirstOrDefaultAsync(tk => tk.Username.ToLower() == username && tk.PasswordHash == model.Password);
 
-            if (username.Contains("admin"))
+            if (taiKhoan == null)
             {
-                role = "Admin";
-                fullName = "Quản trị viên Hệ thống";
-                studentCode = "ADMIN-01";
-                email = "admin@smartlib.edu.vn";
-                cardNumber = "LIB-ADMIN";
-                cardStatus = "Sử dụng được";
+                ModelState.AddModelError("", "Tài khoản hoặc mật khẩu không đúng.");
+                return View(model);
             }
-            else if (username.Contains("thuthu"))
-            {
-                role = "Librarian";
-                fullName = "Thủ thư Nguyễn Thị Mai";
-                studentCode = "LIB-STAFF";
-                email = "mai.nt@smartlib.edu.vn";
-                cardNumber = "LIB-STAFF";
-                cardStatus = "Sử dụng được";
-            }
+
+            string role = taiKhoan.Role; // "Admin" / "ThuThu" / "SinhVien"
+            string fullName = taiKhoan.TheThuVien?.HoTen ?? taiKhoan.Username;
+            string studentCode = taiKhoan.Username;
+            string cardNumber = taiKhoan.TheThuVien?.SoThe ?? "";
+            string cardStatus = taiKhoan.TheThuVien?.TinhTrangSuDung ?? "";
 
             // Tạo Claims Identity xác thực Cookie
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, fullName),
-                new Claim(ClaimTypes.Email, email),
                 new Claim(ClaimTypes.NameIdentifier, studentCode),
                 new Claim(ClaimTypes.Role, role),
                 new Claim("CardNumber", cardNumber),
-                new Claim("CardStatus", cardStatus),
-                new Claim("ActiveLoansCount", "2")
+                new Claim("CardStatus", cardStatus)
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -97,7 +96,7 @@ namespace BOOK.Controllers
                 TempData["Success"] = "Đăng nhập thành công với quyền Quản trị viên (Admin)!";
                 return RedirectToAction("Index", "Home", new { area = "Admin" });
             }
-            else if (role == "Librarian")
+            else if (role == "ThuThu")
             {
                 TempData["Success"] = "Đăng nhập thành công với quyền Thủ thư trực ca!";
                 return RedirectToAction("Index", "Borrow", new { area = "Admin" });
@@ -109,7 +108,6 @@ namespace BOOK.Controllers
                 {
                     return Redirect(model.ReturnUrl);
                 }
-                // Chuyển hướng trực tiếp tới trang Hồ sơ cá nhân & Quản lý mượn trả
                 return RedirectToAction(nameof(Profile));
             }
         }
@@ -131,7 +129,7 @@ namespace BOOK.Controllers
         // POST: /Account/Register
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Register(RegisterViewModel model)
+        public async Task<IActionResult> Register(RegisterViewModel model)
         {
             if (!ModelState.IsValid)
             {
@@ -144,122 +142,114 @@ namespace BOOK.Controllers
                 return View(model);
             }
 
-            // Tự động gán mã thẻ thư viện liên kết: LIB-{MSSV}
-            var assignedCardNumber = $"LIB-{model.StudentCode.Trim().ToUpper()}";
-            model.CardNumber = assignedCardNumber;
-            model.CardIssueDate = DateTime.Today;
-            model.CardExpiryDate = DateTime.Today.AddYears(1);
-            model.CardStatus = "Sử dụng được";
+            var usernameExists = await _context.TaiKhoans
+                .AnyAsync(tk => tk.Username.ToLower() == model.StudentCode.Trim().ToLower());
 
-            TempData["Success"] = $"Đăng ký tài khoản thành công cho độc giả {model.FullName}! Hệ thống đã tự động cấp Thẻ thư viện số [{assignedCardNumber}] có hạn sử dụng đến ngày {model.CardExpiryDate:dd/MM/yyyy}. Bạn có thể đăng nhập ngay bây giờ.";
+            if (usernameExists)
+            {
+                ModelState.AddModelError("StudentCode", "Mã số sinh viên này đã đăng ký tài khoản.");
+                model.CardIssueDate = DateTime.Today;
+                model.CardExpiryDate = DateTime.Today.AddYears(1);
+                model.CardStatus = "Sử dụng được";
+                model.CardNumber = $"LIB-{model.StudentCode.Trim().ToUpper()}";
+                return View(model);
+            }
+
+            var newTaiKhoan = new TaiKhoan
+            {
+                Username = model.StudentCode.Trim(),
+                PasswordHash = model.Password, // case study không yêu cầu hash, giữ đơn giản
+                Role = "SinhVien"
+            };
+
+            var assignedCardNumber = $"LIB-{model.StudentCode.Trim().ToUpper()}";
+            var newThe = new TheThuVien
+            {
+                SoThe = assignedCardNumber,
+                HoTen = model.FullName,
+                NgayHetHan = DateTime.Today.AddYears(1),
+                TinhTrangSuDung = "Sử dụng được",
+                TaiKhoan = newTaiKhoan
+            };
+
+            _context.TheThuViens.Add(newThe);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = $"Đăng ký tài khoản thành công cho độc giả {model.FullName}! Hệ thống đã tự động cấp Thẻ thư viện số [{assignedCardNumber}] có hạn sử dụng đến ngày {newThe.NgayHetHan:dd/MM/yyyy}. Bạn có thể đăng nhập ngay bây giờ.";
 
             return RedirectToAction(nameof(Login));
         }
 
         // GET: /Account/Profile
         [HttpGet]
-        public IActionResult Profile()
+        public async Task<IActionResult> Profile()
         {
-            // Lấy thông tin từ Claims hoặc dữ liệu mẫu chuẩn nghiệp vụ Case Study
-            var currentName = User.Identity?.Name ?? "Trần Văn Hoàng";
-            var studentCode = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "24DH112970";
-            var email = User.FindFirst(ClaimTypes.Email)?.Value ?? "hoang.tv@student.university.edu.vn";
-            var cardNumber = User.FindFirst("CardNumber")?.Value ?? $"LIB-{studentCode}";
-            var cardStatus = User.FindFirst("CardStatus")?.Value ?? "Sử dụng được";
+            var studentCode = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(studentCode))
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            var the = await _context.TheThuViens
+                .Include(t => t.TaiKhoan)
+                .Include(t => t.PhieuMuons)
+                    .ThenInclude(p => p.ChiTiets)
+                        .ThenInclude(c => c.DauSach)
+                            .ThenInclude(d => d.Sach)
+                .FirstOrDefaultAsync(t => t.TaiKhoan.Username == studentCode);
+
+            if (the == null)
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            var activeLoans = the.PhieuMuons
+                .Where(p => p.TrangThai == "Đang mượn")
+                .SelectMany(p => p.ChiTiets.Where(c => c.NgayTraThucTe == null).Select(c => new ActiveBorrowItemViewModel
+                {
+                    BorrowId = p.MaPhieuMuon,
+                    BookCode = c.DauSach.Sach.MaSachCode,
+                    ControlNumber = c.DauSach.SoKiemSoat,
+                    BookTitle = c.DauSach.Sach.TenSach,
+                    Author = c.DauSach.Sach.TacGia,
+                    BorrowDate = p.NgayMuon,
+                    DueDate = p.HanTra
+                }))
+                .ToList();
+
+            var historyLoans = the.PhieuMuons
+                .SelectMany(p => p.ChiTiets.Where(c => c.NgayTraThucTe != null).Select(c => new BorrowHistoryItemViewModel
+                {
+                    Id = c.MaChiTiet,
+                    BookCode = c.DauSach.Sach.MaSachCode,
+                    ControlNumber = c.DauSach.SoKiemSoat,
+                    BookTitle = c.DauSach.Sach.TenSach,
+                    BorrowDate = p.NgayMuon,
+                    ReturnDate = c.NgayTraThucTe!.Value,
+                    ReturnCondition = c.TinhTrangTra,
+                    CompensationFee = c.TienBoiThuong,
+                    PaymentStatus = c.DaBoiThuong ? "Đã thanh toán" : (c.TienBoiThuong > 0 ? "Chưa thanh toán" : "Miễn phí")
+                }))
+                .ToList();
 
             var model = new MemberProfileViewModel
             {
-                FullName = currentName,
-                StudentCode = studentCode,
-                Email = email,
-                PhoneNumber = "0912 345 678",
-                Faculty = "Khoa Công Nghệ Thông Tin",
-                CardNumber = cardNumber,
-                CardIssueDate = DateTime.Today.AddMonths(-6),
-                CardExpiryDate = DateTime.Today.AddMonths(6),
-                CardStatus = cardStatus,
-                TotalFinesPaid = 36000,
-                TotalUnpaidFines = 0,
-                ActiveLoans = new List<ActiveBorrowItemViewModel>
-                {
-                    new ActiveBorrowItemViewModel
-                    {
-                        BorrowId = 101,
-                        BookCode = "CS01",
-                        ControlNumber = "002",
-                        BookTitle = "Cấu Trúc Dữ Liệu & Giải Thuật Ứng Dụng",
-                        Author = "PGS.TS Nguyễn Đức Lam",
-                        CategoryName = "Khoa học máy tính",
-                        CoverImageUrl = "https://images.unsplash.com/photo-1532012164546-f432f2e3777a?w=300&auto=format&fit=crop&q=80",
-                        BorrowDate = DateTime.Today.AddDays(-10),
-                        DueDate = DateTime.Today.AddDays(5),
-                        RenewalCount = 0
-                    },
-                    new ActiveBorrowItemViewModel
-                    {
-                        BorrowId = 102,
-                        BookCode = "CS04",
-                        ControlNumber = "001",
-                        BookTitle = "Lập Trình Web Hiện Đại Với ASP.NET Core 8 & C#",
-                        Author = "TS. Lê Hoàng Quân",
-                        CategoryName = "Công nghệ phần mềm",
-                        CoverImageUrl = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=300&auto=format&fit=crop&q=80",
-                        BorrowDate = DateTime.Today.AddDays(-14),
-                        DueDate = DateTime.Today.AddDays(1),
-                        RenewalCount = 1
-                    }
-                },
-                HistoryLoans = new List<BorrowHistoryItemViewModel>
-                {
-                    new BorrowHistoryItemViewModel
-                    {
-                        Id = 1,
-                        BookCode = "CS02",
-                        ControlNumber = "003",
-                        BookTitle = "Phân Tích & Thiết Kế Hệ Thống Thông Tin Hiện Đại",
-                        BorrowDate = DateTime.Today.AddMonths(-2),
-                        ReturnDate = DateTime.Today.AddMonths(-2).AddDays(12),
-                        ReturnCondition = "Bình thường (Đúng hạn)",
-                        CompensationFee = 0,
-                        PaymentStatus = "Miễn phí",
-                        Notes = "Sách nguyên vẹn, trả trước hạn"
-                    },
-                    new BorrowHistoryItemViewModel
-                    {
-                        Id = 2,
-                        BookCode = "DB03",
-                        ControlNumber = "001",
-                        BookTitle = "Cơ Sở Dữ Liệu Quan Hệ Nâng Cao & Tối Ưu Truy Vấn SQL",
-                        BorrowDate = DateTime.Today.AddMonths(-3),
-                        ReturnDate = DateTime.Today.AddMonths(-3).AddDays(18),
-                        ReturnCondition = "Trễ hạn 3 ngày",
-                        CompensationFee = 6000,
-                        PaymentStatus = "Đã thanh toán",
-                        Notes = "Phạt quá hạn 2.000đ/ngày x 3 ngày"
-                    },
-                    new BorrowHistoryItemViewModel
-                    {
-                        Id = 3,
-                        BookCode = "NET05",
-                        ControlNumber = "002",
-                        BookTitle = "Mạng Máy Tính & Truyền Số Liệu Căn Bản",
-                        BorrowDate = DateTime.Today.AddMonths(-4),
-                        ReturnDate = DateTime.Today.AddMonths(-4).AddDays(14),
-                        ReturnCondition = "Hư hỏng trang bìa (Bồi thường)",
-                        CompensationFee = 30000,
-                        PaymentStatus = "Đã thanh toán",
-                        Notes = "Bồi thường phí sửa chữa đóng bìa sách"
-                    }
-                }
+                FullName = the.HoTen,
+                StudentCode = the.TaiKhoan.Username,
+                CardNumber = the.SoThe,
+                CardIssueDate = the.NgayHetHan.AddYears(-1),
+                CardExpiryDate = the.NgayHetHan,
+                CardStatus = the.TinhTrangSuDung,
+                TotalUnpaidFines = historyLoans.Where(h => h.PaymentStatus == "Chưa thanh toán").Sum(h => h.CompensationFee),
+                TotalFinesPaid = historyLoans.Where(h => h.PaymentStatus == "Đã thanh toán").Sum(h => h.CompensationFee),
+                ActiveLoans = activeLoans,
+                HistoryLoans = historyLoans
             };
 
             model.UpdateModel = new UpdateProfileInputModel
             {
                 FullName = model.FullName,
-                StudentCode = model.StudentCode,
-                Email = model.Email,
-                PhoneNumber = model.PhoneNumber,
-                Faculty = model.Faculty
+                StudentCode = model.StudentCode
             };
 
             return View(model);
@@ -268,12 +258,22 @@ namespace BOOK.Controllers
         // POST: /Account/UpdateProfile
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult UpdateProfile(UpdateProfileInputModel input)
+        public async Task<IActionResult> UpdateProfile(UpdateProfileInputModel input)
         {
             if (!ModelState.IsValid)
             {
                 TempData["Error"] = "Vui lòng kiểm tra lại thông tin nhập liệu.";
                 return RedirectToAction(nameof(Profile));
+            }
+
+            var the = await _context.TheThuViens
+                .Include(t => t.TaiKhoan)
+                .FirstOrDefaultAsync(t => t.TaiKhoan.Username == input.StudentCode);
+
+            if (the != null)
+            {
+                the.HoTen = input.FullName;
+                await _context.SaveChangesAsync();
             }
 
             TempData["Success"] = $"Cập nhật thông tin thành công cho độc giả {input.FullName}!";
@@ -283,9 +283,20 @@ namespace BOOK.Controllers
         // POST: /Account/ExtendBorrow
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult ExtendBorrow(int borrowId, string? reason)
+        public async Task<IActionResult> ExtendBorrow(int borrowId, string? reason)
         {
-            TempData["Success"] = $"Yêu cầu gia hạn thêm 07 ngày cho phiếu mượn #{borrowId} đã được hệ thống phê duyệt tự động thành công!";
+            var phieu = await _context.PhieuMuons.FindAsync(borrowId);
+            if (phieu != null && phieu.TrangThai == "Đang mượn")
+            {
+                phieu.HanTra = phieu.HanTra.AddDays(7);
+                await _context.SaveChangesAsync();
+                TempData["Success"] = $"Yêu cầu gia hạn thêm 07 ngày cho phiếu mượn #{borrowId} đã được hệ thống phê duyệt tự động thành công!";
+            }
+            else
+            {
+                TempData["Error"] = $"Không tìm thấy phiếu mượn #{borrowId} đang hoạt động.";
+            }
+
             return RedirectToAction(nameof(Profile));
         }
 

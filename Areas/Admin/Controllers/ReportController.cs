@@ -1,6 +1,9 @@
 using System;
-using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using BOOK.Data;
 using BOOK.Models.ViewModels;
 
 namespace BOOK.Areas.Admin.Controllers
@@ -8,84 +11,70 @@ namespace BOOK.Areas.Admin.Controllers
     [Area("Admin")]
     public class ReportController : Controller
     {
-        // GET: /Admin/Report/DamagedLostBooks
-        public IActionResult DamagedLostBooks(int? year, string? condition)
+        private readonly ApplicationDbContext _context;
+
+        public ReportController(ApplicationDbContext context)
         {
+            _context = context;
+        }
+
+        // GET: /Admin/Report/DamagedLostBooks
+        public async Task<IActionResult> DamagedLostBooks(int? year, string? condition)
+        {
+            var conditionFilter = condition ?? "Tất cả";
+
+            var query = _context.DauSachs
+                .Include(d => d.Sach).ThenInclude(s => s.TheLoai)
+                .Include(d => d.ChiTietPhieuMuons)
+                    .ThenInclude(c => c.PhieuMuon)
+                        .ThenInclude(p => p.The)
+                            .ThenInclude(t => t.TaiKhoan)
+                .Where(d => d.TinhTrang == "Hỏng" || d.TinhTrang == "Mất")
+                .AsQueryable();
+
+            if (conditionFilter == "Chỉ mất")
+            {
+                query = query.Where(d => d.TinhTrang == "Mất");
+            }
+            else if (conditionFilter == "Chỉ hỏng")
+            {
+                query = query.Where(d => d.TinhTrang == "Hỏng");
+            }
+
+            var list = await query.ToListAsync();
+
+            var records = list.Select(d =>
+            {
+                var lastChiTiet = d.ChiTietPhieuMuons
+                    .Where(c => c.TinhTrangTra == d.TinhTrang)
+                    .OrderByDescending(c => c.NgayTraThucTe)
+                    .FirstOrDefault();
+
+                return new DamagedLostBookRecordViewModel
+                {
+                    Id = d.MaDauSach,
+                    BookCode = d.Sach.MaSachCode,
+                    BookTitle = d.Sach.TenSach,
+                    CategoryName = d.Sach.TheLoai.TenTheLoai,
+                    ControlNumber = d.SoKiemSoat,
+                    ConditionStatus = d.TinhTrang,
+                    RecordedDate = lastChiTiet?.NgayTraThucTe ?? DateTime.Today,
+                    Notes = d.GhiChu,
+                    StudentName = lastChiTiet?.PhieuMuon.The.HoTen ?? "(Không rõ)",
+                    StudentCode = lastChiTiet?.PhieuMuon.The.TaiKhoan.Username ?? "",
+                    CompensationStatus = (lastChiTiet != null && lastChiTiet.DaBoiThuong) ? "Đã bồi thường" : "Chưa bồi thường",
+                    CompensationAmount = lastChiTiet?.TienBoiThuong ?? 0,
+                    LiquidationStatus = "Đề xuất thanh lý"
+                };
+            })
+            .Where(r => (year == null) || r.RecordedDate.Year == year)
+            .ToList();
+
             var model = new DamagedLostReportViewModel
             {
                 SelectedYear = year ?? DateTime.Today.Year,
-                SelectedCondition = condition ?? "Tất cả",
-                Records = new List<DamagedLostBookRecordViewModel>
-                {
-                    new DamagedLostBookRecordViewModel
-                    {
-                        Id = 1,
-                        BookCode = "CS-001",
-                        BookTitle = "Thiết Kế Kiến Trúc Phần Mềm Doanh Nghiệp",
-                        CategoryName = "Công Nghệ Thông Tin",
-                        ControlNumber = "004",
-                        ConditionStatus = "Hỏng",
-                        RecordedDate = DateTime.Today.AddDays(-12),
-                        Notes = "Rách 20 trang phụ lục, gãy gáy sách do dính nước",
-                        StudentName = "Lê Thị Mai Linh",
-                        StudentCode = "23110255",
-                        BookCost = 145000,
-                        CompensationStatus = "Đã bồi thường",
-                        CompensationAmount = 70000,
-                        LiquidationStatus = "Đề xuất thanh lý"
-                    },
-                    new DamagedLostBookRecordViewModel
-                    {
-                        Id = 2,
-                        BookCode = "AI-002",
-                        BookTitle = "Học Máy & Trí Tuệ Nhân Tạo Ứng Dụng",
-                        CategoryName = "Khoa Học Dữ Liệu",
-                        ControlNumber = "003",
-                        ConditionStatus = "Mất",
-                        RecordedDate = DateTime.Today.AddDays(-25),
-                        Notes = "Sinh viên báo mất trong đợt đi thực tập doanh nghiệp",
-                        StudentName = "Vũ Đình Trọng",
-                        StudentCode = "21120042",
-                        BookCost = 160000,
-                        CompensationStatus = "Đã bồi thường",
-                        CompensationAmount = 160000,
-                        LiquidationStatus = "Đề xuất thanh lý"
-                    },
-                    new DamagedLostBookRecordViewModel
-                    {
-                        Id = 3,
-                        BookCode = "KT-003",
-                        BookTitle = "Quản Trị Chiến Lược & Chuyển Đổi Số",
-                        CategoryName = "Kinh Tế & Quản Trị",
-                        ControlNumber = "002",
-                        ConditionStatus = "Mất",
-                        RecordedDate = DateTime.Today.AddDays(-40),
-                        Notes = "Mất sách chưa rõ nguyên nhân, sinh viên chưa đến bồi thường",
-                        StudentName = "Nguyễn Văn Hùng",
-                        StudentCode = "20110415",
-                        BookCost = 120000,
-                        CompensationStatus = "Chưa bồi thường",
-                        CompensationAmount = 0,
-                        LiquidationStatus = "Chờ xử lý (Thẻ đang khóa)"
-                    },
-                    new DamagedLostBookRecordViewModel
-                    {
-                        Id = 4,
-                        BookCode = "SEC-004",
-                        BookTitle = "Cơ Sở An Toàn Thông Tin & Mật Mã",
-                        CategoryName = "An Toàn Thông Tin",
-                        ControlNumber = "006",
-                        ConditionStatus = "Hỏng",
-                        RecordedDate = DateTime.Today.AddDays(-60),
-                        Notes = "Sách cũ bị mối mọt xâm thực theo thời gian",
-                        StudentName = "Lưu kho",
-                        StudentCode = "KH-01",
-                        BookCost = 90000,
-                        CompensationStatus = "Đã bồi thường",
-                        CompensationAmount = 0,
-                        LiquidationStatus = "Đề xuất thanh lý"
-                    }
-                }
+                SelectedCondition = conditionFilter,
+                Records = records
             };
 
             return View(model);
