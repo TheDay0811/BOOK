@@ -25,6 +25,7 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.Migrate();   // tự tạo DB + áp migration nếu chưa có
     DbSeeder.Seed(db);       // tự chèn data mẫu nếu bảng còn trống
+    DbSeeder.SeedBooks(db);
 }
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

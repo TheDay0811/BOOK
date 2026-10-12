@@ -64,6 +64,8 @@ namespace BOOK.Controllers
                 CategoryName = s.TheLoai.TenTheLoai,
                 PublisherName = s.NhaXuatBan.TenNXB,
                 PublishYear = s.NamXuatBan,
+                ISBN = s.Isbn,
+                CoverImageUrl = s.AnhBiaUrl,
                 AvailableCopies = s.DauSachs.Count(d => d.TinhTrang == "Còn"),
                 TotalCopies = s.DauSachs.Count
             }).ToList();
@@ -113,6 +115,8 @@ namespace BOOK.Controllers
                 CategoryName = sach.TheLoai.TenTheLoai,
                 PublisherName = sach.NhaXuatBan.TenNXB,
                 PublishYear = sach.NamXuatBan,
+                ISBN = sach.Isbn,
+                CoverImageUrl = sach.AnhBiaUrl,
                 AvailableCopies = sach.DauSachs.Count(d => d.TinhTrang == "Còn"),
                 TotalCopies = sach.DauSachs.Count
             };

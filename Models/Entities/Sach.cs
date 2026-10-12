@@ -9,7 +9,12 @@ namespace BOOK.Models.Entities
         public string TenSach { get; set; } = string.Empty;
         public string TacGia { get; set; } = string.Empty;
         public int NamXuatBan { get; set; }
+        public string Isbn { get; set; } = string.Empty;
 
+        [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+        public string AnhBiaUrl => string.IsNullOrEmpty(Isbn)
+            ? "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&auto=format&fit=crop&q=80"
+            : $"https://covers.openlibrary.org/b/isbn/{Isbn}-L.jpg?default=false";
         public int MaTheLoai { get; set; }
         public TheLoai TheLoai { get; set; } = null!;
 

@@ -1,10 +1,11 @@
+using BOOK.Data;
+using BOOK.Models.Entities;
+using BOOK.Models.ViewModels;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using BOOK.Data;
-using BOOK.Models.ViewModels;
 
 namespace BOOK.Areas.Admin.Controllers
 {
@@ -43,6 +44,8 @@ namespace BOOK.Areas.Admin.Controllers
                 CategoryName = s.TheLoai.TenTheLoai,
                 PublisherName = s.NhaXuatBan.TenNXB,
                 PublishYear = s.NamXuatBan,
+                ISBN = s.Isbn,
+                CoverImageUrl = s.AnhBiaUrl,
                 TotalCopies = s.DauSachs.Count,
                 AvailableCopies = s.DauSachs.Count(d => d.TinhTrang == "Còn")
             }).ToList();
@@ -73,6 +76,7 @@ namespace BOOK.Areas.Admin.Controllers
                 CategoryName = sach.TheLoai.TenTheLoai,
                 PublisherName = sach.NhaXuatBan.TenNXB,
                 PublishYear = sach.NamXuatBan,
+                CoverImageUrl = sach.AnhBiaUrl,
                 Copies = sach.DauSachs.Select(d => new BookCopyViewModel
                 {
                     Id = d.MaDauSach,

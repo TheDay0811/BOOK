@@ -23,6 +23,23 @@ namespace BOOK.Data
                 .HasOne(t => t.TaiKhoan)
                 .WithOne(tk => tk.TheThuVien)
                 .HasForeignKey<TheThuVien>(t => t.MaTK);
+            modelBuilder.Entity<Sach>()
+                .HasOne(s => s.TheLoai).WithMany(t => t.Sachs).HasForeignKey(s => s.MaTheLoai);
+
+            modelBuilder.Entity<Sach>()
+                .HasOne(s => s.NhaXuatBan).WithMany(n => n.Sachs).HasForeignKey(s => s.MaNXB);
+
+            modelBuilder.Entity<DauSach>()
+                .HasOne(d => d.Sach).WithMany(s => s.DauSachs).HasForeignKey(d => d.MaSach);
+
+            modelBuilder.Entity<PhieuMuon>()
+                .HasOne(p => p.The).WithMany(t => t.PhieuMuons).HasForeignKey(p => p.MaThe);
+
+            modelBuilder.Entity<ChiTietPhieuMuon>()
+                .HasOne(c => c.PhieuMuon).WithMany(p => p.ChiTiets).HasForeignKey(c => c.MaPhieuMuon);
+
+            modelBuilder.Entity<ChiTietPhieuMuon>()
+                .HasOne(c => c.DauSach).WithMany(d => d.ChiTietPhieuMuons).HasForeignKey(c => c.MaDauSach);
         }
     }
 }
