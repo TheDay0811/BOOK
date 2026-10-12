@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace BOOK.Models.ViewModels
@@ -20,6 +21,7 @@ namespace BOOK.Models.ViewModels
         public string ShelfLocation { get; set; } = string.Empty;
         public double Rating { get; set; }
         public int ReviewCount { get; set; }
+        public int BorrowCount { get; set; }
         public bool IsAvailable => AvailableCopies > 0;
         public string Description { get; set; } = string.Empty;
         public int PageCount { get; set; }
@@ -81,13 +83,15 @@ namespace BOOK.Models.ViewModels
         public DateTime PickupDate { get; set; } = DateTime.Today.AddDays(1);
 
         [Required(ErrorMessage = "Vui lòng chọn thời hạn mượn.")]
-        [Range(1, 30, ErrorMessage = "Thời gian mượn tối đa 30 ngày.")]
-        public int DurationDays { get; set; } = 14;
+        [Range(1, 15, ErrorMessage = "Thời gian mượn tối đa 15 ngày theo quy định.")]
+        public int DurationDays { get; set; } = 15;
+
+        [DataType(DataType.Date)]
+        public DateTime? DueDate { get; set; }
 
         [MaxLength(255, ErrorMessage = "Ghi chú không quá 255 ký tự.")]
         public string? Notes { get; set; }
 
-        [Range(typeof(bool), "true", "true", ErrorMessage = "Bạn cần đồng ý với nội quy thư viện để mượn sách.")]
         public bool AcceptTerms { get; set; }
     }
 
@@ -98,5 +102,103 @@ namespace BOOK.Models.ViewModels
         public List<BookItemViewModel> RelatedBooks { get; set; } = new();
         public CreateReviewInputModel NewReview { get; set; } = new();
         public BorrowRequestInputModel BorrowForm { get; set; } = new();
+        public List<BookCopyViewModel> Copies { get; set; } = new();
+        public string UserCardStatus { get; set; } = "Sử dụng được";
+        public bool HasUnreturnedBooks { get; set; } = false;
+        public int CurrentBorrowedCount { get; set; } = 0;
+        public bool IsUserAuthenticated { get; set; } = false;
+    }
+
+    public class CreateBookInputModel
+    {
+        [Required(ErrorMessage = "Vui lòng nhập tên tựa sách.")]
+        [Display(Name = "Tên tựa sách")]
+        public string Title { get; set; } = string.Empty;
+
+        [Display(Name = "Mã tựa sách (Code)")]
+        public string? BookCode { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập tác giả.")]
+        [Display(Name = "Tác giả")]
+        public string Author { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng chọn thể loại.")]
+        [Display(Name = "Thể loại")]
+        public int CategoryId { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng chọn nhà xuất bản.")]
+        [Display(Name = "Nhà xuất bản")]
+        public int PublisherId { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập năm xuất bản.")]
+        [Range(1900, 2050, ErrorMessage = "Năm xuất bản không hợp lệ.")]
+        [Display(Name = "Năm xuất bản")]
+        public int PublishYear { get; set; } = DateTime.Today.Year;
+
+        [Range(1, 100, ErrorMessage = "Số lượng bản sao ban đầu từ 1 đến 100.")]
+        [Display(Name = "Số bản sao ban đầu")]
+        public int InitialCopiesCount { get; set; } = 3;
+
+        [Display(Name = "Vị trí kệ sách")]
+        public string? ShelfLocation { get; set; } = "Kệ A1 - Tầng 2";
+
+        [Display(Name = "URL ảnh bìa")]
+        public string? CoverImageUrl { get; set; }
+
+        [Display(Name = "File ảnh bìa")]
+        public IFormFile? ImageFile { get; set; }
+    }
+
+    public class EditBookInputModel
+    {
+        public int BookId { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập tên tựa sách.")]
+        public string Title { get; set; } = string.Empty;
+
+        public string BookCode { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng nhập tác giả.")]
+        public string Author { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng chọn thể loại.")]
+        public int CategoryId { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng chọn nhà xuất bản.")]
+        public int PublisherId { get; set; }
+
+        [Required(ErrorMessage = "Vui lòng nhập năm xuất bản.")]
+        [Range(1900, 2050, ErrorMessage = "Năm xuất bản không hợp lệ.")]
+        public int PublishYear { get; set; }
+
+        public string? ShelfLocation { get; set; }
+        public string? CoverImageUrl { get; set; }
+
+        public IFormFile? ImageFile { get; set; }
+    }
+
+    public class CategoryItemViewModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public int BookCount { get; set; }
+        public string IconName { get; set; } = "book-open";
+        public string ColorClass { get; set; } = "text-navy-800 bg-blue-50";
+    }
+
+    public class PublisherItemViewModel
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public int BookCount { get; set; }
+    }
+
+    public class HomeIndexViewModel
+    {
+        public List<CategoryItemViewModel> Categories { get; set; } = new();
+        public List<BookItemViewModel> NewBooks { get; set; } = new();
+        public List<BookItemViewModel> PopularBooks { get; set; } = new();
+        public int TotalBooksCount { get; set; }
+        public int TotalCopiesCount { get; set; }
     }
 }

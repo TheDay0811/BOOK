@@ -63,7 +63,7 @@ namespace BOOK.Models.ViewModels
     public class LibrarianDashboardViewModel
     {
         public int PendingBorrowsCount => PendingRequests.Count;
-        public int TodayReturnsCount { get; set; } = 12;
+        public int TodayReturnsCount { get; set; } = 0;
         public int PendingRenewalsCount => RenewalRequests.Count;
         public int OverdueAlertsCount => OverdueAlerts.Count;
 

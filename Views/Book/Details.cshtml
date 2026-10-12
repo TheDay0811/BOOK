@@ -1,11 +1,13 @@
 @model BOOK.Models.ViewModels.BookDetailsViewModel
 @{
     ViewData["Title"] = Model.Book.Title;
-    // Giả lập trạng thái thẻ của độc giả đang đăng nhập
-    var userCardStatus = "Sử dụng được"; // hoặc "Không sử dụng"
-    var hasUnreturnedBooks = false;       // Nếu true -> Không được mượn tiếp
-    var currentBorrowedCount = 1;        // Đang mượn 1 cuốn (tối đa 3 cuốn)
-    var maxAllowedBorrow = 3 - currentBorrowedCount;
+    var userCardStatus = Model.UserCardStatus;
+    var hasUnreturnedBooks = Model.HasUnreturnedBooks;
+    var currentBorrowedCount = Model.CurrentBorrowedCount;
+    var maxAllowedBorrow = Math.Max(0, 3 - currentBorrowedCount);
+    var isAuthenticated = Model.IsUserAuthenticated;
+    var nextCopy = Model.Copies.FirstOrDefault(c => c.Status == "Còn");
+    var canBorrow = isAuthenticated && Model.Book.IsAvailable && userCardStatus == "Sử dụng được" && !hasUnreturnedBooks && currentBorrowedCount < 3;
 }
 
 <!-- BREADCRUMB -->
@@ -32,9 +34,10 @@
             <!-- CỘT TRÁI: ẢNH BÌA & THẺ THÔNG TIN KHO -->
             <div class="lg:col-span-4 flex flex-col items-center">
                 <div class="relative w-full max-w-[280px] aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border border-slate-200 bg-slate-100">
-                    <img src="@Model.Book.CoverImageUrl" alt="@Model.Book.Title" 
+                    <img src="@(string.IsNullOrEmpty(Model.Book.CoverImageUrl) ? "/uploads/books/default-book.svg" : Model.Book.CoverImageUrl)" 
+                         alt="@Model.Book.Title" 
                          class="w-full h-full object-cover" 
-                         onerror="this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=600&auto=format&fit=crop&q=80'" />
+                         onerror="this.onerror=null; this.src='/uploads/books/default-book.svg';" />
                     <div class="absolute top-3 left-3">
                         <span class="px-3 py-1 rounded-full text-xs font-bold bg-navy-950/80 text-white backdrop-blur-md">
                             Mã: @Model.Book.ISBN
@@ -82,72 +85,104 @@
                         </div>
                     </div>
 
-                    <!-- BẢNG TÌNH TRẠNG KHO: CÁC CUỐN SÁCH VẬT LÝ THEO SỐ KIỂM SOÁT -->
+                    <!-- BẢNG TÌNH TRẠNG KHO: CÁC CUỐN SÁCH VẬT LÝ THẬT TỪ DATABASE -->
                     <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200 space-y-3">
-                        <div class="flex justify-between items-center">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <h4 class="font-bold text-xs uppercase tracking-wider text-slate-700 flex items-center gap-2">
                                 <i data-lucide="layers" class="w-4 h-4 text-navy-800"></i>
-                                Tình Trạng Các Bản Sao (Cuốn Sách Vật Lý)
+                                Tình Trạng Các Bản Sao (Cuốn Sách Vật Lý Trong Kho)
                             </h4>
                             <span class="text-xs font-bold text-slate-800">
                                 Tổng: <strong>@Model.Book.TotalCopies cuốn</strong> • Khả dụng: <strong class="text-emerald-600">@Model.Book.AvailableCopies cuốn [Còn]</strong>
                             </span>
                         </div>
 
-                        <!-- Danh sách các số kiểm soát của tựa sách này -->
+                        <!-- Danh sách các số kiểm soát của tựa sách này lấy trực tiếp từ database -->
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                            <div class="p-2.5 bg-white border border-emerald-300 rounded-xl flex items-center justify-between">
-                                <span class="font-mono font-bold text-slate-800">Số KS: 001</span>
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Còn</span>
-                            </div>
-                            <div class="p-2.5 bg-white border border-emerald-300 rounded-xl flex items-center justify-between">
-                                <span class="font-mono font-bold text-slate-800">Số KS: 002</span>
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Còn</span>
-                            </div>
-                            <div class="p-2.5 bg-white border border-amber-300 rounded-xl flex items-center justify-between">
-                                <span class="font-mono font-bold text-slate-800">Số KS: 003</span>
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">Cho mượn</span>
-                            </div>
-                            <div class="p-2.5 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
-                                <span class="font-mono font-bold text-slate-400">Số KS: 004</span>
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">Hỏng</span>
-                            </div>
+                            @if (Model.Copies != null && Model.Copies.Any())
+                            {
+                                foreach (var copy in Model.Copies)
+                                {
+                                    string borderClass = copy.Status switch
+                                    {
+                                        "Còn" => "border-emerald-300 bg-white",
+                                        "Cho mượn" => "border-amber-300 bg-amber-50/50",
+                                        "Hỏng" => "border-rose-300 bg-rose-50/50",
+                                        "Mất" => "border-slate-300 bg-slate-100",
+                                        _ => "border-slate-200 bg-white"
+                                    };
+
+                                    string badgeClass = copy.Status switch
+                                    {
+                                        "Còn" => "bg-emerald-100 text-emerald-800",
+                                        "Cho mượn" => "bg-amber-100 text-amber-800",
+                                        "Hỏng" => "bg-rose-100 text-rose-800",
+                                        "Mất" => "bg-slate-200 text-slate-700",
+                                        _ => "bg-slate-100 text-slate-800"
+                                    };
+
+                                    <div class="p-2.5 border rounded-xl flex items-center justify-between @borderClass" title="Ghi chú: @copy.Notes">
+                                        <span class="font-mono font-bold text-slate-800">Số KS: @copy.ControlNumber</span>
+                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold @badgeClass">@copy.Status</span>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <p class="text-xs text-slate-400 italic col-span-4">Chưa có bản sao vật lý nào được nhập kho cho tựa sách này.</p>
+                            }
                         </div>
                     </div>
 
                     <!-- THÔNG BÁO RÀNG BUỘC THẺ CỦA ĐỘC GIẢ -->
-                    <div class="p-4 rounded-2xl border text-xs space-y-2 @(userCardStatus == "Sử dụng được" && !hasUnreturnedBooks ? "bg-emerald-50/70 border-emerald-200 text-emerald-800" : "bg-rose-50 border-rose-200 text-rose-800")">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-2 font-bold">
-                                <i data-lucide="@(userCardStatus == "Sử dụng được" && !hasUnreturnedBooks ? "check-circle-2" : "alert-octagon")" class="w-4 h-4"></i>
-                                <span>Trạng thái Thẻ thư viện: <strong>@userCardStatus</strong></span>
+                    @if (!isAuthenticated)
+                    {
+                        <div class="p-4 rounded-2xl border border-blue-200 bg-blue-50/80 text-blue-900 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="info" class="w-4 h-4 text-blue-600 flex-shrink-0"></i>
+                                <span>Vui lòng <strong>Đăng nhập tài khoản sinh viên</strong> để tra cứu tình trạng Thẻ thư viện và thực hiện đặt mượn sách.</span>
                             </div>
-                            <span>Đang mượn: <strong>@currentBorrowedCount / 3 cuốn</strong></span>
+                            <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path"
+                               class="px-4 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl font-bold whitespace-nowrap text-center transition-colors">
+                                Đăng Nhập Ngay
+                            </a>
                         </div>
-                        @if (hasUnreturnedBooks)
-                        {
-                            <p class="text-rose-700 font-medium">
-                                ⚠️ Ràng buộc nghiệp vụ: Bạn đang có phiếu mượn sách chưa trả. <strong>Chỉ được mượn tiếp sau khi đã hoàn tất trả sách.</strong>
-                            </p>
-                        }
-                        else if (userCardStatus == "Không sử dụng")
-                        {
-                            <p class="text-rose-700 font-medium">
-                                ⛔ Thẻ của bạn đang bị khóa do làm mất/hỏng sách chưa bồi thường hoặc hết hạn. Vui lòng liên hệ quầy thủ thư.
-                            </p>
-                        }
-                        else
-                        {
-                            <p class="text-emerald-700">
-                                ✓ Thẻ hợp lệ. Bạn được chọn mượn thêm tối đa <strong>@maxAllowedBorrow cuốn</strong> (Hạn mượn tối đa 15 ngày).
-                            </p>
-                        }
-                    </div>
+                    }
+                    else
+                    {
+                        <div class="p-4 rounded-2xl border text-xs space-y-2 @(userCardStatus == "Sử dụng được" && !hasUnreturnedBooks ? "bg-emerald-50/70 border-emerald-200 text-emerald-800" : "bg-rose-50 border-rose-200 text-rose-800")">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2 font-bold">
+                                    <i data-lucide="@(userCardStatus == "Sử dụng được" && !hasUnreturnedBooks ? "check-circle-2" : "alert-octagon")" class="w-4 h-4"></i>
+                                    <span>Trạng thái Thẻ thư viện: <strong>@userCardStatus</strong></span>
+                                </div>
+                                <span>Đang mượn: <strong>@currentBorrowedCount / 3 cuốn</strong></span>
+                            </div>
+                            @if (hasUnreturnedBooks)
+                            {
+                                <p class="text-rose-700 font-medium">
+                                    ⚠️ Ràng buộc nghiệp vụ: Bạn đang có phiếu mượn sách chưa trả. <strong>Chỉ được mượn tiếp sau khi đã hoàn tất trả sách.</strong>
+                                </p>
+                            }
+                            else if (userCardStatus != "Sử dụng được")
+                            {
+                                <p class="text-rose-700 font-medium">
+                                    ⛔ Thẻ của bạn đang bị khóa do làm mất/hỏng sách chưa bồi thường hoặc hết hạn. Vui lòng liên hệ quầy thủ thư để xử lý.
+                                </p>
+                            }
+                            else
+                            {
+                                <p class="text-emerald-700">
+                                    ✓ Thẻ hợp lệ. Bạn được chọn mượn thêm tối đa <strong>@maxAllowedBorrow cuốn</strong> (Hạn mượn tối đa 15 ngày).
+                                </p>
+                            }
+                        </div>
+                    }
                 </div>
 
                 <!-- CÁC NÚT THAO TÁC CTA -->
                 <div class="pt-4 border-t border-slate-100 flex flex-wrap items-center gap-4">
-                    @if (Model.Book.IsAvailable && userCardStatus == "Sử dụng được" && !hasUnreturnedBooks)
+                    @if (canBorrow)
                     {
                         <button onclick="openBorrowModal()" 
                                 class="px-8 py-3.5 bg-navy-800 hover:bg-navy-900 text-white rounded-2xl font-bold text-sm shadow-lg shadow-navy-900/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center gap-2">
@@ -155,12 +190,21 @@
                             Thêm Vào Phiếu Mượn (Hạn 15 ngày)
                         </button>
                     }
+                    else if (!isAuthenticated)
+                    {
+                        <button onclick="handleUnauthenticatedBorrow()" 
+                                class="px-8 py-3.5 bg-navy-800 hover:bg-navy-900 text-white rounded-2xl font-bold text-sm shadow-md transition-all flex items-center gap-2">
+                            <i data-lucide="log-in" class="w-5 h-5 text-amber-400"></i>
+                            Đăng Nhập Để Mượn Sách
+                        </button>
+                    }
                     else
                     {
                         <button disabled 
-                                class="px-8 py-3.5 bg-slate-200 text-slate-400 rounded-2xl font-bold text-sm cursor-not-allowed flex items-center gap-2">
+                                class="px-8 py-3.5 bg-slate-200 text-slate-400 rounded-2xl font-bold text-sm cursor-not-allowed flex items-center gap-2"
+                                title="@(Model.Book.IsAvailable ? "Tài khoản của bạn không đủ điều kiện mượn theo quy định" : "Hiện tại tất cả bản sao của tựa sách này đều đang được cho mượn")">
                             <i data-lucide="lock" class="w-4 h-4"></i>
-                            Không Đủ Điều Kiện Mượn
+                            @(Model.Book.IsAvailable ? "Không Đủ Điều Kiện Mượn" : "Đã Hết Sách Trong Kho")
                         </button>
                     }
 
@@ -176,7 +220,7 @@
 
 <!-- ================= MODAL XÁC NHẬN ĐẶT MƯỢN TRỰC TUYẾN ================= -->
 <div id="borrowModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/60 backdrop-blur-sm">
-    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         
         <div class="bg-navy-900 text-white p-5 flex items-center justify-between">
             <h3 class="font-bold text-base flex items-center gap-2">
@@ -187,14 +231,24 @@
             </button>
         </div>
 
-        <form asp-controller="Borrow" asp-action="CreateRequest" method="post" class="p-6 space-y-4 text-xs">
+        <form id="borrowForm" asp-controller="Borrow" asp-action="CreateRequest" method="post" onsubmit="handleBorrowSubmit(event)" class="p-6 space-y-4 text-xs">
+            @Html.AntiForgeryToken()
             <input type="hidden" name="BookId" value="@Model.Book.Id" />
             <input type="hidden" name="BookTitle" value="@Model.Book.Title" />
 
             <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-1">
                 <p class="font-bold text-slate-900 text-sm">@Model.Book.Title</p>
                 <p class="text-slate-500">Mã sách: @Model.Book.ISBN • Kệ: @Model.Book.ShelfLocation</p>
-                <p class="text-blue-600 font-bold">Cuốn sách khả dụng tiếp theo sẽ gán: Số kiểm soát [001]</p>
+                @if (nextCopy != null)
+                {
+                    <p class="text-emerald-700 font-bold flex items-center gap-1">
+                        <i data-lucide="check" class="w-3.5 h-3.5"></i> Cuốn sách khả dụng tiếp theo sẽ gán: Số kiểm soát [@nextCopy.ControlNumber]
+                    </p>
+                }
+                else
+                {
+                    <p class="text-rose-600 font-bold">Không còn bản sao khả dụng nào trong kho.</p>
+                }
             </div>
 
             <div class="grid grid-cols-2 gap-3">
@@ -219,23 +273,105 @@
             </div>
 
             <label class="flex items-start gap-2 text-slate-600 cursor-pointer pt-1">
-                <input type="checkbox" required class="w-4 h-4 text-navy-800 rounded border-slate-300 mt-0.5" />
-                <span>Tôi đồng ý với thời hạn 15 ngày và chịu hoàn toàn trách nhiệm bồi thường khi làm mất/hỏng.</span>
+                <input type="checkbox" required name="AcceptTerms" value="true" class="w-4 h-4 text-navy-800 rounded border-slate-300 mt-0.5" />
+                <span>Tôi đồng ý với thời hạn 15 ngày và cam đoan tuân thủ quy chế bồi thường khi làm mất/hỏng.</span>
             </label>
 
             <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
                 <button type="button" onclick="closeBorrowModal()" class="px-4 py-2 font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Hủy</button>
-                <button type="submit" class="px-6 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl font-bold shadow">
-                    Xác Nhận Đặt Mượn
+                <button type="submit" id="btnSubmitBorrow" class="px-6 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl font-bold shadow flex items-center gap-2">
+                    <span>Xác Nhận Đặt Mượn</span>
                 </button>
             </div>
         </form>
     </div>
 </div>
 
+<!-- MODAL CẢNH BÁO YÊU CẦU ĐĂNG NHẬP -->
+<div id="loginRequiredModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/60 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full p-6 text-center space-y-4">
+        <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 mx-auto flex items-center justify-center border border-amber-200">
+            <i data-lucide="lock" class="w-8 h-8"></i>
+        </div>
+        <div class="space-y-1">
+            <h3 class="text-lg font-black text-slate-900">Yêu Cầu Đăng Nhập</h3>
+            <p class="text-xs text-slate-500 leading-relaxed">
+                Vui lòng đăng nhập tài khoản sinh viên để hệ thống kiểm tra trạng thái Thẻ thư viện và tiến hành lập phiếu mượn sách.
+            </p>
+        </div>
+        <div class="flex gap-2 justify-center pt-2">
+            <button onclick="document.getElementById('loginRequiredModal').classList.add('hidden')" 
+                    class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">
+                Để sau
+            </button>
+            <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path"
+               class="px-5 py-2 text-xs font-bold bg-navy-800 hover:bg-navy-900 text-white rounded-xl shadow">
+                Đăng Nhập Ngay
+            </a>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
-        function openBorrowModal() { document.getElementById('borrowModal')?.classList.remove('hidden'); lucide.createIcons(); }
-        function closeBorrowModal() { document.getElementById('borrowModal')?.classList.add('hidden'); }
+        function openBorrowModal() { 
+            document.getElementById('borrowModal')?.classList.remove('hidden'); 
+            lucide.createIcons(); 
+        }
+
+        function closeBorrowModal() { 
+            document.getElementById('borrowModal')?.classList.add('hidden'); 
+        }
+
+        function handleUnauthenticatedBorrow() {
+            document.getElementById('loginRequiredModal')?.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        async function handleBorrowSubmit(e) {
+            e.preventDefault();
+            const form = document.getElementById('borrowForm');
+            const btn = document.getElementById('btnSubmitBorrow');
+            if (!form) return;
+
+            btn.disabled = true;
+            btn.innerHTML = `<span class="animate-spin inline-block mr-1">⌛</span> Đang xử lý...`;
+
+            try {
+                const formData = new FormData(form);
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const res = await response.json();
+                    if (res.requireLogin) {
+                        window.location.href = res.loginUrl || '/Account/Login';
+                        return;
+                    }
+
+                    if (res.success) {
+                        closeBorrowModal();
+                        showNotification('success', 'Thành công!', res.message);
+                        setTimeout(() => {
+                            window.location.href = '/Account/Profile';
+                        }, 1200);
+                    } else {
+                        showNotification('error', 'Không thể mượn sách', res.message);
+                        btn.disabled = false;
+                        btn.innerHTML = `<span>Xác Nhận Đặt Mượn</span>`;
+                    }
+                } else {
+                    form.submit(); // fallback to standard submit
+                }
+            } catch (err) {
+                form.submit();
+            }
+        }
     </script>
 }

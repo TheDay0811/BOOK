@@ -142,12 +142,12 @@ namespace BOOK.Models.ViewModels
 
     public class ReturnBookDeskViewModel
     {
-        public string TicketCode { get; set; } = "PM-2026-0881";
-        public string CardNumber { get; set; } = "LIB-2026-1024";
-        public string StudentName { get; set; } = "Trần Văn Hoàng";
-        public string StudentCode { get; set; } = "22110098";
-        public string CurrentCardStatus { get; set; } = "Sử dụng được";
-        public DateTime CardExpiryDate { get; set; } = DateTime.Today.AddMonths(6);
+        public string TicketCode { get; set; } = string.Empty;
+        public string CardNumber { get; set; } = string.Empty;
+        public string StudentName { get; set; } = string.Empty;
+        public string StudentCode { get; set; } = string.Empty;
+        public string CurrentCardStatus { get; set; } = string.Empty;
+        public DateTime CardExpiryDate { get; set; } = DateTime.Today;
 
         public List<ReturnBookItemViewModel> BorrowedCopies { get; set; } = new();
     }
@@ -156,6 +156,8 @@ namespace BOOK.Models.ViewModels
     public class DamagedLostBookRecordViewModel
     {
         public int Id { get; set; }
+        public int ChiTietId { get; set; }
+        public int CardId { get; set; }
         public string BookCode { get; set; } = string.Empty;
         public string BookTitle { get; set; } = string.Empty;
         public string CategoryName { get; set; } = string.Empty;

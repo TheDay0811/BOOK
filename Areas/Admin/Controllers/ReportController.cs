@@ -1,6 +1,7 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BOOK.Data;
@@ -9,6 +10,7 @@ using BOOK.Models.ViewModels;
 namespace BOOK.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Roles = "Admin,Librarian,ThuThu")]
     public class ReportController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -16,6 +18,48 @@ namespace BOOK.Areas.Admin.Controllers
         public ReportController(ApplicationDbContext context)
         {
             _context = context;
+        }
+
+        // GET: /Admin/Report/Index
+        public async Task<IActionResult> Index()
+        {
+            var totalBorrows = await _context.PhieuMuons.CountAsync();
+            var activeBorrows = await _context.PhieuMuons.CountAsync(p => p.TrangThai == "Đang mượn");
+            var overdueBorrows = await _context.PhieuMuons.CountAsync(p => p.TrangThai == "Đang mượn" && p.HanTra < DateTime.Today);
+            var compensations = await _context.ChiTietPhieuMuons
+                .Where(c => c.DaBoiThuong)
+                .SumAsync(c => c.TienBoiThuong);
+
+            // GroupBy ChiTietPhieuMuon để tìm Top 5 sách mượn nhiều nhất
+            var topBooks = await _context.ChiTietPhieuMuons
+                .Include(c => c.DauSach)
+                    .ThenInclude(d => d.Sach)
+                        .ThenInclude(s => s.TheLoai)
+                .Where(c => c.DauSach != null && c.DauSach.Sach != null)
+                .GroupBy(c => c.DauSach.Sach)
+                .Select(g => new TopBorrowedBookViewModel
+                {
+                    BookId = g.Key.MaSach,
+                    Title = g.Key.TenSach,
+                    BookCode = g.Key.MaSachCode,
+                    CategoryName = g.Key.TheLoai.TenTheLoai,
+                    BorrowCount = g.Count(),
+                    TotalCopies = g.Key.DauSachs.Count
+                })
+                .OrderByDescending(b => b.BorrowCount)
+                .Take(5)
+                .ToListAsync();
+
+            var viewModel = new BorrowAnalyticsReportViewModel
+            {
+                TotalBorrows = totalBorrows,
+                ActiveBorrows = activeBorrows,
+                OverdueBorrows = overdueBorrows,
+                TotalCompensations = compensations,
+                TopBooks = topBooks
+            };
+
+            return View(viewModel);
         }
 
         // GET: /Admin/Report/DamagedLostBooks
@@ -53,6 +97,8 @@ namespace BOOK.Areas.Admin.Controllers
                 return new DamagedLostBookRecordViewModel
                 {
                     Id = d.MaDauSach,
+                    ChiTietId = lastChiTiet?.MaChiTiet ?? 0,
+                    CardId = lastChiTiet?.PhieuMuon?.The?.MaThe ?? 0,
                     BookCode = d.Sach.MaSachCode,
                     BookTitle = d.Sach.TenSach,
                     CategoryName = d.Sach.TheLoai.TenTheLoai,
@@ -78,6 +124,53 @@ namespace BOOK.Areas.Admin.Controllers
             };
 
             return View(model);
+        }
+
+        // POST: /Admin/Report/ConfirmCompensation
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ConfirmCompensation(int chiTietId)
+        {
+            var chiTiet = await _context.ChiTietPhieuMuons
+                .Include(c => c.PhieuMuon)
+                    .ThenInclude(p => p.The)
+                .FirstOrDefaultAsync(c => c.MaChiTiet == chiTietId);
+
+            if (chiTiet == null)
+            {
+                TempData["Error"] = "Không tìm thấy thông tin lượt mượn hỏng/mất này.";
+                return RedirectToAction(nameof(DamagedLostBooks));
+            }
+
+            chiTiet.DaBoiThuong = true;
+            if (chiTiet.TienBoiThuong == 0)
+            {
+                chiTiet.TienBoiThuong = 150000;
+            }
+
+            var card = chiTiet.PhieuMuon.The;
+            var hasOtherUncompensated = await _context.ChiTietPhieuMuons
+                .AnyAsync(c => c.MaChiTiet != chiTietId &&
+                               c.PhieuMuon.MaThe == card.MaThe &&
+                               (c.TinhTrangTra == "Mất" || c.TinhTrangTra == "Hỏng") &&
+                               !c.DaBoiThuong);
+
+            if (!hasOtherUncompensated)
+            {
+                card.TinhTrangSuDung = "Sử dụng được";
+            }
+
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = $"Đã ghi nhận bồi thường {chiTiet.TienBoiThuong:N0} đ từ độc giả {card.HoTen} ({card.SoThe}). Thẻ thư viện đã được khôi phục thành công: '{card.TinhTrangSuDung}'!";
+            return RedirectToAction(nameof(DamagedLostBooks));
+        }
+
+        // GET: /Admin/Report/Settings (Cấu hình hệ thống quy chế - Chỉ dành cho Admin)
+        [Authorize(Roles = "Admin")]
+        public IActionResult Settings()
+        {
+            return View();
         }
     }
 }

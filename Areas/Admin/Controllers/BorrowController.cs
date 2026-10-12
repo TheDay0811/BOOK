@@ -1,3 +1,4 @@
+﻿using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +13,7 @@ using BOOK.Models.ViewModels;
 namespace BOOK.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Roles = "Admin,Librarian,ThuThu")]
     public class BorrowController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -26,30 +28,159 @@ namespace BOOK.Areas.Admin.Controllers
         {
             var today = DateTime.Today;
 
+            // 1. Danh sách yêu cầu mượn online đang chờ duyệt
+            var pendingList = await _context.PhieuMuons
+                .Include(p => p.The)
+                    .ThenInclude(t => t.TaiKhoan)
+                .Include(p => p.ChiTiets)
+                    .ThenInclude(c => c.DauSach)
+                        .ThenInclude(d => d.Sach)
+                .Where(p => p.TrangThai == "Chờ duyệt")
+                .OrderByDescending(p => p.NgayMuon)
+                .ToListAsync();
+
+            var pendingRequests = pendingList.Select(p =>
+            {
+                var bookTitles = string.Join(", ", p.ChiTiets.Where(c => c.DauSach?.Sach != null).Select(c => c.DauSach.Sach.TenSach));
+                var firstDetail = p.ChiTiets.FirstOrDefault();
+                var book = firstDetail?.DauSach?.Sach;
+                return new PendingBorrowRequestViewModel
+                {
+                    Id = p.MaPhieuMuon,
+                    RequestCode = $"PM-{p.MaPhieuMuon:D4}",
+                    MemberName = p.The?.HoTen ?? "Độc giả",
+                    MemberCode = p.The?.TaiKhoan?.Username ?? p.The?.SoThe ?? "",
+                    MemberPhone = !string.IsNullOrWhiteSpace(p.The?.TaiKhoan?.PhoneNumber) ? p.The.TaiKhoan.PhoneNumber : "Chưa cập nhật",
+                    BookTitle = !string.IsNullOrWhiteSpace(bookTitles) ? bookTitles : (book?.TenSach ?? "Tài liệu"),
+                    BookISBN = book?.MaSachCode ?? p.The?.SoThe ?? "---",
+                    RequestDate = p.NgayMuon,
+                    PickupDueDate = p.HanTra,
+                    Status = p.TrangThai
+                };
+            }).ToList();
+
+            // 2. Danh sách đang mượn để tiếp nhận trả sách tại quầy
+            var activeBorrows = await _context.PhieuMuons
+                .Include(p => p.The)
+                    .ThenInclude(t => t.TaiKhoan)
+                .Include(p => p.ChiTiets)
+                    .ThenInclude(c => c.DauSach)
+                        .ThenInclude(d => d.Sach)
+                .Where(p => p.TrangThai == "Đang mượn")
+                .OrderByDescending(p => p.NgayMuon)
+                .ToListAsync();
+
+            var activeBorrowItems = activeBorrows.Select(p =>
+            {
+                var bookTitles = string.Join(", ", p.ChiTiets.Where(c => c.DauSach?.Sach != null).Select(c => c.DauSach.Sach.TenSach));
+                var isOverdue = p.HanTra < today;
+                var daysLate = isOverdue ? (today - p.HanTra).Days : 0;
+
+                return new BookReturnItemViewModel
+                {
+                    BorrowId = p.MaPhieuMuon,
+                    BorrowCode = $"PM-{p.MaPhieuMuon:D4}",
+                    MemberCode = p.The?.TaiKhoan?.Username ?? p.The?.SoThe ?? "",
+                    MemberName = p.The?.HoTen ?? "Độc giả",
+                    BookTitle = string.IsNullOrWhiteSpace(bookTitles) ? "Tài liệu mượn" : bookTitles,
+                    BookISBN = p.The?.SoThe ?? "",
+                    BorrowDate = p.NgayMuon,
+                    DueDate = p.HanTra,
+                    DaysOverdue = daysLate,
+                    ConditionStatus = isOverdue ? $"Trễ {daysLate} ngày" : "Trong hạn",
+                    EstimatedFine = daysLate * 2000
+                };
+            }).ToList();
+
+            // 3. Danh sách quá hạn chưa trả
             var overdue = await _context.PhieuMuons
                 .Include(p => p.The)
+                    .ThenInclude(t => t.TaiKhoan)
+                .Include(p => p.ChiTiets)
+                    .ThenInclude(c => c.DauSach)
+                        .ThenInclude(d => d.Sach)
                 .Where(p => p.TrangThai == "Đang mượn" && p.HanTra < today)
                 .Select(p => new OverdueAlertViewModel
                 {
                     BorrowId = p.MaPhieuMuon,
                     MemberName = p.The.HoTen,
-                    MemberCode = p.The.SoThe,
+                    MemberCode = p.The.TaiKhoan.Username,
+                    MemberEmail = !string.IsNullOrWhiteSpace(p.The.TaiKhoan.Email) ? p.The.TaiKhoan.Email : (p.The.TaiKhoan.Username + "@student.huflit.edu.vn"),
+                    MemberPhone = !string.IsNullOrWhiteSpace(p.The.TaiKhoan.PhoneNumber) ? p.The.TaiKhoan.PhoneNumber : "Chưa cập nhật",
+                    BookTitle = p.ChiTiets.Select(c => c.DauSach.Sach.TenSach).FirstOrDefault() ?? "Tài liệu",
                     DueDate = p.HanTra,
-                    DaysOverdue = EF.Functions.DateDiffDay(p.HanTra, today)
+                    DaysOverdue = EF.Functions.DateDiffDay(p.HanTra, today),
+                    AccumulatedFine = EF.Functions.DateDiffDay(p.HanTra, today) * 2000
                 }).ToListAsync();
 
+            // 4. Số lượng trả hôm nay
             var todayReturns = await _context.ChiTietPhieuMuons
                 .CountAsync(c => c.NgayTraThucTe != null && c.NgayTraThucTe.Value.Date == today);
 
             var viewModel = new LibrarianDashboardViewModel
             {
                 TodayReturnsCount = todayReturns,
-                PendingRequests = new List<PendingBorrowRequestViewModel>(), // không có trong ERD case study
-                RenewalRequests = new List<RenewalRequestViewModel>(),      // không có trong ERD case study
+                PendingRequests = pendingRequests,
+                ActiveBorrowsForReturn = activeBorrowItems,
+                RenewalRequests = new List<RenewalRequestViewModel>(),
                 OverdueAlerts = overdue
             };
 
             return View(viewModel);
+        }
+
+        // POST: /Admin/Borrow/ApproveBorrowRequest
+        [HttpPost]
+        public async Task<IActionResult> ApproveBorrowRequest(int requestId)
+        {
+            var phieu = await _context.PhieuMuons
+                .Include(p => p.ChiTiets)
+                    .ThenInclude(c => c.DauSach)
+                .FirstOrDefaultAsync(p => p.MaPhieuMuon == requestId);
+
+            if (phieu == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy phiếu mượn #" + requestId });
+            }
+
+            phieu.TrangThai = "Đang mượn";
+            foreach (var c in phieu.ChiTiets)
+            {
+                if (c.DauSach != null)
+                {
+                    c.DauSach.TinhTrang = "Cho mượn";
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, message = $"Đã duyệt cấp sách cho phiếu mượn #{requestId} thành công!" });
+        }
+
+        // POST: /Admin/Borrow/RejectBorrowRequest
+        [HttpPost]
+        public async Task<IActionResult> RejectBorrowRequest(int requestId, string? reason)
+        {
+            var phieu = await _context.PhieuMuons
+                .Include(p => p.ChiTiets)
+                    .ThenInclude(c => c.DauSach)
+                .FirstOrDefaultAsync(p => p.MaPhieuMuon == requestId);
+
+            if (phieu == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy phiếu mượn #" + requestId });
+            }
+
+            phieu.TrangThai = "Đã từ chối";
+            foreach (var c in phieu.ChiTiets)
+            {
+                if (c.DauSach != null)
+                {
+                    c.DauSach.TinhTrang = "Còn";
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, message = $"Đã từ chối phiếu mượn #{requestId} thành công." });
         }
 
         // GET: /Admin/Borrow/Create

@@ -1,0 +1,239 @@
+@model List<BOOK.Models.ViewModels.PublisherItemViewModel>
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Quản Lý Nhà Xuất Bản";
+}
+
+<div class="space-y-6">
+
+    <!-- BREADCRUMB & HEADER -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <nav class="flex items-center gap-2 text-xs text-slate-500 mb-1">
+                <span>Quản lý kho sách</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+                <span class="text-navy-800 font-bold">Nhà xuất bản</span>
+            </nav>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Danh Mục Nhà Xuất Bản</h1>
+            <p class="text-xs text-slate-500 mt-0.5">Quản lý các đối tác xuất bản và nguồn cung cấp giáo trình, tài liệu thư viện.</p>
+        </div>
+
+        <div>
+            <button onclick="openCreateModal()" 
+                    class="px-4 py-2.5 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow transition-all flex items-center gap-2">
+                <i data-lucide="plus-circle" class="w-4 h-4 text-emerald-400"></i> Thêm Nhà Xuất Bản
+            </button>
+        </div>
+    </div>
+
+    <!-- THÔNG BÁO FLASH MESSAGE -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-center gap-3 text-xs font-bold">
+            <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600 shrink-0"></i>
+            <span>@TempData["Success"]</span>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 flex items-center gap-3 text-xs font-bold">
+            <i data-lucide="alert-circle" class="w-5 h-5 text-rose-600 shrink-0"></i>
+            <span>@TempData["Error"]</span>
+        </div>
+    }
+
+    <!-- THANH TÌM KIẾM & THỐNG KÊ NHANH -->
+    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <form method="get" asp-area="Admin" asp-controller="Publisher" asp-action="Index" class="flex items-center gap-2 w-full sm:w-80">
+            <div class="relative w-full">
+                <input type="text" name="keyword" value="@ViewBag.Keyword" placeholder="Tìm theo tên nhà xuất bản..." 
+                       class="w-full pl-9 pr-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+            </div>
+            <button type="submit" class="px-3.5 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shrink-0 transition-colors">
+                Lọc
+            </button>
+            @if (!string.IsNullOrEmpty(ViewBag.Keyword as string))
+            {
+                <a asp-area="Admin" asp-controller="Publisher" asp-action="Index" class="text-xs text-slate-400 hover:text-slate-600 underline shrink-0">
+                    Xóa
+                </a>
+            }
+        </form>
+
+        <div class="text-xs text-slate-500 font-medium">
+            Tổng cộng: <strong class="text-navy-900 font-bold">@Model.Count</strong> nhà xuất bản
+        </div>
+    </div>
+
+    <!-- BẢNG DANH SÁCH NHÀ XUẤT BẢN -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="bg-slate-50/75 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-bold">
+                        <th class="py-3.5 px-4 w-16 text-center">Mã</th>
+                        <th class="py-3.5 px-4">Tên Nhà Xuất Bản</th>
+                        <th class="py-3.5 px-4 text-center">Số Tựa Sách Liên Kết</th>
+                        <th class="py-3.5 px-4 text-right">Thao Tác</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                    @if (Model.Any())
+                    {
+                        foreach (var pub in Model)
+                        {
+                            <tr class="hover:bg-slate-50/80 transition-colors">
+                                <td class="py-4 px-4 text-center font-mono font-bold text-slate-400">
+                                    #@pub.Id
+                                </td>
+                                <td class="py-4 px-4">
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold">
+                                            <i data-lucide="building" class="w-4 h-4"></i>
+                                        </div>
+                                        <span class="font-bold text-navy-900 text-sm">@pub.Name</span>
+                                    </div>
+                                </td>
+                                <td class="py-4 px-4 text-center">
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold @(pub.BookCount > 0 ? "bg-emerald-50 text-emerald-700 border border-emerald-100" : "bg-slate-100 text-slate-500")">
+                                        <i data-lucide="book" class="w-3.5 h-3.5"></i> @pub.BookCount tựa sách
+                                    </span>
+                                </td>
+                                <td class="py-4 px-4 text-right">
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        <button onclick="openEditModal(@pub.Id, '@pub.Name')"
+                                                class="px-2.5 py-1.5 bg-slate-100 hover:bg-navy-800 hover:text-white text-slate-700 rounded-lg text-xs font-bold transition-all flex items-center gap-1">
+                                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i> Sửa
+                                        </button>
+
+                                        @if (pub.BookCount == 0)
+                                        {
+                                            <form method="post" asp-area="Admin" asp-controller="Publisher" asp-action="Delete" asp-route-id="@pub.Id"
+                                                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa nhà xuất bản \'@pub.Name\'?');" class="inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-600 hover:text-white text-rose-600 rounded-lg text-xs font-bold transition-all flex items-center gap-1">
+                                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Xóa
+                                                </button>
+                                            </form>
+                                        }
+                                        else
+                                        {
+                                            <button disabled title="Không thể xóa vì đang có sách thuộc nhà xuất bản này"
+                                                    class="px-2.5 py-1.5 bg-slate-100 text-slate-400 rounded-lg text-xs font-bold cursor-not-allowed flex items-center gap-1 opacity-60">
+                                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Xóa
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="4" class="py-12 text-center text-slate-400">
+                                <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2 text-slate-300"></i>
+                                <p class="text-sm font-semibold">Không tìm thấy nhà xuất bản nào phù hợp.</p>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- MODAL THÊM NHÀ XUẤT BẢN -->
+<div id="createPublisherModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-100">
+        <form method="post" asp-area="Admin" asp-controller="Publisher" asp-action="Create">
+            @Html.AntiForgeryToken()
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-4 h-4 text-emerald-600"></i> Thêm Nhà Xuất Bản Mới
+                </h3>
+                <button type="button" onclick="closeCreateModal()" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-5 space-y-4 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Tên nhà xuất bản <span class="text-rose-500">*</span></label>
+                    <input type="text" name="name" required placeholder="Ví dụ: NXB Giáo Dục, NXB Trẻ..." 
+                           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+            </div>
+            <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                <button type="button" onclick="closeCreateModal()" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100">
+                    Hủy bỏ
+                </button>
+                <button type="submit" class="px-4 py-2 bg-navy-800 text-white font-bold rounded-xl text-xs hover:bg-navy-900 shadow">
+                    Lưu Nhà Xuất Bản
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL SỬA NHÀ XUẤT BẢN -->
+<div id="editPublisherModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-100">
+        <form method="post" asp-area="Admin" asp-controller="Publisher" asp-action="Edit">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="editPublisherId" name="id" />
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="edit-3" class="w-4 h-4 text-blue-600"></i> Chỉnh Sửa Nhà Xuất Bản
+                </h3>
+                <button type="button" onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-5 space-y-4 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Tên nhà xuất bản <span class="text-rose-500">*</span></label>
+                    <input type="text" id="editPublisherName" name="name" required
+                           class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+            </div>
+            <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+                <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-100">
+                    Hủy bỏ
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white font-bold rounded-xl text-xs hover:bg-blue-700 shadow">
+                    Cập Nhật
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openCreateModal() {
+            document.getElementById('createPublisherModal').classList.remove('hidden');
+        }
+
+        function closeCreateModal() {
+            document.getElementById('createPublisherModal').classList.add('hidden');
+        }
+
+        function openEditModal(id, name) {
+            document.getElementById('editPublisherId').value = id;
+            document.getElementById('editPublisherName').value = name;
+            document.getElementById('editPublisherModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editPublisherModal').classList.add('hidden');
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        });
+    </script>
+}

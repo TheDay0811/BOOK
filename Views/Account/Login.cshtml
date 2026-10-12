@@ -20,8 +20,8 @@
                         <i data-lucide="book-open-check" class="w-6 h-6 text-amber-400"></i>
                     </div>
                     <div>
-                        <span class="block text-xs uppercase tracking-wider font-semibold text-blue-300">Thư Viện Trung Tâm</span>
-                        <h2 class="text-xl font-black tracking-tight text-white">SMART<span class="text-blue-400">LIB</span></h2>
+                        <span class="block text-xs uppercase tracking-wider font-semibold text-blue-300">Thư Viện HUFLIT</span>
+                        <h2 class="text-xl font-black tracking-tight text-white">SMART<span class="text-amber-400">LIB</span> HÓC MÔN</h2>
                     </div>
                 </div>
 
@@ -30,7 +30,7 @@
                         Cánh Cửa Bước Vào Kho Tàng <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-amber-300">Tri Thức Số</span>.
                     </h3>
                     <p class="text-xs sm:text-sm text-slate-300 mt-2.5 leading-relaxed">
-                        Hệ thống định danh độc giả thông minh giúp bạn tra cứu, đặt mượn giáo trình và quản lý hạn trả tiện lợi mọi lúc mọi nơi.
+                        Thư viện HUFLIT Cơ sở Hóc Môn - Tra cứu, đặt mượn giáo trình và quản lý hạn trả tiện lợi mọi lúc mọi nơi.
                     </p>
                 </div>
             </div>
@@ -53,13 +53,13 @@
                     <div class="w-6 h-6 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0">
                         <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
                     </div>
-                    <span>Thanh toán phí phạt & gia hạn tự động 24/7</span>
+                    <span>Gia hạn trực tuyến & hỗ trợ độc giả 24/7</span>
                 </div>
             </div>
 
             <!-- Footer Quote -->
             <div class="relative z-10 text-[11px] text-slate-400 italic">
-                “Tri thức là chìa khóa mở ra tiềm năng vô tận của con người.”
+                “Học tập hôm nay - Kiến tạo tương lai mai sau.”
             </div>
         </div>
 
@@ -69,29 +69,36 @@
 
                 <!-- Header Form -->
                 <div>
-                    <span class="text-xs font-bold uppercase tracking-wider text-blue-600">Chào mừng bạn quay lại</span>
+                    <span class="text-xs font-bold uppercase tracking-wider text-blue-600">HUFLIT Hóc Môn</span>
                     <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight mt-1">Đăng Nhập Hệ Thống</h2>
-                    <p class="text-xs text-slate-500 mt-1">Sử dụng tài khoản thư viện hoặc mã số sinh viên (MSSV) được cấp.</p>
+                    <p class="text-xs text-slate-500 mt-1">Sử dụng tài khoản hoặc Mã số sinh viên (MSSV) để đăng nhập.</p>
                 </div>
 
                 <!-- Validation Summary (ModelOnly) -->
                 <div asp-validation-summary="ModelOnly" class="p-3.5 text-xs text-rose-800 bg-rose-50 border border-rose-200 rounded-xl"></div>
 
-                <!-- Form Login -->
-                <form asp-controller="Account" asp-action="Login" method="post" id="loginForm" class="space-y-4">
+
+                <!-- Form Login (Đăng nhập nội bộ độc lập, chặn Edge Microsoft SSO) -->
+                <form asp-controller="Account" asp-action="Login" method="post" id="loginForm" autocomplete="off" data-ms-no-sso="true" class="space-y-4">
                     <input type="hidden" asp-for="ReturnUrl" />
 
-                    <!-- Username or Email -->
+                    <!-- Username or Student Code -->
                     <div>
                         <label asp-for="UsernameOrEmail" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                            Tên đăng nhập hoặc Email <span class="text-rose-500">*</span>
+                            Tên đăng nhập hoặc MSSV <span class="text-rose-500">*</span>
                         </label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                                 <i data-lucide="user" class="w-4 h-4"></i>
                             </div>
-                            <input asp-for="UsernameOrEmail" 
-                                   placeholder="Nhập tên tài khoản, email hoặc MSSV..." 
+                            <input asp-for="UsernameOrEmail" id="usernameInput" type="text"
+                                   autocomplete="off"
+                                   autocorrect="off"
+                                   autocapitalize="off"
+                                   spellcheck="false"
+                                   data-lpignore="true"
+                                   data-form-type="other"
+                                   placeholder="Nhập email hoặc MSSV..." 
                                    class="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:ring-2 focus:ring-navy-800/20 focus:outline-none transition-all placeholder:text-slate-400" />
                         </div>
                         <span asp-validation-for="UsernameOrEmail" class="text-[11px] text-rose-600 mt-1 block"></span>
@@ -103,16 +110,19 @@
                             <label asp-for="Password" class="text-xs font-bold uppercase tracking-wider text-slate-700">
                                 Mật khẩu <span class="text-rose-500">*</span>
                             </label>
-                            <a href="#forgot" onclick="alert('Vui lòng liên hệ quầy Thủ thư hoặc gửi email về thuvien@university.edu.vn để đặt lại mật khẩu.')" 
+                            <button type="button" onclick="showForgotPasswordModal()" 
                                class="text-xs font-medium text-blue-600 hover:text-navy-800 hover:underline">
                                 Quên mật khẩu?
-                            </a>
+                            </button>
                         </div>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                                 <i data-lucide="lock" class="w-4 h-4"></i>
                             </div>
                             <input asp-for="Password" id="passwordInput" type="password" 
+                                   autocomplete="off"
+                                   data-lpignore="true"
+                                   data-form-type="other"
                                    placeholder="Nhập mật khẩu của bạn..." 
                                    class="w-full pl-10 pr-10 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:ring-2 focus:ring-navy-800/20 focus:outline-none transition-all placeholder:text-slate-400" />
                             <button type="button" onclick="togglePasswordVisibility('passwordInput', 'eyeIcon')" 
@@ -143,22 +153,6 @@
                             </span>
                         </button>
                     </div>
-
-                    <!-- Test Credential Quick Links -->
-                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-[11px] text-slate-500 space-y-1">
-                        <p class="font-semibold text-slate-700">Tài khoản demo nghiệp vụ:</p>
-                        <div class="flex flex-wrap gap-2 text-xs">
-                            <button type="button" onclick="fillDemo('sv001', '123456')" class="px-2 py-0.5 bg-white border border-slate-200 rounded text-slate-700 hover:border-navy-800">
-                                🧑 Độc giả
-                            </button>
-                            <button type="button" onclick="fillDemo('thuthu', 'thuthu123')" class="px-2 py-0.5 bg-blue-50 border border-blue-200 rounded text-navy-800 hover:border-navy-800">
-                                🛡️ Thủ thư
-                            </button>
-                            <button type="button" onclick="fillDemo('admin', 'admin123')" class="px-2 py-0.5 bg-amber-50 border border-amber-200 rounded text-amber-800 hover:border-navy-800">
-                                👑 Quản trị viên
-                            </button>
-                        </div>
-                    </div>
                 </form>
 
                 <!-- Link sang Đăng ký -->
@@ -177,6 +171,16 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
+        function fillCredentials(user, pass) {
+            const u = document.getElementById('usernameInput');
+            const p = document.getElementById('passwordInput');
+            if (u && p) {
+                u.value = user;
+                p.value = pass;
+                u.focus();
+            }
+        }
+
         function togglePasswordVisibility(inputId, iconId) {
             const input = document.getElementById(inputId);
             const icon = document.getElementById(iconId);
@@ -189,12 +193,16 @@
                 input.type = 'password';
                 icon.setAttribute('data-lucide', 'eye');
             }
-            lucide.createIcons();
+            if (window.lucide) lucide.createIcons();
         }
 
-        function fillDemo(username, pwd) {
-            document.querySelector('[name="UsernameOrEmail"]').value = username;
-            document.getElementById('passwordInput').value = pwd;
+        function showForgotPasswordModal() {
+            window.showAppModal({
+                title: 'Hỗ Trợ Khôi Phục Mật Khẩu HUFLIT',
+                message: 'Quý độc giả quên mật khẩu vui lòng liên hệ trực tiếp:\n\n• Quầy Thủ Thư Tầng 1 - Thư Viện HUFLIT Cơ sở Hóc Môn\n• Địa chỉ: Số 80/2 Bà Triệu, Xã Tân Xuân, Huyện Hóc Môn, TP. Hồ Chí Minh\n• Hotline: (028) 38 632 052\n• Email hỗ trợ: thuvien@huflit.edu.vn\n\nThủ thư sẽ kiểm tra Thẻ sinh viên và cấp lại mật khẩu bảo mật ngay tại quầy.',
+                type: 'info',
+                confirmText: 'Đã hiểu'
+            });
         }
 
         // Handle button submit spinner
@@ -202,9 +210,9 @@
         if (form) {
             form.addEventListener('submit', () => {
                 if (form.checkValidity()) {
-                    document.getElementById('btnText').classList.add('hidden');
-                    document.getElementById('btnLoading').classList.remove('hidden');
-                    document.getElementById('btnLoading').classList.add('inline-flex');
+                    document.getElementById('btnText')?.classList.add('hidden');
+                    document.getElementById('btnLoading')?.classList.remove('hidden');
+                    document.getElementById('btnLoading')?.classList.add('inline-flex');
                 }
             });
         }

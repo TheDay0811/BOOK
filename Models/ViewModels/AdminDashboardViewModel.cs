@@ -44,4 +44,23 @@ namespace BOOK.Models.ViewModels
         public List<string> CategoryLabels { get; set; } = new();
         public List<int> CategoryBookCounts { get; set; } = new();
     }
+
+    public class TopBorrowedBookViewModel
+    {
+        public int BookId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string BookCode { get; set; } = string.Empty;
+        public string CategoryName { get; set; } = string.Empty;
+        public int BorrowCount { get; set; }
+        public int TotalCopies { get; set; }
+    }
+
+    public class BorrowAnalyticsReportViewModel
+    {
+        public int TotalBorrows { get; set; }
+        public int ActiveBorrows { get; set; }
+        public int OverdueBorrows { get; set; }
+        public decimal TotalCompensations { get; set; }
+        public List<TopBorrowedBookViewModel> TopBooks { get; set; } = new();
+    }
 }

@@ -144,9 +144,9 @@
                         <div class="group bg-white rounded-2xl border border-slate-200 hover:border-navy-800/30 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col overflow-hidden">
                             <!-- Book Cover Image Section -->
                             <div class="relative h-64 overflow-hidden bg-slate-100 flex items-center justify-center p-4">
-                                <img src="@book.CoverImageUrl" alt="@book.Title" 
+                                <img src="@(string.IsNullOrEmpty(book.CoverImageUrl) ? "/uploads/books/default-book.svg" : book.CoverImageUrl)" alt="@book.Title" 
                                      class="h-full max-w-full object-contain rounded-lg shadow group-hover:scale-105 transition-transform duration-300"
-                                     onerror="this.src='https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&auto=format&fit=crop&q=80'" />
+                                     onerror="this.onerror=null; this.src='/uploads/books/default-book.svg';" />
 
                                 <!-- Availability Badge -->
                                 <div class="absolute top-3 right-3">

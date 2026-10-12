@@ -25,9 +25,12 @@ namespace BOOK.ViewModels
 
         // Quy định hạn mức mượn
         public int MaxBorrowLimit { get; set; } = 3;
-        public int CurrentBorrowCount => ActiveLoans?.Count ?? 0;
+        public int CurrentBorrowCount => (ActiveLoans?.Count ?? 0) + (PendingLoans?.Count ?? 0);
         public bool CanBorrowMore => CurrentBorrowCount < MaxBorrowLimit && !IsCardLocked;
         public int BorrowPercentage => (int)Math.Round((double)CurrentBorrowCount / MaxBorrowLimit * 100);
+
+        // Danh sách sách đang đăng ký mượn (chờ thủ thư/admin duyệt)
+        public List<PendingBorrowItemViewModel> PendingLoans { get; set; } = new();
 
         // Danh sách sách đang mượn
         public List<ActiveBorrowItemViewModel> ActiveLoans { get; set; } = new();
@@ -42,6 +45,44 @@ namespace BOOK.ViewModels
 
         // Model hỗ trợ cập nhật thông tin
         public UpdateProfileInputModel UpdateModel { get; set; } = new();
+
+        // Model đổi mật khẩu
+        public ChangePasswordInputModel PasswordModel { get; set; } = new();
+    }
+
+    public class PendingBorrowItemViewModel
+    {
+        public int BorrowId { get; set; }
+        public string BookCode { get; set; } = string.Empty;
+        public string ControlNumber { get; set; } = string.Empty;
+        public string DisplayCode => $"{BookCode} - Bản {ControlNumber}";
+        public string BookTitle { get; set; } = string.Empty;
+        public string Author { get; set; } = string.Empty;
+        public string CategoryName { get; set; } = string.Empty;
+        public string CoverImageUrl { get; set; } = string.Empty;
+        public DateTime RequestDate { get; set; }
+        public DateTime DueDate { get; set; }
+        public string Status { get; set; } = "Chờ duyệt";
+    }
+
+    public class ChangePasswordInputModel
+    {
+        [Required(ErrorMessage = "Vui lòng nhập Mật khẩu hiện tại.")]
+        [DataType(DataType.Password)]
+        [Display(Name = "Mật khẩu hiện tại")]
+        public string CurrentPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng nhập Mật khẩu mới.")]
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "Mật khẩu mới phải từ 6 ký tự trở lên.")]
+        [DataType(DataType.Password)]
+        [Display(Name = "Mật khẩu mới")]
+        public string NewPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Vui lòng xác nhận Mật khẩu mới.")]
+        [DataType(DataType.Password)]
+        [Compare("NewPassword", ErrorMessage = "Mật khẩu xác nhận không khớp.")]
+        [Display(Name = "Xác nhận mật khẩu mới")]
+        public string ConfirmPassword { get; set; } = string.Empty;
     }
 
     public class ActiveBorrowItemViewModel

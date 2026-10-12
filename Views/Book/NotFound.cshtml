@@ -1,0 +1,29 @@
+@{
+    ViewData["Title"] = "Không Tìm Thấy Tài Liệu";
+    var requestedId = ViewBag.RequestedBookId ?? "yêu cầu";
+}
+
+<div class="max-w-4xl mx-auto px-4 py-16 text-center space-y-6">
+    <div class="w-24 h-24 mx-auto rounded-3xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-200 shadow-lg">
+        <i data-lucide="book-x" class="w-12 h-12"></i>
+    </div>
+
+    <div class="space-y-2">
+        <span class="px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800">Mã Lỗi: 404 - Không Tìm Thấy</span>
+        <h1 class="text-3xl font-black text-slate-900 tracking-tight">Rất Tiếc, Tựa Sách #@requestedId Không Tồn Tại</h1>
+        <p class="text-slate-500 text-sm max-w-md mx-auto leading-relaxed">
+            Tài liệu này có thể đã được chuyển sang kho lưu trữ đặc biệt, đã được thanh lý hoặc đường dẫn tra cứu chưa chính xác.
+        </p>
+    </div>
+
+    <div class="flex flex-wrap items-center justify-center gap-3 pt-4">
+        <a asp-controller="Book" asp-action="Index" 
+           class="px-6 py-3 bg-navy-800 hover:bg-navy-900 text-white rounded-2xl text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+            <i data-lucide="compass" class="w-4 h-4 text-amber-400"></i> Khám Phá Danh Mục Sách
+        </a>
+        <a asp-controller="Home" asp-action="Index" 
+           class="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl text-xs font-bold transition-all flex items-center gap-2">
+            <i data-lucide="home" class="w-4 h-4"></i> Về Trang Chủ
+        </a>
+    </div>
+</div>

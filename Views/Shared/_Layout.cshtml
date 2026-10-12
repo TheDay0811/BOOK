@@ -65,6 +65,29 @@
     <partial name="_Header" />
 
 
+    <!-- ================= GLOBAL REUSABLE APP MODAL ================= -->
+    <div id="appModalOverlay" class="fixed inset-0 z-[9999] hidden bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-200">
+        <div id="appModalBox" class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-200 relative transform transition-all duration-200 scale-95 opacity-0">
+            <div class="flex items-start gap-4">
+                <div id="appModalIconWrapper" class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
+                    <i id="appModalIcon" data-lucide="info" class="w-6 h-6"></i>
+                </div>
+                <div class="space-y-1.5 flex-1">
+                    <h3 id="appModalTitle" class="text-base font-extrabold text-slate-900 leading-snug">Thông Báo</h3>
+                    <div id="appModalMessage" class="text-xs text-slate-600 leading-relaxed whitespace-pre-line"></div>
+                </div>
+            </div>
+            <div class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                <button type="button" id="appModalCancelBtn" class="hidden px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors">
+                    Hủy bỏ
+                </button>
+                <button type="button" id="appModalConfirmBtn" class="px-5 py-2.5 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all">
+                    Đồng ý
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- TOAST NOTIFICATION CONTAINER -->
     <div id="toastContainer" class="fixed top-24 right-5 z-50 flex flex-col gap-3 pointer-events-none">
         @if (TempData["Success"] != null)
@@ -87,6 +110,16 @@
                 </div>
             </div>
         }
+        @if (TempData["Warning"] != null)
+        {
+            <div class="pointer-events-auto flex items-center gap-3 p-4 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl shadow-lg">
+                <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600 flex-shrink-0"></i>
+                <div>
+                    <p class="font-semibold">Lưu ý</p>
+                    <p class="text-amber-700">@TempData["Warning"]</p>
+                </div>
+            </div>
+        }
     </div>
 
     <!-- MAIN BODY CONTENT -->
@@ -104,24 +137,28 @@
                 <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
             </span>
             <div class="flex items-center gap-2">
-                <i data-lucide="message-square" class="w-5 h-5 text-amber-400"></i>
-                <span class="text-sm font-semibold tracking-wide">Trò chuyện cùng Thủ thư</span>
+                <i data-lucide="bot" class="w-5 h-5 text-amber-400"></i>
+                <span class="text-sm font-semibold tracking-wide">Trợ lý Thủ thư ảo HUFLIT</span>
             </div>
         </button>
 
         <!-- Slide-up Chat Window Modal -->
         <div id="chatWindow" class="hidden absolute bottom-16 right-0 w-[380px] sm:w-[420px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col transition-all duration-300">
             <!-- Header -->
-            <div class="bg-gradient-to-r from-navy-900 to-navy-800 text-white p-4 flex items-center justify-between">
+            <div class="bg-gradient-to-r from-navy-950 via-navy-900 to-navy-800 text-white p-4 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="relative">
-                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&auto=format&fit=crop&q=80" 
-                             alt="Thủ thư tư vấn" class="w-10 h-10 rounded-full border-2 border-amber-400 object-cover" />
+                        <div class="w-10 h-10 rounded-full bg-navy-700 border-2 border-amber-400 flex items-center justify-center font-bold text-white text-xs">
+                            <i data-lucide="bot" class="w-5 h-5 text-amber-300"></i>
+                        </div>
                         <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border border-white"></span>
                     </div>
                     <div>
-                        <h4 class="font-bold text-sm leading-tight">Thủ thư Trợ lý (Trực tuyến)</h4>
-                        <p class="text-xs text-slate-300">Hỗ trợ tra cứu & mượn sách 24/7</p>
+                        <h4 class="font-bold text-sm leading-tight flex items-center gap-1.5">
+                            Thủ Thư Ảo HUFLIT
+                            <span class="px-1.5 py-0.2 rounded text-[10px] bg-amber-400/20 text-amber-300 border border-amber-400/30">AI</span>
+                        </h4>
+                        <p class="text-[11px] text-slate-300">Cơ sở Hóc Môn • Hỗ trợ 24/7</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-1">
@@ -135,25 +172,27 @@
             <div id="chatMessages" class="p-4 h-80 overflow-y-auto space-y-3 bg-slate-50 text-sm">
                 <!-- Librarian Greeting -->
                 <div class="flex gap-2.5 items-start">
-                    <div class="w-7 h-7 rounded-full bg-navy-800 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
+                    <div class="w-7 h-7 rounded-full bg-navy-800 text-amber-300 flex items-center justify-center text-xs font-bold flex-shrink-0">
                         TT
                     </div>
                     <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm p-3 shadow-sm max-w-[85%]">
-                        <p class="text-slate-800">Xin chào Quý độc giả! Em là trợ lý thư viện số. Em có thể hỗ trợ Anh/Chị tìm tài liệu hoặc hướng dẫn gia hạn sách ngay bây giờ.</p>
+                        <p class="text-slate-800 text-xs leading-relaxed">
+                            Xin chào bạn! Em là <strong>Trợ lý Thủ thư ảo HUFLIT cơ sở Hóc Môn</strong>. Em có thể hỗ trợ bạn tra cứu sách, hướng dẫn quy định mượn tối đa 3 cuốn/15 ngày, hay thủ tục xử lý sách mất/hỏng.
+                        </p>
                         <span class="text-[10px] text-slate-400 mt-1 block">Vừa xong</span>
                     </div>
                 </div>
 
                 <!-- Quick Action Chips -->
-                <div class="pt-1 flex flex-wrap gap-1.5 pl-9">
+                <div id="quickActionChips" class="pt-1 flex flex-wrap gap-1.5 pl-9">
                     <button onclick="sendQuickPrompt('Làm sao để đặt mượn sách trực tuyến?')" class="text-xs px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-navy-800 border border-slate-200 rounded-full transition-colors text-slate-600">
-                        📖 Cách mượn sách online?
+                        📖 Cách mượn sách?
                     </button>
-                    <button onclick="sendQuickPrompt('Quy định tính phí phạt quá hạn thế nào?')" class="text-xs px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-navy-800 border border-slate-200 rounded-full transition-colors text-slate-600">
-                        💰 Biểu phí trễ hạn?
+                    <button onclick="sendQuickPrompt('Quy định tính phí phạt quá hạn và làm mất/hỏng sách thế nào?')" class="text-xs px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-navy-800 border border-slate-200 rounded-full transition-colors text-slate-600">
+                        💰 Phí phạt & Mất sách?
                     </button>
-                    <button onclick="sendQuickPrompt('Tôi muốn gia hạn sách đang mượn')" class="text-xs px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-navy-800 border border-slate-200 rounded-full transition-colors text-slate-600">
-                        ⏳ Thủ tục gia hạn sách?
+                    <button onclick="sendQuickPrompt('Tôi muốn gia hạn sách đang mượn thì làm sao?')" class="text-xs px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-navy-800 border border-slate-200 rounded-full transition-colors text-slate-600">
+                        ⏳ Gia hạn sách?
                     </button>
                 </div>
             </div>
@@ -162,8 +201,8 @@
             <div class="p-3 bg-white border-t border-slate-200">
                 <form id="chatForm" onsubmit="handleSendChat(event)" class="flex items-center gap-2">
                     <input type="text" id="chatInput" placeholder="Nhập câu hỏi của bạn tại đây..." 
-                           class="flex-1 py-2 px-3 text-sm bg-slate-100 border border-transparent rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none transition-all placeholder:text-slate-400" />
-                    <button type="submit" class="p-2 bg-navy-800 hover:bg-navy-700 text-white rounded-xl shadow transition-colors">
+                           class="flex-1 py-2 px-3 text-xs sm:text-sm bg-slate-100 border border-transparent rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none transition-all placeholder:text-slate-400" />
+                    <button type="submit" id="chatSendBtn" class="p-2 bg-navy-800 hover:bg-navy-700 text-white rounded-xl shadow transition-colors">
                         <i data-lucide="send" class="w-4 h-4"></i>
                     </button>
                 </form>
@@ -181,22 +220,11 @@
                         <div class="w-10 h-10 rounded-xl bg-navy-800 text-white flex items-center justify-center shadow">
                             <i data-lucide="book-open-check" class="w-5 h-5 text-amber-400"></i>
                         </div>
-                        <span class="text-xl font-bold tracking-tight text-white">SMART<span class="text-blue-400">LIB</span></span>
+                        <span class="text-xl font-bold tracking-tight text-white">SMART<span class="text-blue-400">LIB</span> HUFLIT</span>
                     </div>
                     <p class="text-sm text-slate-400 leading-relaxed max-w-md">
-                        Hệ thống Thư viện Học thuật Hiện đại - Cung cấp trên 50.000 đầu sách in, giáo trình chuyên ngành và kho học liệu số phục vụ nghiên cứu, giảng dạy và học tập đỉnh cao.
+                        Thư Viện Trường Đại Học Ngoại Ngữ - Tin Học TP.HCM (HUFLIT) - Hệ thống Thư viện Học thuật Hiện đại cung cấp kho giáo trình chuyên ngành và tài nguyên số phục vụ đào tạo chất lượng cao.
                     </p>
-                    <div class="flex items-center gap-3 pt-2">
-                        <a href="#" class="w-8 h-8 rounded-lg bg-navy-900 hover:bg-blue-600 text-slate-300 hover:text-white flex items-center justify-center transition-colors">
-                            <i data-lucide="facebook" class="w-4 h-4"></i>
-                        </a>
-                        <a href="#" class="w-8 h-8 rounded-lg bg-navy-900 hover:bg-rose-600 text-slate-300 hover:text-white flex items-center justify-center transition-colors">
-                            <i data-lucide="youtube" class="w-4 h-4"></i>
-                        </a>
-                        <a href="#" class="w-8 h-8 rounded-lg bg-navy-900 hover:bg-blue-400 text-slate-300 hover:text-white flex items-center justify-center transition-colors">
-                            <i data-lucide="globe" class="w-4 h-4"></i>
-                        </a>
-                    </div>
                 </div>
 
                 <!-- Column 2: Quick Links -->
@@ -204,10 +232,10 @@
                     <h3 class="text-sm font-semibold uppercase tracking-wider text-white mb-4">Tra Cứu Nhanh</h3>
                     <ul class="space-y-2.5 text-sm text-slate-400">
                         <li><a asp-controller="Book" asp-action="Index" class="hover:text-white transition-colors">Danh mục sách in</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Luận văn & Luận án</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Tạp chí khoa học</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Tài liệu tham khảo số</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Sách mới tiếp nhận</a></li>
+                        <li><a asp-controller="Book" asp-action="Index" asp-route-searchQuery="Công nghệ" class="hover:text-white transition-colors">CNTT & Lập trình</a></li>
+                        <li><a asp-controller="Book" asp-action="Index" asp-route-searchQuery="Ngoại ngữ" class="hover:text-white transition-colors">Ngoại ngữ & Ngôn ngữ</a></li>
+                        <li><a asp-controller="Book" asp-action="Index" asp-route-searchQuery="Kinh tế" class="hover:text-white transition-colors">Kinh tế & Quản trị</a></li>
+                        <li><a asp-controller="Home" asp-action="Index" asp-fragment="featured" class="hover:text-white transition-colors">Sách mới tiếp nhận</a></li>
                     </ul>
                 </div>
 
@@ -215,28 +243,32 @@
                 <div>
                     <h3 class="text-sm font-semibold uppercase tracking-wider text-white mb-4">Dịch Vụ Độc Giả</h3>
                     <ul class="space-y-2.5 text-sm text-slate-400">
-                        <li><a href="#" class="hover:text-white transition-colors">Đăng ký làm thẻ thư viện</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Quy chế mượn & trả</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Gia hạn sách trực tuyến</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Đặt phòng tự học nhóm</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Tra cứu nợ phạt qua VietQR</a></li>
+                        <li><a asp-controller="Account" asp-action="Register" class="hover:text-white transition-colors">Đăng ký làm thẻ thư viện</a></li>
+                        <li><a asp-controller="Home" asp-action="Rules" class="hover:text-white transition-colors font-medium text-amber-300">Quy chế mượn & trả</a></li>
+                        <li><a asp-controller="Account" asp-action="Profile" class="hover:text-white transition-colors">Gia hạn sách trực tuyến</a></li>
+                        <li><a asp-controller="Home" asp-action="Map" class="hover:text-white transition-colors">Sơ đồ phòng đọc & Kệ sách</a></li>
+                        <li><a asp-controller="Account" asp-action="Profile" class="hover:text-white transition-colors">Tra cứu nợ phạt cá nhân</a></li>
                     </ul>
                 </div>
 
                 <!-- Column 4: Contact & Location -->
                 <div>
-                    <h3 class="text-sm font-semibold uppercase tracking-wider text-white mb-4">Liên Hệ & Hỗ Trợ</h3>
+                    <h3 class="text-sm font-semibold uppercase tracking-wider text-white mb-4">Liên Hệ & Cơ Sở</h3>
                     <div class="space-y-3 text-sm text-slate-400">
                         <p class="flex items-start gap-2.5">
                             <i data-lucide="map-pin" class="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5"></i>
-                            <span>Khu Đô thị Đại học, Phường Linh Trung, TP. Thủ Đức, TP. Hồ Chí Minh</span>
+                            <span>Cơ sở Hóc Môn: Số 80/2 Bà Triệu, Xã Tân Xuân, Huyện Hóc Môn, TP. Hồ Chí Minh</span>
+                        </p>
+                        <p class="flex items-center gap-2.5">
+                            <i data-lucide="phone" class="w-4 h-4 text-amber-400 flex-shrink-0"></i>
+                            <span>(028) 38 632 052</span>
                         </p>
                         <p class="flex items-center gap-2.5">
                             <i data-lucide="mail" class="w-4 h-4 text-blue-400 flex-shrink-0"></i>
-                            <span>thuvien@university.edu.vn</span>
+                            <span>thuvien@huflit.edu.vn</span>
                         </p>
                         <p class="flex items-center gap-2.5">
-                            <i data-lucide="clock" class="w-4 h-4 text-amber-400 flex-shrink-0"></i>
+                            <i data-lucide="clock" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i>
                             <span>T2 - T7: 07:30 - 21:00</span>
                         </p>
                     </div>
@@ -244,11 +276,11 @@
             </div>
 
             <div class="border-t border-navy-900 mt-12 pt-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-4">
-                <p>&copy; @DateTime.Now.Year Hệ Thống Quản Lý Thư Viện SmartLib. Thiết kế chuẩn ASP.NET Core 8 MVC & Tailwind CSS.</p>
+                <p>&copy; @DateTime.Now.Year Thư Viện Trường Đại Học Ngoại Ngữ - Tin Học TP.HCM (HUFLIT). Phát triển trên ASP.NET Core 8 MVC & Tailwind CSS.</p>
                 <div class="flex gap-6">
-                    <a href="#" class="hover:text-slate-300">Chính sách bảo mật</a>
-                    <a href="#" class="hover:text-slate-300">Điều khoản sử dụng</a>
-                    <a href="#" class="hover:text-slate-300">Sơ đồ thư viện</a>
+                    <a asp-controller="Home" asp-action="Privacy" class="hover:text-slate-300">Chính sách bảo mật</a>
+                    <a asp-controller="Home" asp-action="Terms" class="hover:text-slate-300">Điều khoản sử dụng</a>
+                    <a asp-controller="Home" asp-action="Map" class="hover:text-slate-300">Sơ đồ cơ sở Hóc Môn</a>
                 </div>
             </div>
         </div>
@@ -258,7 +290,9 @@
     <script>
         // Init Lucide Icons
         document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
+            if (window.lucide) {
+                lucide.createIcons();
+            }
         });
 
         // Mobile drawer toggle
@@ -290,7 +324,7 @@
             }
         }
 
-        function handleSendChat(e) {
+        async function handleSendChat(e) {
             e.preventDefault();
             const input = document.getElementById('chatInput');
             const messages = document.getElementById('chatMessages');
@@ -303,7 +337,7 @@
             userBubble.className = "flex justify-end gap-2 items-start";
             userBubble.innerHTML = `
                 <div class="bg-navy-800 text-white rounded-2xl rounded-tr-sm p-3 shadow-sm max-w-[85%]">
-                    <p>${escapeHtml(userText)}</p>
+                    <p class="text-xs leading-relaxed">${escapeHtml(userText)}</p>
                     <span class="text-[10px] text-blue-200 mt-1 block text-right">Vừa xong</span>
                 </div>
             `;
@@ -311,21 +345,78 @@
             input.value = '';
             messages.scrollTop = messages.scrollHeight;
 
-            // Auto response after 700ms
-            setTimeout(() => {
-                const botBubble = document.createElement('div');
-                botBubble.className = "flex gap-2.5 items-start";
-                botBubble.innerHTML = `
-                    <div class="w-7 h-7 rounded-full bg-navy-800 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">TT</div>
-                    <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm p-3 shadow-sm max-w-[85%]">
-                        <p class="text-slate-800">Dạ, yêu cầu "<strong>${escapeHtml(userText)}</strong>" của bạn đã được ghi nhận. Bạn có thể nhấn nút "Đặt mượn trực tuyến" ngay tại trang Chi tiết sách hoặc liên hệ quầy mượn Tầng 1 nhé!</p>
-                        <span class="text-[10px] text-slate-400 mt-1 block">Vừa xong</span>
-                    </div>
-                `;
-                messages.appendChild(botBubble);
-                messages.scrollTop = messages.scrollHeight;
-                lucide.createIcons();
-            }, 700);
+            // Append Typing Indicator
+            const typingIndicator = document.createElement('div');
+            typingIndicator.id = 'chatTypingIndicator';
+            typingIndicator.className = "flex gap-2.5 items-start";
+            typingIndicator.innerHTML = `
+                <div class="w-7 h-7 rounded-full bg-navy-800 text-amber-300 flex items-center justify-center text-xs font-bold flex-shrink-0">TT</div>
+                <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-3.5 py-2.5 shadow-sm text-slate-500 text-xs flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-navy-600 animate-pulse"></span>
+                    <span class="w-2 h-2 rounded-full bg-navy-600 animate-pulse delay-75"></span>
+                    <span class="w-2 h-2 rounded-full bg-navy-600 animate-pulse delay-150"></span>
+                    <span class="ml-1 text-[11px] text-slate-400">Thủ thư HUFLIT đang trả lời...</span>
+                </div>
+            `;
+            messages.appendChild(typingIndicator);
+            messages.scrollTop = messages.scrollHeight;
+
+            try {
+                const response = await fetch('/Chat/SendMessage', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ message: userText })
+                });
+
+                document.getElementById('chatTypingIndicator')?.remove();
+
+                if (response.ok) {
+                    const data = await response.json();
+                    appendBotMessage(data.reply || "Dạ, em đã ghi nhận câu hỏi. Bạn vui lòng thử lại nhé!");
+                } else {
+                    appendBotFallback(userText);
+                }
+            } catch (err) {
+                document.getElementById('chatTypingIndicator')?.remove();
+                appendBotFallback(userText);
+            }
+        }
+
+        function appendBotMessage(text) {
+            const messages = document.getElementById('chatMessages');
+            if (!messages) return;
+
+            const botBubble = document.createElement('div');
+            botBubble.className = "flex gap-2.5 items-start";
+            botBubble.innerHTML = `
+                <div class="w-7 h-7 rounded-full bg-navy-800 text-amber-300 flex items-center justify-center text-xs font-bold flex-shrink-0">TT</div>
+                <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm p-3 shadow-sm max-w-[85%] text-slate-800 leading-relaxed text-xs">
+                    <p class="whitespace-pre-line">${text}</p>
+                    <span class="text-[10px] text-slate-400 mt-1 block">Vừa xong • Trợ lý HUFLIT</span>
+                </div>
+            `;
+            messages.appendChild(botBubble);
+            messages.scrollTop = messages.scrollHeight;
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function appendBotFallback(userText) {
+            let botReply = '';
+            const lowerText = userText.toLowerCase();
+
+            if (lowerText.includes('mượn') || lowerText.includes('hạn') || lowerText.includes('15') || lowerText.includes('3 cuốn')) {
+                botReply = "Quy chế mượn sách HUFLIT: Mỗi sinh viên được mượn tối đa 3 cuốn sách trong thời hạn 15 ngày. Nếu thẻ đang có sách chưa trả thì không được mượn tiếp.";
+            } else if (lowerText.includes('gia hạn') || lowerText.includes('hạn trả')) {
+                botReply = "Gia hạn sách: Bạn có thể vào Cổng Độc Giả > Sách Đang Mượn để nhấn 'Gia hạn' (tối đa thêm 07 ngày) nếu sách chưa có độc giả khác đặt trước.";
+            } else if (lowerText.includes('mất') || lowerText.includes('hỏng') || lowerText.includes('phạt') || lowerText.includes('bồi thường')) {
+                botReply = "Quy định bồi thường: Khi sách bị Mất hoặc Hỏng, Thẻ thư viện tự động chuyển sang 'Không sử dụng'. Bạn cần đến Quầy Thủ thư Cơ sở Hóc Môn nộp tiền bồi thường để mở lại thẻ.";
+            } else {
+                botReply = "Dạ, em đã ghi nhận câu hỏi. Bạn có thể xem thêm mục Quy định mượn trả hoặc liên hệ trực tiếp Thư viện HUFLIT Cơ sở Hóc Môn: Số 80/2 Bà Triệu, Xã Tân Xuân, Hóc Môn (Hotline: 028 38 632 052) nhé!";
+            }
+            appendBotMessage(botReply);
         }
 
         function escapeHtml(text) {
@@ -334,23 +425,126 @@
             return div.innerHTML;
         }
 
-        // Global Toast Notification Trigger
+        // ================= GLOBAL REUSABLE APP MODAL & TOAST HELPERS =================
+        window.showAppModal = function(options) {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('appModalOverlay');
+                const box = document.getElementById('appModalBox');
+                const iconWrapper = document.getElementById('appModalIconWrapper');
+                const icon = document.getElementById('appModalIcon');
+                const title = document.getElementById('appModalTitle');
+                const msg = document.getElementById('appModalMessage');
+                const confirmBtn = document.getElementById('appModalConfirmBtn');
+                const cancelBtn = document.getElementById('appModalCancelBtn');
+
+                if (!overlay || !box) {
+                    resolve(true);
+                    return;
+                }
+
+                const type = options.type || 'info';
+                title.innerText = options.title || 'Thông Báo Thư Viện';
+                if (options.html) {
+                    msg.innerHTML = options.html;
+                } else {
+                    msg.innerText = options.message || '';
+                }
+
+                if (type === 'success') {
+                    iconWrapper.className = 'w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0';
+                    icon.setAttribute('data-lucide', 'check-circle-2');
+                    confirmBtn.className = 'px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-md transition-all';
+                } else if (type === 'error' || type === 'danger') {
+                    iconWrapper.className = 'w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center flex-shrink-0';
+                    icon.setAttribute('data-lucide', 'alert-circle');
+                    confirmBtn.className = 'px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md transition-all';
+                } else if (type === 'warning') {
+                    iconWrapper.className = 'w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0';
+                    icon.setAttribute('data-lucide', 'alert-triangle');
+                    confirmBtn.className = 'px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md transition-all';
+                } else {
+                    iconWrapper.className = 'w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0';
+                    icon.setAttribute('data-lucide', 'info');
+                    confirmBtn.className = 'px-5 py-2.5 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow-md transition-all';
+                }
+
+                confirmBtn.innerText = options.confirmText || 'Đồng ý';
+
+                if (options.cancelText || type === 'confirm') {
+                    cancelBtn.classList.remove('hidden');
+                    cancelBtn.innerText = options.cancelText || 'Hủy bỏ';
+                } else {
+                    cancelBtn.classList.add('hidden');
+                }
+
+                overlay.classList.remove('hidden');
+                setTimeout(() => {
+                    box.classList.remove('scale-95', 'opacity-0');
+                    box.classList.add('scale-100', 'opacity-100');
+                }, 10);
+                if (window.lucide) lucide.createIcons();
+
+                const cleanup = (result) => {
+                    box.classList.remove('scale-100', 'opacity-100');
+                    box.classList.add('scale-95', 'opacity-0');
+                    setTimeout(() => {
+                        overlay.classList.add('hidden');
+                    }, 150);
+                    confirmBtn.onclick = null;
+                    cancelBtn.onclick = null;
+                    resolve(result);
+                };
+
+                confirmBtn.onclick = () => cleanup(true);
+                cancelBtn.onclick = () => cleanup(false);
+            });
+        };
+
+        window.showAppConfirm = function(message, title = 'Xác Nhận Thao Tác') {
+            return window.showAppModal({
+                title: title,
+                message: message,
+                type: 'confirm',
+                confirmText: 'Đồng ý',
+                cancelText: 'Hủy bỏ'
+            });
+        };
+
+        window.showAppAlert = function(message, title = 'Thông Báo') {
+            return window.showAppModal({
+                title: title,
+                message: message,
+                type: 'info',
+                confirmText: 'Đã hiểu'
+            });
+        };
+
+        window.showAppToast = function(type, title, message) {
+            showNotification(type, title, message);
+        };
+
         function showNotification(type, title, message) {
             const container = document.getElementById('toastContainer');
             if (!container) return;
 
             const isSuccess = type === 'success';
+            const isWarn = type === 'warning';
+            let colorClass = isSuccess ? 'text-emerald-800 bg-emerald-50 border-emerald-200' : 
+                             (isWarn ? 'text-amber-800 bg-amber-50 border-amber-200' : 'text-rose-800 bg-rose-50 border-rose-200');
+            let iconName = isSuccess ? 'check-circle-2' : (isWarn ? 'alert-triangle' : 'alert-circle');
+            let iconColor = isSuccess ? 'text-emerald-600' : (isWarn ? 'text-amber-600' : 'text-rose-600');
+
             const toast = document.createElement('div');
-            toast.className = `pointer-events-auto flex items-center gap-3 p-4 text-sm ${isSuccess ? 'text-emerald-800 bg-emerald-50 border-emerald-200' : 'text-rose-800 bg-rose-50 border-rose-200'} border rounded-xl shadow-lg transition-all transform duration-300`;
+            toast.className = `pointer-events-auto flex items-center gap-3 p-4 text-sm ${colorClass} border rounded-xl shadow-lg transition-all transform duration-300`;
             toast.innerHTML = `
-                <i data-lucide="${isSuccess ? 'check-circle-2' : 'alert-circle'}" class="w-5 h-5 ${isSuccess ? 'text-emerald-600' : 'text-rose-600'} flex-shrink-0"></i>
+                <i data-lucide="${iconName}" class="w-5 h-5 ${iconColor} flex-shrink-0"></i>
                 <div>
                     <p class="font-semibold">${title}</p>
-                    <p>${message}</p>
+                    <p class="text-xs mt-0.5">${message}</p>
                 </div>
             `;
             container.appendChild(toast);
-            lucide.createIcons();
+            if (window.lucide) lucide.createIcons();
 
             setTimeout(() => {
                 toast.classList.add('opacity-0', 'translate-x-full');

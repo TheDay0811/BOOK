@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BOOK.Data;
@@ -29,6 +31,14 @@ namespace BOOK.Controllers
         {
             if (User.Identity != null && User.Identity.IsAuthenticated)
             {
+                if (User.IsInRole("Admin"))
+                {
+                    return RedirectToAction("Index", "Home", new { area = "Admin" });
+                }
+                if (User.IsInRole("Librarian") || User.IsInRole("ThuThu"))
+                {
+                    return RedirectToAction("Index", "Borrow", new { area = "Admin" });
+                }
                 if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                 {
                     return Redirect(returnUrl);
@@ -54,19 +64,42 @@ namespace BOOK.Controllers
 
             var taiKhoan = await _context.TaiKhoans
                 .Include(tk => tk.TheThuVien)
-                .FirstOrDefaultAsync(tk => tk.Username.ToLower() == username && tk.PasswordHash == model.Password);
+                .FirstOrDefaultAsync(tk => (
+                    tk.Username.ToLower() == username || 
+                    (tk.Email != null && tk.Email.ToLower() == username) ||
+                    (username == "admin" && (tk.Username.ToLower() == "admin@huflit.edu.vn" || tk.Role == "Admin")) ||
+                    (username == "admin@huflit.edu.vn" && (tk.Username.ToLower() == "admin" || tk.Role == "Admin")) ||
+                    (username == "thuthu" && (tk.Username.ToLower() == "thuthu@huflit.edu.vn" || tk.Role == "Librarian" || tk.Role == "ThuThu")) ||
+                    (username == "thuthu@huflit.edu.vn" && (tk.Username.ToLower() == "thuthu" || tk.Role == "Librarian" || tk.Role == "ThuThu"))
+                ) && tk.PasswordHash == model.Password);
 
             if (taiKhoan == null)
             {
-                ModelState.AddModelError("", "Tài khoản hoặc mật khẩu không đúng.");
+                ModelState.AddModelError("", "Tên đăng nhập / Email hoặc mật khẩu không đúng.");
                 return View(model);
             }
 
-            string role = taiKhoan.Role; // "Admin" / "ThuThu" / "SinhVien"
-            string fullName = taiKhoan.TheThuVien?.HoTen ?? taiKhoan.Username;
+            // Tự động cấp lại thẻ thư viện nếu tài khoản sinh viên chưa có thẻ
+            if (taiKhoan.Role == "SinhVien" && taiKhoan.TheThuVien == null)
+            {
+                taiKhoan.TheThuVien = new TheThuVien
+                {
+                    SoThe = $"LIB-{taiKhoan.Username.Trim().ToUpper()}",
+                    HoTen = !string.IsNullOrWhiteSpace(taiKhoan.FullName) ? taiKhoan.FullName : taiKhoan.Username,
+                    NgayHetHan = DateTime.Today.AddYears(1),
+                    TinhTrangSuDung = "Sử dụng được"
+                };
+                await _context.SaveChangesAsync();
+            }
+
+            string role = taiKhoan.Role; // "Admin" / "Librarian" / "ThuThu" / "SinhVien"
+            string fullName = !string.IsNullOrWhiteSpace(taiKhoan.FullName)
+                ? taiKhoan.FullName
+                : (taiKhoan.TheThuVien?.HoTen ?? taiKhoan.Username);
             string studentCode = taiKhoan.Username;
             string cardNumber = taiKhoan.TheThuVien?.SoThe ?? "";
             string cardStatus = taiKhoan.TheThuVien?.TinhTrangSuDung ?? "";
+            string avatarUrl = !string.IsNullOrEmpty(taiKhoan.AvatarUrl) ? taiKhoan.AvatarUrl : "/uploads/avatars/default-avatar.svg";
 
             // Tạo Claims Identity xác thực Cookie
             var claims = new List<Claim>
@@ -75,8 +108,14 @@ namespace BOOK.Controllers
                 new Claim(ClaimTypes.NameIdentifier, studentCode),
                 new Claim(ClaimTypes.Role, role),
                 new Claim("CardNumber", cardNumber),
-                new Claim("CardStatus", cardStatus)
+                new Claim("CardStatus", cardStatus),
+                new Claim("AvatarUrl", avatarUrl)
             };
+
+            if (!string.IsNullOrEmpty(taiKhoan.Email))
+            {
+                claims.Add(new Claim(ClaimTypes.Email, taiKhoan.Email));
+            }
 
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var authProperties = new AuthenticationProperties
@@ -96,7 +135,7 @@ namespace BOOK.Controllers
                 TempData["Success"] = "Đăng nhập thành công với quyền Quản trị viên (Admin)!";
                 return RedirectToAction("Index", "Home", new { area = "Admin" });
             }
-            else if (role == "ThuThu")
+            else if (role == "ThuThu" || role == "Librarian")
             {
                 TempData["Success"] = "Đăng nhập thành công với quyền Thủ thư trực ca!";
                 return RedirectToAction("Index", "Borrow", new { area = "Admin" });
@@ -158,15 +197,19 @@ namespace BOOK.Controllers
             var newTaiKhoan = new TaiKhoan
             {
                 Username = model.StudentCode.Trim(),
+                FullName = model.FullName.Trim(),
+                Email = model.Email.Trim(),
+                PhoneNumber = model.PhoneNumber.Trim(),
                 PasswordHash = model.Password, // case study không yêu cầu hash, giữ đơn giản
-                Role = "SinhVien"
+                Role = "SinhVien",
+                AvatarUrl = "/uploads/avatars/default-avatar.svg"
             };
 
             var assignedCardNumber = $"LIB-{model.StudentCode.Trim().ToUpper()}";
             var newThe = new TheThuVien
             {
                 SoThe = assignedCardNumber,
-                HoTen = model.FullName,
+                HoTen = model.FullName.Trim(),
                 NgayHetHan = DateTime.Today.AddYears(1),
                 TinhTrangSuDung = "Sử dụng được",
                 TaiKhoan = newTaiKhoan
@@ -200,6 +243,18 @@ namespace BOOK.Controllers
 
             if (the == null)
             {
+                if (User.IsInRole("Admin"))
+                {
+                    return RedirectToAction("Index", "Home", new { area = "Admin" });
+                }
+                if (User.IsInRole("Librarian") || User.IsInRole("ThuThu"))
+                {
+                    return RedirectToAction("Index", "Borrow", new { area = "Admin" });
+                }
+
+                // Tài khoản không còn tồn tại / không có thẻ: đăng xuất để tránh lặp chuyển hướng
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                TempData["Error"] = "Không tìm thấy hồ sơ thẻ thư viện. Vui lòng đăng nhập lại hoặc liên hệ thủ thư.";
                 return RedirectToAction(nameof(Login));
             }
 
@@ -208,12 +263,29 @@ namespace BOOK.Controllers
                 .SelectMany(p => p.ChiTiets.Where(c => c.NgayTraThucTe == null).Select(c => new ActiveBorrowItemViewModel
                 {
                     BorrowId = p.MaPhieuMuon,
-                    BookCode = c.DauSach.Sach.MaSachCode,
-                    ControlNumber = c.DauSach.SoKiemSoat,
-                    BookTitle = c.DauSach.Sach.TenSach,
-                    Author = c.DauSach.Sach.TacGia,
+                    BookCode = c.DauSach?.Sach?.MaSachCode ?? "",
+                    ControlNumber = c.DauSach?.SoKiemSoat ?? "",
+                    BookTitle = c.DauSach?.Sach?.TenSach ?? "",
+                    Author = c.DauSach?.Sach?.TacGia ?? "",
+                    CoverImageUrl = !string.IsNullOrEmpty(c.DauSach?.Sach?.HinhAnh) ? c.DauSach.Sach.HinhAnh : "/uploads/books/default-book.svg",
                     BorrowDate = p.NgayMuon,
                     DueDate = p.HanTra
+                }))
+                .ToList();
+
+            var pendingLoans = the.PhieuMuons
+                .Where(p => p.TrangThai == "Chờ duyệt")
+                .SelectMany(p => p.ChiTiets.Select(c => new PendingBorrowItemViewModel
+                {
+                    BorrowId = p.MaPhieuMuon,
+                    BookCode = c.DauSach?.Sach?.MaSachCode ?? "",
+                    ControlNumber = c.DauSach?.SoKiemSoat ?? "",
+                    BookTitle = c.DauSach?.Sach?.TenSach ?? "",
+                    Author = c.DauSach?.Sach?.TacGia ?? "",
+                    CoverImageUrl = !string.IsNullOrEmpty(c.DauSach?.Sach?.HinhAnh) ? c.DauSach.Sach.HinhAnh : "/uploads/books/default-book.svg",
+                    RequestDate = p.NgayMuon,
+                    DueDate = p.HanTra,
+                    Status = p.TrangThai
                 }))
                 .ToList();
 
@@ -221,9 +293,9 @@ namespace BOOK.Controllers
                 .SelectMany(p => p.ChiTiets.Where(c => c.NgayTraThucTe != null).Select(c => new BorrowHistoryItemViewModel
                 {
                     Id = c.MaChiTiet,
-                    BookCode = c.DauSach.Sach.MaSachCode,
-                    ControlNumber = c.DauSach.SoKiemSoat,
-                    BookTitle = c.DauSach.Sach.TenSach,
+                    BookCode = c.DauSach?.Sach?.MaSachCode ?? "",
+                    ControlNumber = c.DauSach?.SoKiemSoat ?? "",
+                    BookTitle = c.DauSach?.Sach?.TenSach ?? "",
                     BorrowDate = p.NgayMuon,
                     ReturnDate = c.NgayTraThucTe!.Value,
                     ReturnCondition = c.TinhTrangTra,
@@ -236,6 +308,9 @@ namespace BOOK.Controllers
             {
                 FullName = the.HoTen,
                 StudentCode = the.TaiKhoan.Username,
+                Email = the.TaiKhoan.Email ?? $"{the.TaiKhoan.Username.ToLower()}@student.huflit.edu.vn",
+                PhoneNumber = the.TaiKhoan.PhoneNumber ?? "",
+                AvatarUrl = !string.IsNullOrEmpty(the.TaiKhoan.AvatarUrl) ? the.TaiKhoan.AvatarUrl : "/uploads/avatars/default-avatar.svg",
                 CardNumber = the.SoThe,
                 CardIssueDate = the.NgayHetHan.AddYears(-1),
                 CardExpiryDate = the.NgayHetHan,
@@ -243,13 +318,16 @@ namespace BOOK.Controllers
                 TotalUnpaidFines = historyLoans.Where(h => h.PaymentStatus == "Chưa thanh toán").Sum(h => h.CompensationFee),
                 TotalFinesPaid = historyLoans.Where(h => h.PaymentStatus == "Đã thanh toán").Sum(h => h.CompensationFee),
                 ActiveLoans = activeLoans,
+                PendingLoans = pendingLoans,
                 HistoryLoans = historyLoans
             };
 
             model.UpdateModel = new UpdateProfileInputModel
             {
                 FullName = model.FullName,
-                StudentCode = model.StudentCode
+                StudentCode = model.StudentCode,
+                Email = model.Email,
+                PhoneNumber = model.PhoneNumber
             };
 
             return View(model);
@@ -260,23 +338,240 @@ namespace BOOK.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UpdateProfile(UpdateProfileInputModel input)
         {
+            bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+                          Request.Headers["Accept"].ToString().Contains("application/json");
+
             if (!ModelState.IsValid)
             {
+                if (isAjax)
+                {
+                    return Json(new { success = false, message = "Vui lòng kiểm tra lại thông tin nhập liệu." });
+                }
                 TempData["Error"] = "Vui lòng kiểm tra lại thông tin nhập liệu.";
                 return RedirectToAction(nameof(Profile));
             }
 
+            var studentCode = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? input.StudentCode;
+
             var the = await _context.TheThuViens
                 .Include(t => t.TaiKhoan)
-                .FirstOrDefaultAsync(t => t.TaiKhoan.Username == input.StudentCode);
+                .FirstOrDefaultAsync(t => t.TaiKhoan.Username == studentCode);
 
             if (the != null)
             {
-                the.HoTen = input.FullName;
+                the.HoTen = input.FullName.Trim();
+                if (the.TaiKhoan != null)
+                {
+                    the.TaiKhoan.FullName = input.FullName.Trim();
+                    the.TaiKhoan.Email = input.Email.Trim();
+                    the.TaiKhoan.PhoneNumber = input.PhoneNumber.Trim();
+                }
                 await _context.SaveChangesAsync();
             }
 
-            TempData["Success"] = $"Cập nhật thông tin thành công cho độc giả {input.FullName}!";
+            var successMsg = $"Cập nhật thông tin thành công cho độc giả {input.FullName}!";
+            if (isAjax)
+            {
+                return Json(new { success = true, message = successMsg, fullName = input.FullName });
+            }
+
+            TempData["Success"] = successMsg;
+            return RedirectToAction(nameof(Profile));
+        }
+
+        // POST: /Account/UploadAvatar
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadAvatar(IFormFile? avatarFile)
+        {
+            var studentCode = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(studentCode))
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            if (avatarFile == null || avatarFile.Length == 0)
+            {
+                TempData["Error"] = "Vui lòng chọn tệp ảnh đại diện.";
+                return RedirectToAction(nameof(Profile));
+            }
+
+            if (avatarFile.Length > 2 * 1024 * 1024) // 2MB
+            {
+                TempData["Error"] = "Dung lượng ảnh không được vượt quá 2MB.";
+                return RedirectToAction(nameof(Profile));
+            }
+
+            var extension = Path.GetExtension(avatarFile.FileName).ToLowerInvariant();
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            if (!allowedExtensions.Contains(extension))
+            {
+                TempData["Error"] = "Chỉ chấp nhận các định dạng ảnh: JPG, JPEG, PNG, WEBP.";
+                return RedirectToAction(nameof(Profile));
+            }
+
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "avatars");
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            var uniqueFileName = $"{studentCode}_{DateTime.UtcNow.Ticks}{extension}";
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await avatarFile.CopyToAsync(stream);
+            }
+
+            var avatarUrl = $"/uploads/avatars/{uniqueFileName}";
+
+            var taiKhoan = await _context.TaiKhoans.FirstOrDefaultAsync(tk => tk.Username == studentCode);
+            if (taiKhoan != null)
+            {
+                taiKhoan.AvatarUrl = avatarUrl;
+                await _context.SaveChangesAsync();
+
+                // Cập nhật lại Claim Identity trong Cookie để ảnh hiển thị ngay lập tức
+                if (User.Identity is ClaimsIdentity identity)
+                {
+                    var existingAvatarClaim = identity.FindFirst("AvatarUrl");
+                    if (existingAvatarClaim != null)
+                    {
+                        identity.RemoveClaim(existingAvatarClaim);
+                    }
+                    identity.AddClaim(new Claim("AvatarUrl", avatarUrl));
+                    await HttpContext.SignInAsync(
+                        CookieAuthenticationDefaults.AuthenticationScheme,
+                        new ClaimsPrincipal(identity),
+                        new AuthenticationProperties { IsPersistent = true });
+                }
+            }
+
+            TempData["Success"] = "Cập nhật ảnh đại diện thành công!";
+            return RedirectToAction(nameof(Profile));
+        }
+
+        // POST: /Account/CancelBorrowRequest
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CancelBorrowRequest(int borrowId)
+        {
+            bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+                          Request.Headers["Accept"].ToString().Contains("application/json");
+
+            var studentCode = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(studentCode))
+            {
+                if (isAjax) return Json(new { success = false, message = "Vui lòng đăng nhập lại." });
+                return RedirectToAction(nameof(Login));
+            }
+
+            var phieu = await _context.PhieuMuons
+                .Include(p => p.The)
+                    .ThenInclude(t => t.TaiKhoan)
+                .Include(p => p.ChiTiets)
+                    .ThenInclude(c => c.DauSach)
+                        .ThenInclude(d => d.Sach)
+                .FirstOrDefaultAsync(p => p.MaPhieuMuon == borrowId);
+
+            if (phieu == null || phieu.The?.TaiKhoan?.Username != studentCode)
+            {
+                var msg = "Không tìm thấy yêu cầu mượn sách hoặc bạn không có quyền thao tác.";
+                if (isAjax) return Json(new { success = false, message = msg });
+                TempData["Error"] = msg;
+                return RedirectToAction(nameof(Profile));
+            }
+
+            if (phieu.TrangThai != "Chờ duyệt")
+            {
+                var msg = $"Không thể hủy yêu cầu này vì trạng thái hiện tại là '{phieu.TrangThai}'.";
+                if (isAjax) return Json(new { success = false, message = msg });
+                TempData["Error"] = msg;
+                return RedirectToAction(nameof(Profile));
+            }
+
+            // Hoàn lại tình trạng đầu sách về "Còn"
+            string bookTitle = "tài liệu";
+            foreach (var c in phieu.ChiTiets)
+            {
+                if (c.DauSach != null)
+                {
+                    c.DauSach.TinhTrang = "Còn";
+                    if (c.DauSach.Sach != null)
+                    {
+                        bookTitle = c.DauSach.Sach.TenSach;
+                    }
+                }
+            }
+
+            // Cập nhật trạng thái phiếu mượn sang "Đã hủy"
+            phieu.TrangThai = "Đã hủy";
+            await _context.SaveChangesAsync();
+
+            var successMsg = $"Đã hủy yêu cầu đăng ký mượn cuốn sách \"{bookTitle}\" (Mã phiếu #{borrowId}) thành công!";
+            if (isAjax)
+            {
+                return Json(new { success = true, message = successMsg });
+            }
+
+            TempData["Success"] = successMsg;
+            return RedirectToAction(nameof(Profile));
+        }
+
+        // POST: /Account/ChangePassword
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangePassword(ChangePasswordInputModel model)
+        {
+            bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" ||
+                          Request.Headers["Accept"].ToString().Contains("application/json");
+
+            var studentCode = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(studentCode))
+            {
+                if (isAjax) return Json(new { success = false, message = "Vui lòng đăng nhập lại." });
+                return RedirectToAction(nameof(Login));
+            }
+
+            if (!ModelState.IsValid)
+            {
+                var firstError = ModelState.Values.SelectMany(v => v.Errors).FirstOrDefault()?.ErrorMessage
+                                 ?? "Vui lòng kiểm tra lại thông tin mật khẩu.";
+                if (isAjax) return Json(new { success = false, message = firstError });
+                TempData["Error"] = firstError;
+                return RedirectToAction(nameof(Profile));
+            }
+
+            var taiKhoan = await _context.TaiKhoans.FirstOrDefaultAsync(tk => tk.Username == studentCode);
+            if (taiKhoan == null)
+            {
+                var msg = "Không tìm thấy tài khoản người dùng.";
+                if (isAjax) return Json(new { success = false, message = msg });
+                TempData["Error"] = msg;
+                return RedirectToAction(nameof(Profile));
+            }
+
+            // Kiểm tra mật khẩu hiện tại
+            if (taiKhoan.PasswordHash != model.CurrentPassword)
+            {
+                var msg = "Mật khẩu hiện tại không chính xác. Vui lòng kiểm tra lại.";
+                if (isAjax) return Json(new { success = false, message = msg });
+                TempData["Error"] = msg;
+                return RedirectToAction(nameof(Profile));
+            }
+
+            // Cập nhật mật khẩu mới
+            taiKhoan.PasswordHash = model.NewPassword;
+            await _context.SaveChangesAsync();
+
+            var successMsg = "Đổi mật khẩu thành công! Mật khẩu mới đã có hiệu lực.";
+            if (isAjax)
+            {
+                return Json(new { success = true, message = successMsg });
+            }
+
+            TempData["Success"] = successMsg;
             return RedirectToAction(nameof(Profile));
         }
 

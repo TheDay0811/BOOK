@@ -1,62 +1,199 @@
 @model BOOK.Models.ViewModels.ReturnBookDeskViewModel
 @{
     Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
-    ViewData["Title"] = "Tiếp Nhận Trả Sách";
+    ViewData["Title"] = "Quầy Thu Hồi & Đánh Giá Tình Trạng Tài Liệu";
 }
 
 <div class="space-y-6">
-    <h1 class="text-2xl font-black text-slate-900">Quầy Nhận Trả Sách</h1>
 
-    @if (TempData["Error"] != null)
-    {
-        <div class="p-3 rounded-xl bg-rose-100 text-rose-800 text-sm font-bold">@TempData["Error"]</div>
-    }
+    <!-- BREADCRUMB & HEADER -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <nav class="flex items-center gap-2 text-xs text-slate-500 mb-1">
+                <span>Nghiệp Vụ Mượn - Trả</span>
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+                <span class="text-navy-800 font-bold">Quầy Thu Hồi & Đánh Giá</span>
+            </nav>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Quầy Thu Hồi & Đánh Giá Tình Trạng Tài Liệu</h1>
+            <p class="text-xs text-slate-500 mt-0.5">Tiếp nhận sách vật lý từ độc giả, kiểm tra tình trạng từng cuốn theo số kiểm soát và tính phí bồi thường (nếu có).</p>
+        </div>
 
-    <form method="get" asp-action="Return" class="flex gap-3">
-        <input type="number" name="ticketCode" placeholder="Nhập mã phiếu mượn (số)" class="flex-1 p-2.5 border border-slate-300 rounded-xl font-mono" />
-        <button type="submit" class="px-4 py-2.5 bg-navy-800 text-white rounded-xl text-xs font-bold">Tra Cứu Phiếu</button>
-    </form>
+        <a asp-action="Index" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 self-start">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Quay Lại Danh Sách Mượn Trả
+        </a>
+    </div>
+
+    <!-- TÌM KIẾM PHIẾU MƯỢN CẦN TRẢ -->
+    <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+        <form method="get" asp-action="Return" class="max-w-2xl">
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                Nhập Mã Số Phiếu Mượn Hoặc Quét Mã Vạch
+            </label>
+            <div class="flex gap-2">
+                <div class="relative flex-1">
+                    <input type="number" name="ticketCode" value="@(string.IsNullOrEmpty(Model.TicketCode) ? "" : Model.TicketCode)" 
+                           placeholder="Ví dụ: 1, 2, 3... (nhập số phiếu mượn)" 
+                           class="w-full pl-10 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none font-mono" />
+                    <i data-lucide="scan" class="w-5 h-5 text-slate-400 absolute left-3 top-3"></i>
+                </div>
+                <button type="submit" class="px-6 py-2.5 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm">
+                    <i data-lucide="search" class="w-4 h-4"></i> Tra Cứu Phiếu
+                </button>
+            </div>
+        </form>
+    </div>
 
     @if (!string.IsNullOrEmpty(Model.StudentName))
     {
-        <div class="bg-white rounded-2xl border border-slate-200 p-4">
-            <p><strong>@Model.StudentName</strong> — MSSV @Model.StudentCode — Thẻ @Model.CardNumber</p>
+        <!-- THÔNG TIN ĐỘC GIẢ & THẺ THƯ VIỆN -->
+        <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-navy-800 text-white flex items-center justify-center font-bold text-base shadow">
+                        @(Model.StudentName.Length > 0 ? Model.StudentName.Substring(0, 1).ToUpper() : "Đ")
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-extrabold text-slate-900 text-base">@Model.StudentName</h3>
+                            <span class="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-slate-100 text-slate-700">MSSV: @Model.StudentCode</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">Số thẻ thư viện: <strong class="font-mono text-navy-800">@Model.CardNumber</strong> | Hạn thẻ: @Model.CardExpiryDate.ToString("dd/MM/yyyy")</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-500">Tình trạng thẻ:</span>
+                    @if (Model.CurrentCardStatus == "Sử dụng được")
+                    {
+                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> @Model.CurrentCardStatus
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                            <span class="w-2 h-2 rounded-full bg-rose-500"></span> @Model.CurrentCardStatus (Đang bị khóa)
+                        </span>
+                    }
+                </div>
+            </div>
+
+            <!-- QUY TẮC NGHIỆP VỤ BẮT BUỘC -->
+            <div class="mt-4 p-3.5 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5">
+                <i data-lucide="alert-circle" class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5"></i>
+                <div class="space-y-0.5">
+                    <p class="font-bold">Quy định nghiệp vụ Case Study Thư Viện:</p>
+                    <p class="text-[11px] text-amber-800">
+                        • Nếu ghi nhận <span class="font-bold text-rose-700">"Hỏng"</span> hoặc <span class="font-bold text-rose-700">"Mất"</span>, hệ thống sẽ tự động chuyển thẻ thư viện của sinh viên thành <strong>"Không sử dụng"</strong>.
+                        Sinh viên cần hoàn tất bồi thường tại quầy hoặc Cổng sinh viên để được mở khóa thẻ.
+                    </p>
+                </div>
+            </div>
         </div>
 
-        <form method="post" asp-action="Return" class="space-y-4 bg-white p-6 rounded-2xl border border-slate-200">
+        <!-- FORM GHI NHẬN TÌNH TRẠNG SÁCH & BỒI THƯỜNG -->
+        <form method="post" asp-action="Return" class="space-y-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
             @Html.AntiForgeryToken()
             <input type="hidden" name="phieuMuonId" value="@Model.TicketCode" />
 
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="text-left border-b">
-                        <th class="py-2">Sách</th>
-                        <th>Số KS</th>
-                        <th>Tình trạng khi trả</th>
-                        <th>Tiền bồi thường</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in Model.BorrowedCopies)
-                    {
-                        <tr class="border-b">
-                            <td class="py-2">@item.BookTitle</td>
-                            <td>@item.ControlNumber</td>
-                            <td>
-                                <input type="hidden" name="copyIds" value="@item.CopyId" />
-                                <select name="conditions" class="p-1.5 border border-slate-300 rounded-lg">
-                                    <option value="Bình thường">Bình thường</option>
-                                    <option value="Hỏng">Hỏng</option>
-                                    <option value="Mất">Mất</option>
-                                </select>
-                            </td>
-                            <td><input type="number" name="fees" value="0" class="p-1.5 border border-slate-300 rounded-lg w-28" /></td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h3 class="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                    <i data-lucide="book-check" class="w-4 h-4 text-emerald-600"></i>
+                    Danh Mục Cuốn Sách Trong Phiếu Mượn (#@Model.TicketCode)
+                </h3>
+                <span class="text-xs text-slate-500">Số lượng: <strong>@Model.BorrowedCopies.Count cuốn</strong></span>
+            </div>
 
-            <button type="submit" class="px-6 py-3 bg-navy-800 text-white rounded-xl font-bold">Xác Nhận Trả Sách</button>
+            <div class="overflow-x-auto rounded-2xl border border-slate-200">
+                <table class="w-full text-left text-xs text-slate-600">
+                    <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
+                        <tr>
+                            <th class="py-3 px-4">Tên Sách</th>
+                            <th class="py-3 px-4">Số Kiểm Soát</th>
+                            <th class="py-3 px-4">Hạn Trả</th>
+                            <th class="py-3 px-4">Tình Trạng Khi Nhận Lại</th>
+                            <th class="py-3 px-4">Tiền Bồi Thường (VNĐ)</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        @for (int i = 0; i < Model.BorrowedCopies.Count; i++)
+                        {
+                            var item = Model.BorrowedCopies[i];
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="py-3.5 px-4 font-bold text-slate-900 max-w-xs">
+                                    <p class="truncate">@item.BookTitle</p>
+                                    <span class="text-[10px] text-slate-400 font-mono font-normal">Mã: @item.BookCode</span>
+                                </td>
+                                <td class="py-3.5 px-4 font-mono font-black text-sm text-navy-800">
+                                    @item.ControlNumber
+                                </td>
+                                <td class="py-3.5 px-4 text-slate-500">
+                                    @item.DueDate.ToString("dd/MM/yyyy")
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    <input type="hidden" name="copyIds" value="@item.CopyId" />
+                                    <select name="conditions" onchange="handleConditionChange(this, @i)" 
+                                            class="py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs focus:bg-white focus:border-navy-800 focus:outline-none">
+                                        <option value="Bình thường" selected>✓ Còn nguyên vẹn (Bình thường)</option>
+                                        <option value="Hỏng">⚠️ Hư hỏng / Rách trang (Hỏng)</option>
+                                        <option value="Mất">⛔ Thất lạc / Làm mất (Mất)</option>
+                                    </select>
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    <div class="relative w-36">
+                                        <input type="number" id="feeInput_@i" name="fees" value="0" min="0" step="1000" 
+                                               class="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-rose-600 focus:bg-white focus:border-navy-800 focus:outline-none" />
+                                        <span class="absolute right-3 top-2 text-[10px] text-slate-400 pointer-events-none">đ</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+                <span class="text-xs text-slate-500">Kiểm tra kỹ tình trạng vật lý trước khi xác nhận lưu vào kho.</span>
+                <button type="submit" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+                    <i data-lucide="check-check" class="w-4 h-4"></i> Xác Nhận Nhập Trả Vào Kho
+                </button>
+            </div>
         </form>
     }
+    else
+    {
+        <!-- EMPTY STATE KHI CHƯA CHỌN PHIẾU HOẶC KHÔNG TÌM THẤY -->
+        <div class="p-12 text-center bg-white rounded-3xl border border-slate-200 shadow-sm">
+            <div class="w-16 h-16 rounded-full bg-blue-50 text-navy-800 flex items-center justify-center mx-auto mb-3">
+                <i data-lucide="scan-barcode" class="w-8 h-8"></i>
+            </div>
+            <h3 class="font-extrabold text-slate-800 text-base">Chưa Chọn Phiếu Mượn Cần Tiếp Nhận</h3>
+            <p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                Vui lòng nhập mã số phiếu mượn vào ô tìm kiếm ở trên hoặc truy cập danh sách các phiếu đang mượn để chọn nhanh phiếu cần hoàn trả.
+            </p>
+            <div class="mt-5">
+                <a asp-action="Index" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold transition-all shadow-sm">
+                    <i data-lucide="list" class="w-4 h-4 text-amber-400"></i> Xem Danh Sách Phiếu Đang Mượn
+                </a>
+            </div>
+        </div>
+    }
+
 </div>
+
+@section Scripts {
+    <script>
+        function handleConditionChange(selectEl, index) {
+            const feeInput = document.getElementById('feeInput_' + index);
+            if (!feeInput) return;
+
+            if (selectEl.value === 'Hỏng') {
+                feeInput.value = 50000;
+            } else if (selectEl.value === 'Mất') {
+                feeInput.value = 100000;
+            } else {
+                feeInput.value = 0;
+            }
+        }
+    </script>
+}

@@ -16,7 +16,7 @@
             <h1 class="text-2xl font-black text-slate-900 tracking-tight">Quản Lý Người Dùng & Phân Quyền</h1>
         </div>
 
-        <button onclick="alert('Mở form cấp phát tài khoản nội bộ mới');" 
+        <button type="button" onclick="window.showAppModal({ title: 'Cấp Tài Khoản Mới', message: 'Tài khoản Độc giả (Sinh viên) được tạo tự động khi độc giả đăng ký thẻ tại Cổng trực tuyến hoặc đồng bộ từ Cổng đào tạo HUFLIT.\n\nNếu cần cấp tài khoản Thủ thư mới, vui lòng nhập thông tin trong cơ sở dữ liệu hoặc phân quyền từ tài khoản độc giả hiện có.', type: 'info' })" 
                 class="px-5 py-2.5 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2">
             <i data-lucide="user-plus" class="w-4 h-4 text-amber-400"></i> Cấp Tài Khoản Mới
         </button>
@@ -39,28 +39,36 @@
                 <tbody class="divide-y divide-slate-200">
                     @foreach (var user in Model)
                     {
-                        <tr class="hover:bg-slate-50/80 transition-colors">
+                        <tr class="hover:bg-slate-50/80 transition-colors @(user.IsCurrentAdmin ? "bg-purple-50/30" : "")">
                             <td class="py-3.5 px-4 font-bold text-slate-900">
-                                @user.FullName
+                                <div class="flex items-center gap-3">
+                                    <img src="@user.AvatarUrl" alt="@user.FullName"
+                                         class="w-10 h-10 rounded-2xl object-cover border border-slate-200 shadow-xs flex-shrink-0"
+                                         onerror="this.onerror=null; this.src='/uploads/avatars/default-avatar.svg';" />
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <span>@user.FullName</span>
+                                            @if (user.IsCurrentAdmin)
+                                            {
+                                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200" title="Tài khoản hiện đang đăng nhập">Bạn</span>
+                                            }
+                                        </div>
+                                        <span class="text-[11px] text-slate-400 font-normal">@user.Username</span>
+                                    </div>
+                                </div>
                             </td>
                             <td class="py-3.5 px-4 font-mono font-semibold text-navy-800">
                                 @user.Username
                             </td>
                             <td class="py-3.5 px-4">
                                 <p class="text-slate-800">@user.Email</p>
-                                <p class="text-slate-400 font-mono">@user.PhoneNumber</p>
+                                <p class="text-slate-400 font-mono text-[11px]">@user.PhoneNumber</p>
                             </td>
                             <td class="py-3.5 px-4">
                                 @if (user.Role == "Admin")
                                 {
                                     <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
                                         👑 Quản Trị Viên
-                                    </span>
-                                }
-                                else if (user.Role == "Quản lý")
-                                {
-                                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                                        ⭐ Quản Lý Thư Viện
                                     </span>
                                 }
                                 else if (user.Role == "Thủ thư")
@@ -91,32 +99,46 @@
                                 }
                             </td>
                             <td class="py-3.5 px-4 text-right">
-                                <div class="flex items-center justify-end gap-1.5">
-                                    <button onclick="changeRole(@user.Id, '@user.FullName')" 
-                                            class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold" title="Đổi vai trò">
-                                        Đổi Role
-                                    </button>
-
-                                    @if (user.IsActive)
-                                    {
-                                        <button onclick="toggleUserStatus(@user.Id, false)" 
-                                                class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg font-bold" title="Khóa tài khoản">
-                                            Khóa
+                                @if (user.IsCurrentAdmin)
+                                {
+                                    <span class="px-2.5 py-1 text-slate-400 font-semibold italic text-[11px] inline-flex items-center gap-1" title="Không thể tự thao tác trên tài khoản Admin đang đăng nhập">
+                                        <i data-lucide="shield-check" class="w-3.5 h-3.5 text-purple-600"></i> Đang đăng nhập (Khóa thao tác)
+                                    </span>
+                                }
+                                else
+                                {
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        <button type="button" onclick="openEditUserModal(@user.Id)" 
+                                                class="px-2.5 py-1 bg-navy-800 hover:bg-navy-900 text-white rounded-lg font-bold transition-colors flex items-center gap-1 shadow-sm" title="Xem & Chỉnh sửa chi tiết">
+                                            <i data-lucide="edit-3" class="w-3 h-3 text-amber-400"></i> Xem & Sửa
                                         </button>
-                                    }
-                                    else
-                                    {
-                                        <button onclick="toggleUserStatus(@user.Id, true)" 
-                                                class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg font-bold" title="Mở khóa tài khoản">
-                                            Mở Khóa
-                                        </button>
-                                    }
 
-                                    <button onclick="resetPassword(@user.Id, '@user.Username')" 
-                                            class="p-1 text-slate-400 hover:text-navy-800" title="Đặt lại mật khẩu">
-                                        <i data-lucide="key-round" class="w-4 h-4"></i>
-                                    </button>
-                                </div>
+                                        <button type="button" onclick="openRoleModal(@user.Id, '@user.FullName', '@user.Role')" 
+                                                class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold transition-colors" title="Đổi vai trò">
+                                            Role
+                                        </button>
+
+                                        @if (user.IsActive)
+                                        {
+                                            <button type="button" onclick="confirmToggleStatus(@user.Id, '@user.FullName', false)" 
+                                                    class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg font-bold transition-colors" title="Khóa tài khoản">
+                                                Khóa
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button type="button" onclick="confirmToggleStatus(@user.Id, '@user.FullName', true)" 
+                                                    class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg font-bold transition-colors" title="Mở khóa tài khoản">
+                                                Mở Khóa
+                                            </button>
+                                        }
+
+                                        <button type="button" onclick="confirmResetPassword(@user.Id, '@user.Username')" 
+                                                class="p-1 text-slate-400 hover:text-navy-800 transition-colors" title="Đặt lại mật khẩu">
+                                            <i data-lucide="key-round" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                }
                             </td>
                         </tr>
                     }
@@ -127,25 +149,240 @@
 
 </div>
 
+<!-- HIDDEN FORMS FOR SECURE POST ACTIONS -->
+<form id="actionForm" method="post" class="hidden">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="actionUserId" />
+    <input type="hidden" name="newRole" id="actionNewRole" />
+</form>
+
+<!-- MODAL ĐỔI VAI TRÒ NHANH -->
+<div id="roleModal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+            <h3 class="font-extrabold text-sm text-slate-900 flex items-center gap-2">
+                <i data-lucide="shield" class="w-4 h-4 text-blue-600"></i> Đổi Vai Trò Người Dùng
+            </h3>
+            <button type="button" onclick="closeRoleModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        <div>
+            <p class="text-xs text-slate-500 mb-2">Người dùng: <strong id="modalUserName" class="text-slate-800"></strong></p>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Chọn vai trò mới:</label>
+            <select id="modalRoleSelect" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none">
+                <option value="Độc giả">📖 Độc giả (Sinh viên)</option>
+                <option value="Thủ thư">🛡️ Thủ thư</option>
+                <option value="Admin">👑 Quản trị viên (Admin)</option>
+            </select>
+        </div>
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+            <button type="button" onclick="closeRoleModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">Hủy</button>
+            <button type="button" onclick="submitRoleChange()" class="px-5 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow">Lưu thay đổi</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL XEM & CHỈNH SỬA THÔNG TIN NGƯỜI DÙNG -->
+<div id="editUserModal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-5 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h3 class="font-extrabold text-base text-slate-900 flex items-center gap-2">
+                <i data-lucide="user-check" class="w-5 h-5 text-navy-800"></i>
+                Hồ Sơ & Chỉnh Sửa Người Dùng
+            </h3>
+            <button type="button" onclick="closeEditUserModal()" class="text-slate-400 hover:text-slate-600 p-1">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form id="editUserForm" method="post" asp-action="Edit" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" id="editUserId" />
+
+            <!-- Hiển thị Avatar người dùng tải lên -->
+            <div class="flex items-center gap-3.5 p-3.5 bg-slate-50 rounded-2xl border border-slate-200">
+                <img id="editUserAvatarImg" src="/uploads/avatars/default-avatar.svg" alt="Avatar"
+                     class="w-14 h-14 rounded-2xl object-cover border border-slate-200 shadow-xs flex-shrink-0"
+                     onerror="this.onerror=null; this.src='/uploads/avatars/default-avatar.svg';" />
+                <div>
+                    <p class="text-xs font-bold text-slate-800">Ảnh đại diện tài khoản</p>
+                    <p class="text-[11px] text-slate-400">Ảnh tải lên thực tế từ hồ sơ cá nhân của người dùng</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">Tên Đăng Nhập / MSSV:</label>
+                    <input type="text" id="editUsername" disabled 
+                           class="w-full px-3 py-2 text-xs bg-slate-100 border border-slate-200 rounded-xl font-mono font-bold text-navy-800 cursor-not-allowed" />
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Họ và Tên: <span class="text-rose-500">*</span></label>
+                    <input type="text" name="FullName" id="editFullName" required 
+                           class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none font-semibold text-slate-900" />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Email:</label>
+                    <input type="email" name="Email" id="editEmail" 
+                           class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none text-slate-800" />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Số Điện Thoại:</label>
+                    <input type="text" name="PhoneNumber" id="editPhone" 
+                           class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none text-slate-800 font-mono" />
+                </div>
+
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Vai Trò Hệ Thống (Role):</label>
+                    <select name="Role" id="editRole" 
+                            class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none font-bold text-slate-800">
+                        <option value="Độc giả">📖 Độc giả (Sinh viên)</option>
+                        <option value="Thủ thư">🛡️ Thủ thư</option>
+                        <option value="Admin">👑 Quản trị viên (Admin)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- PHẦN THÔNG TIN THẺ THƯ VIỆN NẾU LÀ ĐỘC GIẢ -->
+            <div id="cardSection" class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="id-card" class="w-4 h-4 text-emerald-600"></i> Thẻ Thư Viện Liên Kết
+                    </h4>
+                    <span id="editCardNumberBadge" class="font-mono text-xs font-bold text-navy-800 px-2 py-0.5 bg-white rounded-lg border border-slate-200"></span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1">Tình trạng thẻ:</label>
+                        <select name="CardStatus" id="editCardStatus" 
+                                class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-bold focus:border-navy-800 focus:outline-none">
+                            <option value="Sử dụng được">✓ Sử dụng được</option>
+                            <option value="Không sử dụng">✗ Không sử dụng (Khóa thẻ)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block font-bold text-slate-600 mb-1">Hạn sử dụng thẻ:</label>
+                        <input type="date" name="CardExpiryDate" id="editCardExpiryDate" 
+                               class="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl font-mono focus:border-navy-800 focus:outline-none" />
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1 border-t border-slate-200">
+                    <span>Sách đang mượn lưu hành:</span>
+                    <span id="editActiveBorrowedCount" class="font-bold text-navy-800">0 cuốn</span>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeEditUserModal()" 
+                        class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors">
+                    Hủy
+                </button>
+                <button type="submit" 
+                        class="px-5 py-2.5 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-1.5">
+                    <i data-lucide="save" class="w-4 h-4 text-amber-400"></i> Lưu Thay Đổi
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @section Scripts {
     <script>
-        function changeRole(id, name) {
-            const newRole = prompt('Chọn vai trò mới cho ' + name + ' (Độc giả / Thủ thư / Quản lý / Admin):', 'Thủ thư');
-            if (newRole) {
-                alert('Đã cập nhật vai trò của ' + name + ' thành: ' + newRole);
+        let currentSelectedUserId = null;
+
+        function openRoleModal(id, name, currentRole) {
+            currentSelectedUserId = id;
+            document.getElementById('modalUserName').innerText = name;
+            document.getElementById('modalRoleSelect').value = currentRole;
+            document.getElementById('roleModal').classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function closeRoleModal() {
+            document.getElementById('roleModal').classList.add('hidden');
+        }
+
+        function submitRoleChange() {
+            if (!currentSelectedUserId) return;
+            const newRole = document.getElementById('modalRoleSelect').value;
+            const form = document.getElementById('actionForm');
+            form.action = '/Admin/User/ChangeRole';
+            document.getElementById('actionUserId').value = currentSelectedUserId;
+            document.getElementById('actionNewRole').value = newRole;
+            form.submit();
+        }
+
+        async function openEditUserModal(id) {
+            try {
+                const res = await fetch('/Admin/User/GetUser?id=' + id);
+                const data = await res.json();
+                if (!data.success) {
+                    if (window.showAppToast) window.showAppToast('error', data.message || 'Không thể tải thông tin người dùng.');
+                    return;
+                }
+
+                document.getElementById('editUserId').value = data.id;
+                document.getElementById('editUsername').value = data.username;
+                document.getElementById('editFullName').value = data.fullName;
+                document.getElementById('editEmail').value = data.email;
+                document.getElementById('editPhone').value = data.phoneNumber;
+                document.getElementById('editRole').value = data.role;
+                document.getElementById('editUserAvatarImg').src = data.avatarUrl || '/uploads/avatars/default-avatar.svg';
+
+                const roleSelect = document.getElementById('editRole');
+                if (data.isCurrentAdmin) {
+                    roleSelect.disabled = true;
+                } else {
+                    roleSelect.disabled = false;
+                }
+
+                const cardSection = document.getElementById('cardSection');
+                if (data.hasCard) {
+                    cardSection.classList.remove('hidden');
+                    document.getElementById('editCardNumberBadge').innerText = data.cardNumber;
+                    document.getElementById('editCardStatus').value = data.cardStatus;
+                    document.getElementById('editCardExpiryDate').value = data.cardExpiryDate;
+                    document.getElementById('editActiveBorrowedCount').innerText = data.activeBorrowedCount + ' cuốn';
+                } else {
+                    cardSection.classList.add('hidden');
+                }
+
+                document.getElementById('editUserModal').classList.remove('hidden');
+                if (window.lucide) lucide.createIcons();
+            } catch (err) {
+                if (window.showAppToast) window.showAppToast('error', 'Lỗi kết nối khi tải hồ sơ người dùng.');
             }
         }
 
-        function toggleUserStatus(id, activate) {
-            const action = activate ? 'mở khóa' : 'khóa';
-            if (confirm('Bạn có chắc chắn muốn ' + action + ' tài khoản này?')) {
-                alert('Đã ' + action + ' tài khoản thành công!');
+        function closeEditUserModal() {
+            document.getElementById('editUserModal').classList.add('hidden');
+        }
+
+        async function confirmToggleStatus(id, name, activate) {
+            const actionText = activate ? 'mở khóa' : 'khóa';
+            const confirmed = await window.showAppConfirm('Bạn có chắc chắn muốn ' + actionText + ' tài khoản của ' + name + '?', 'Xác Nhận ' + (activate ? 'Mở Khóa' : 'Khóa'));
+            if (confirmed) {
+                const form = document.getElementById('actionForm');
+                form.action = '/Admin/User/ToggleStatus';
+                document.getElementById('actionUserId').value = id;
+                form.submit();
             }
         }
 
-        function resetPassword(id, username) {
-            if (confirm('Gửi email đặt lại mật khẩu mặc định cho ' + username + '?')) {
-                alert('Đã cấp lại mật khẩu tạm thời thành công!');
+        async function confirmResetPassword(id, username) {
+            const confirmed = await window.showAppConfirm('Bạn có chắc chắn muốn đặt lại mật khẩu mặc định cho tài khoản ' + username + '?', 'Xác Nhận Đặt Lại Mật Khẩu');
+            if (confirmed) {
+                const form = document.getElementById('actionForm');
+                form.action = '/Admin/User/ResetPassword';
+                document.getElementById('actionUserId').value = id;
+                form.submit();
             }
         }
     </script>

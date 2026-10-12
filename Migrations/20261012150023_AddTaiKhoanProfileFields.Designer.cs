@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BOOK.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260924121142_FixDecimalPrecision")]
-    partial class FixDecimalPrecision
+    [Migration("20261012150023_AddTaiKhoanProfileFields")]
+    partial class AddTaiKhoanProfileFields
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -36,9 +36,6 @@ namespace BOOK.Migrations
                     b.Property<bool>("DaBoiThuong")
                         .HasColumnType("bit");
 
-                    b.Property<int>("DauSachMaDauSach")
-                        .HasColumnType("int");
-
                     b.Property<int>("MaDauSach")
                         .HasColumnType("int");
 
@@ -47,9 +44,6 @@ namespace BOOK.Migrations
 
                     b.Property<DateTime?>("NgayTraThucTe")
                         .HasColumnType("datetime2");
-
-                    b.Property<int>("PhieuMuonMaPhieuMuon")
-                        .HasColumnType("int");
 
                     b.Property<decimal>("TienBoiThuong")
                         .HasColumnType("decimal(18,2)");
@@ -60,9 +54,9 @@ namespace BOOK.Migrations
 
                     b.HasKey("MaChiTiet");
 
-                    b.HasIndex("DauSachMaDauSach");
+                    b.HasIndex("MaDauSach");
 
-                    b.HasIndex("PhieuMuonMaPhieuMuon");
+                    b.HasIndex("MaPhieuMuon");
 
                     b.ToTable("ChiTietPhieuMuons");
                 });
@@ -82,9 +76,6 @@ namespace BOOK.Migrations
                     b.Property<int>("MaSach")
                         .HasColumnType("int");
 
-                    b.Property<int>("SachMaSach")
-                        .HasColumnType("int");
-
                     b.Property<string>("SoKiemSoat")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -95,7 +86,7 @@ namespace BOOK.Migrations
 
                     b.HasKey("MaDauSach");
 
-                    b.HasIndex("SachMaSach");
+                    b.HasIndex("MaSach");
 
                     b.ToTable("DauSachs");
                 });
@@ -134,16 +125,13 @@ namespace BOOK.Migrations
                     b.Property<DateTime>("NgayMuon")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("TheMaThe")
-                        .HasColumnType("int");
-
                     b.Property<string>("TrangThai")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("MaPhieuMuon");
 
-                    b.HasIndex("TheMaThe");
+                    b.HasIndex("MaThe");
 
                     b.ToTable("PhieuMuons");
                 });
@@ -169,9 +157,6 @@ namespace BOOK.Migrations
                     b.Property<int>("NamXuatBan")
                         .HasColumnType("int");
 
-                    b.Property<int>("NhaXuatBanMaNXB")
-                        .HasColumnType("int");
-
                     b.Property<string>("TacGia")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -180,14 +165,11 @@ namespace BOOK.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("TheLoaiMaTheLoai")
-                        .HasColumnType("int");
-
                     b.HasKey("MaSach");
 
-                    b.HasIndex("NhaXuatBanMaNXB");
+                    b.HasIndex("MaNXB");
 
-                    b.HasIndex("TheLoaiMaTheLoai");
+                    b.HasIndex("MaTheLoai");
 
                     b.ToTable("Sachs");
                 });
@@ -200,8 +182,20 @@ namespace BOOK.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaTK"));
 
+                    b.Property<string>("AvatarUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Email")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FullName")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Role")
@@ -272,13 +266,13 @@ namespace BOOK.Migrations
                 {
                     b.HasOne("BOOK.Models.Entities.DauSach", "DauSach")
                         .WithMany("ChiTietPhieuMuons")
-                        .HasForeignKey("DauSachMaDauSach")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("MaDauSach")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("BOOK.Models.Entities.PhieuMuon", "PhieuMuon")
                         .WithMany("ChiTiets")
-                        .HasForeignKey("PhieuMuonMaPhieuMuon")
+                        .HasForeignKey("MaPhieuMuon")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -291,7 +285,7 @@ namespace BOOK.Migrations
                 {
                     b.HasOne("BOOK.Models.Entities.Sach", "Sach")
                         .WithMany("DauSachs")
-                        .HasForeignKey("SachMaSach")
+                        .HasForeignKey("MaSach")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -302,8 +296,8 @@ namespace BOOK.Migrations
                 {
                     b.HasOne("BOOK.Models.Entities.TheThuVien", "The")
                         .WithMany("PhieuMuons")
-                        .HasForeignKey("TheMaThe")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("MaThe")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("The");
@@ -313,14 +307,14 @@ namespace BOOK.Migrations
                 {
                     b.HasOne("BOOK.Models.Entities.NhaXuatBan", "NhaXuatBan")
                         .WithMany("Sachs")
-                        .HasForeignKey("NhaXuatBanMaNXB")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("MaNXB")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("BOOK.Models.Entities.TheLoai", "TheLoai")
                         .WithMany("Sachs")
-                        .HasForeignKey("TheLoaiMaTheLoai")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("MaTheLoai")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("NhaXuatBan");

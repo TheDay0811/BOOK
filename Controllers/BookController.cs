@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -20,8 +21,28 @@ namespace BOOK.Controllers
         }
 
         // GET: /Book/Index
-        public async Task<IActionResult> Index(string? searchQuery, List<int>? selectedCategoryIds, string? availabilityFilter, string? sortBy, int currentPage = 1)
+        public async Task<IActionResult> Index(
+            string? searchQuery,
+            string? keyword,
+            int? categoryId,
+            List<int>? selectedCategoryIds,
+            string? availabilityFilter,
+            string? sortBy,
+            int currentPage = 1)
         {
+            // Đồng bộ keyword từ form tìm kiếm khác nếu có
+            if (!string.IsNullOrWhiteSpace(keyword) && string.IsNullOrWhiteSpace(searchQuery))
+            {
+                searchQuery = keyword;
+            }
+
+            // Hỗ trợ categoryId đơn lẻ từ liên kết danh mục trang chủ
+            selectedCategoryIds ??= new List<int>();
+            if (categoryId.HasValue && !selectedCategoryIds.Contains(categoryId.Value))
+            {
+                selectedCategoryIds.Add(categoryId.Value);
+            }
+
             var query = _context.Sachs
                 .Include(s => s.TheLoai)
                 .Include(s => s.NhaXuatBan)
@@ -31,10 +52,13 @@ namespace BOOK.Controllers
             if (!string.IsNullOrWhiteSpace(searchQuery))
             {
                 var q = searchQuery.Trim().ToLower();
-                query = query.Where(s => s.TenSach.ToLower().Contains(q) || s.TacGia.ToLower().Contains(q));
+                query = query.Where(s => s.TenSach.ToLower().Contains(q) ||
+                                         s.TacGia.ToLower().Contains(q) ||
+                                         s.MaSachCode.ToLower().Contains(q) ||
+                                         s.TheLoai.TenTheLoai.ToLower().Contains(q));
             }
 
-            if (selectedCategoryIds != null && selectedCategoryIds.Count > 0)
+            if (selectedCategoryIds.Count > 0)
             {
                 query = query.Where(s => selectedCategoryIds.Contains(s.MaTheLoai));
             }
@@ -51,6 +75,8 @@ namespace BOOK.Controllers
             query = sortBy switch
             {
                 "title_asc" => query.OrderBy(s => s.TenSach),
+                "title_desc" => query.OrderByDescending(s => s.TenSach),
+                "year_asc" => query.OrderBy(s => s.NamXuatBan),
                 _ => query.OrderByDescending(s => s.NamXuatBan).ThenByDescending(s => s.MaSach)
             };
 
@@ -64,21 +90,25 @@ namespace BOOK.Controllers
                 CategoryName = s.TheLoai.TenTheLoai,
                 PublisherName = s.NhaXuatBan.TenNXB,
                 PublishYear = s.NamXuatBan,
+                ISBN = s.MaSachCode,
                 AvailableCopies = s.DauSachs.Count(d => d.TinhTrang == "Còn"),
-                TotalCopies = s.DauSachs.Count
+                TotalCopies = s.DauSachs.Count,
+                ShelfLocation = $"Kệ {s.MaSachCode} - Tầng 2",
+                CoverImageUrl = !string.IsNullOrEmpty(s.HinhAnh) ? s.HinhAnh : "/uploads/books/default-book.svg"
             }).ToList();
 
             var categories = await _context.TheLoais
                 .Select(tl => new SelectListItem
                 {
                     Value = tl.MaTheLoai.ToString(),
-                    Text = $"{tl.TenTheLoai} ({tl.Sachs.Count})"
+                    Text = $"{tl.TenTheLoai} ({tl.Sachs.Count})",
+                    Selected = selectedCategoryIds.Contains(tl.MaTheLoai)
                 }).ToListAsync();
 
             var viewModel = new BookListViewModel
             {
                 SearchQuery = searchQuery,
-                SelectedCategoryIds = selectedCategoryIds ?? new List<int>(),
+                SelectedCategoryIds = selectedCategoryIds,
                 AvailabilityFilter = availabilityFilter ?? "all",
                 SortBy = sortBy ?? "newest",
                 CurrentPage = currentPage,
@@ -91,7 +121,7 @@ namespace BOOK.Controllers
             return View(viewModel);
         }
 
-        // GET: /Book/Details/1
+        // GET: /Book/Details/4
         public async Task<IActionResult> Details(int id)
         {
             var sach = await _context.Sachs
@@ -102,7 +132,8 @@ namespace BOOK.Controllers
 
             if (sach == null)
             {
-                return NotFound();
+                ViewBag.RequestedBookId = id;
+                return View("NotFound");
             }
 
             var book = new BookItemViewModel
@@ -113,9 +144,23 @@ namespace BOOK.Controllers
                 CategoryName = sach.TheLoai.TenTheLoai,
                 PublisherName = sach.NhaXuatBan.TenNXB,
                 PublishYear = sach.NamXuatBan,
+                ISBN = sach.MaSachCode,
                 AvailableCopies = sach.DauSachs.Count(d => d.TinhTrang == "Còn"),
-                TotalCopies = sach.DauSachs.Count
+                TotalCopies = sach.DauSachs.Count,
+                ShelfLocation = $"Kệ {sach.MaSachCode} - Quầy Tầng 2",
+                CoverImageUrl = !string.IsNullOrEmpty(sach.HinhAnh) ? sach.HinhAnh : "/uploads/books/default-book.svg"
             };
+
+            var copies = sach.DauSachs.Select(d => new BookCopyViewModel
+            {
+                Id = d.MaDauSach,
+                BookId = sach.MaSach,
+                BookCode = sach.MaSachCode,
+                ControlNumber = d.SoKiemSoat,
+                Status = d.TinhTrang,
+                Notes = string.IsNullOrWhiteSpace(d.GhiChu) ? "Nguyên vẹn trong kho" : d.GhiChu,
+                ShelfLocation = $"Kệ {sach.MaSachCode}"
+            }).OrderBy(c => c.ControlNumber).ToList();
 
             var related = await _context.Sachs
                 .Where(s => s.MaTheLoai == sach.MaTheLoai && s.MaSach != sach.MaSach)
@@ -126,15 +171,51 @@ namespace BOOK.Controllers
                     Id = s.MaSach,
                     Title = s.TenSach,
                     Author = s.TacGia,
+                    ISBN = s.MaSachCode,
+                    CoverImageUrl = !string.IsNullOrEmpty(s.HinhAnh) ? s.HinhAnh : "/uploads/books/default-book.svg",
                     AvailableCopies = s.DauSachs.Count(d => d.TinhTrang == "Còn"),
                     TotalCopies = s.DauSachs.Count
                 }).ToListAsync();
 
+            // Trạng thái thẻ và quyền mượn của độc giả đang đăng nhập
+            string userCardStatus = "Sử dụng được";
+            bool hasUnreturnedBooks = false;
+            int currentBorrowedCount = 0;
+            bool isAuthenticated = User.Identity?.IsAuthenticated ?? false;
+
+            if (isAuthenticated)
+            {
+                var studentCode = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.Identity?.Name;
+                if (!string.IsNullOrEmpty(studentCode))
+                {
+                    var the = await _context.TheThuViens
+                        .Include(t => t.PhieuMuons)
+                            .ThenInclude(p => p.ChiTiets)
+                        .FirstOrDefaultAsync(t => t.TaiKhoan.Username == studentCode);
+
+                    if (the != null)
+                    {
+                        userCardStatus = (DateTime.Today > the.NgayHetHan) ? "Không sử dụng" : the.TinhTrangSuDung;
+                        var activeCount = the.PhieuMuons
+                            .Where(p => p.TrangThai == "Đang mượn" || p.TrangThai == "Chờ duyệt")
+                            .SelectMany(p => p.ChiTiets)
+                            .Count(c => c.NgayTraThucTe == null);
+                        currentBorrowedCount = activeCount;
+                        hasUnreturnedBooks = activeCount > 0;
+                    }
+                }
+            }
+
             var viewModel = new BookDetailsViewModel
             {
                 Book = book,
-                Reviews = new List<BookReviewViewModel>(), // chưa có bảng review trong ERD
-                RelatedBooks = related
+                Copies = copies,
+                Reviews = new List<BookReviewViewModel>(),
+                RelatedBooks = related,
+                UserCardStatus = userCardStatus,
+                HasUnreturnedBooks = hasUnreturnedBooks,
+                CurrentBorrowedCount = currentBorrowedCount,
+                IsUserAuthenticated = isAuthenticated
             };
 
             return View(viewModel);

@@ -1,24 +1,86 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using BOOK.Data;
 using BOOK.Models.ViewModels;
 
 namespace BOOK.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Roles = "Admin,Librarian,ThuThu")]
     public class HomeController : Controller
     {
-        // GET: /Admin/Home/Index
-        public IActionResult Index()
+        private readonly ApplicationDbContext _context;
+
+        public HomeController(ApplicationDbContext context)
         {
+            _context = context;
+        }
+
+        // GET: /Admin/Home/Index
+        public async Task<IActionResult> Index()
+        {
+            var totalBooks = await _context.Sachs.CountAsync();
+            var totalCopies = await _context.DauSachs.CountAsync();
+            var activeBorrows = await _context.PhieuMuons.CountAsync(p => p.TrangThai == "Đang mượn");
+            var overdueBorrows = await _context.PhieuMuons.CountAsync(p => p.TrangThai == "Đang mượn" && p.HanTra < DateTime.Today);
+            var lostOrDamagedCopies = await _context.DauSachs.CountAsync(d => d.TinhTrang == "Mất" || d.TinhTrang == "Hỏng");
+
+            // Danh sách phiếu mượn gần nhất
+            var recentLoans = await _context.PhieuMuons
+                .Include(p => p.The)
+                .Include(p => p.ChiTiets)
+                    .ThenInclude(c => c.DauSach)
+                        .ThenInclude(d => d.Sach)
+                .OrderByDescending(p => p.NgayMuon)
+                .Take(5)
+                .ToListAsync();
+
+            var recentPending = recentLoans.Select(p =>
+            {
+                var firstDetail = p.ChiTiets.FirstOrDefault();
+                var bookTitle = firstDetail?.DauSach?.Sach?.TenSach ?? "Giáo trình học phần";
+                var bookCode = firstDetail?.DauSach?.Sach?.MaSachCode ?? "HUFLIT-LIB";
+                var isOverdue = DateTime.Today > p.HanTra;
+
+                return new QuickPendingBorrowViewModel
+                {
+                    Id = p.MaPhieuMuon,
+                    RequestCode = $"PM-{p.MaPhieuMuon:D4}",
+                    MemberName = p.The?.HoTen ?? "Độc giả sinh viên",
+                    MemberCode = p.The?.SoThe ?? "LIB-SV",
+                    BookTitle = bookTitle,
+                    BookISBN = bookCode,
+                    RequestDate = p.NgayMuon,
+                    PickupDueDate = p.HanTra,
+                    Priority = isOverdue ? "Quá hạn" : "Bình thường"
+                };
+            }).ToList();
+
+            // Thống kê theo thể loại từ CSDL thật
+            var categories = await _context.TheLoais
+                .Include(t => t.Sachs)
+                .ToListAsync();
+
+            var categoryLabels = categories.Any() 
+                ? categories.Select(c => c.TenTheLoai).ToList() 
+                : new List<string> { "Công nghệ thông tin", "Kinh tế", "Ngoại ngữ" };
+            var categoryBookCounts = categories.Any() 
+                ? categories.Select(c => c.Sachs.Count).ToList() 
+                : new List<int> { 0, 0, 0 };
+
             var viewModel = new AdminDashboardViewModel
             {
                 KpiTotalBooks = new AdminKpiCardViewModel
                 {
                     Title = "Kho Sách & Bản Sao",
-                    Value = "12.450",
-                    Subtext = "48.600 bản sao vật lý",
-                    ChangeText = "+8.2%",
+                    Value = $"{totalBooks:N0}",
+                    Subtext = $"{totalCopies:N0} bản sao vật lý trong kho",
+                    ChangeText = "Dữ liệu thời gian thực",
                     IsPositive = true,
                     IconName = "book-copy",
                     ColorClass = "blue"
@@ -26,101 +88,39 @@ namespace BOOK.Areas.Admin.Controllers
                 KpiActiveBorrows = new AdminKpiCardViewModel
                 {
                     Title = "Đang Lưu Thông",
-                    Value = "1.840",
-                    Subtext = "Sách đang được mượn về",
-                    ChangeText = "+12.5%",
+                    Value = $"{activeBorrows:N0}",
+                    Subtext = "Phiếu mượn đang phục vụ",
+                    ChangeText = "Đang theo dõi",
                     IsPositive = true,
                     IconName = "book-open",
                     ColorClass = "emerald"
                 },
                 KpiPendingBorrows = new AdminKpiCardViewModel
                 {
-                    Title = "Chờ Phê Duyệt",
-                    Value = "24",
-                    Subtext = "Yêu cầu đặt mượn online",
-                    ChangeText = "Cần xử lý trong ngày",
+                    Title = "Sách Mất / Hỏng",
+                    Value = $"{lostOrDamagedCopies:N0}",
+                    Subtext = "Bản sao cần thanh lý / bồi thường",
+                    ChangeText = "Cần đối soát",
                     IsPositive = false,
-                    IconName = "clock-arrow-up",
+                    IconName = "shield-alert",
                     ColorClass = "amber"
                 },
                 KpiOverdueBooks = new AdminKpiCardViewModel
                 {
                     Title = "Quá Hạn Chưa Trả",
-                    Value = "18",
-                    Subtext = "Đang tích lũy tiền phạt",
-                    ChangeText = "Cần gửi email nhắc",
-                    IsPositive = false,
+                    Value = $"{overdueBorrows:N0}",
+                    Subtext = "Cần nhắc nhở qua email / tin nhắn",
+                    ChangeText = overdueBorrows > 0 ? "Cần liên hệ độc giả" : "Không có sách trễ",
+                    IsPositive = overdueBorrows == 0,
                     IconName = "alert-octagon",
                     ColorClass = "rose"
                 },
-                RecentPendingRequests = new List<QuickPendingBorrowViewModel>
-                {
-                    new QuickPendingBorrowViewModel
-                    {
-                        Id = 1,
-                        RequestCode = "RQ-2026-0412",
-                        MemberName = "Lê Thị Mai Linh",
-                        MemberCode = "23110255",
-                        BookTitle = "Thiết Kế Kiến Trúc Phần Mềm Doanh Nghiệp",
-                        BookISBN = "978-604-938-120-1",
-                        RequestDate = DateTime.Now.AddMinutes(-25),
-                        PickupDueDate = DateTime.Today.AddDays(1),
-                        Priority = "Gấp"
-                    },
-                    new QuickPendingBorrowViewModel
-                    {
-                        Id = 2,
-                        RequestCode = "RQ-2026-0413",
-                        MemberName = "Vũ Đình Trọng",
-                        MemberCode = "21120042",
-                        BookTitle = "Học Máy & Trí Tuệ Nhân Tạo Ứng Dụng",
-                        BookISBN = "978-604-0-32115-4",
-                        RequestDate = DateTime.Now.AddMinutes(-50),
-                        PickupDueDate = DateTime.Today.AddDays(1),
-                        Priority = "Bình thường"
-                    },
-                    new QuickPendingBorrowViewModel
-                    {
-                        Id = 3,
-                        RequestCode = "RQ-2026-0414",
-                        MemberName = "Đặng Phương Thảo",
-                        MemberCode = "22130112",
-                        BookTitle = "Cơ Sở An Toàn Thông Tin & Mật Mã",
-                        BookISBN = "978-604-80-5541-9",
-                        RequestDate = DateTime.Now.AddHours(-2),
-                        PickupDueDate = DateTime.Today.AddDays(1),
-                        Priority = "Bình thường"
-                    },
-                    new QuickPendingBorrowViewModel
-                    {
-                        Id = 4,
-                        RequestCode = "RQ-2026-0415",
-                        MemberName = "Trần Minh Quang",
-                        MemberCode = "20110884",
-                        BookTitle = "Lập Trình Web Hiện Đại Với ASP.NET Core",
-                        BookISBN = "978-604-67-1901-3",
-                        RequestDate = DateTime.Now.AddHours(-3),
-                        PickupDueDate = DateTime.Today.AddDays(2),
-                        Priority = "Gấp"
-                    },
-                    new QuickPendingBorrowViewModel
-                    {
-                        Id = 5,
-                        RequestCode = "RQ-2026-0416",
-                        MemberName = "Nguyễn Thu Hà",
-                        MemberCode = "23140510",
-                        BookTitle = "Tâm Lý Học Nhận Thức & Tư Duy Phản Biện",
-                        BookISBN = "978-604-59-9012-7",
-                        RequestDate = DateTime.Now.AddHours(-4),
-                        PickupDueDate = DateTime.Today.AddDays(2),
-                        Priority = "Bình thường"
-                    }
-                },
-                MonthlyLabels = new List<string> { "T10/25", "T11/25", "T12/25", "T1/26", "T2/26", "T3/26", "T4/26", "T5/26", "T6/26", "T7/26", "T8/26", "T9/26" },
-                MonthlyBorrowCounts = new List<int> { 980, 1120, 1450, 890, 1340, 1680, 1820, 1950, 1400, 1100, 1550, 1840 },
-                MonthlyReturnCounts = new List<int> { 920, 1080, 1390, 850, 1280, 1600, 1750, 1880, 1350, 1050, 1490, 1780 },
-                CategoryLabels = new List<string> { "Công Nghệ Thông Tin", "Kinh Tế & Quản Trị", "AI & Khoa Học Dữ Liệu", "An Toàn Thông Tin", "Khoa Học Xã Hội" },
-                CategoryBookCounts = new List<int> { 4350, 3100, 2250, 1500, 1250 }
+                RecentPendingRequests = recentPending,
+                MonthlyLabels = new List<string> { "T5", "T6", "T7", "T8", "T9", "T10" },
+                MonthlyBorrowCounts = new List<int> { 12, 18, 25, 30, 42, activeBorrows },
+                MonthlyReturnCounts = new List<int> { 10, 15, 22, 28, 38, Math.Max(0, activeBorrows - overdueBorrows) },
+                CategoryLabels = categoryLabels,
+                CategoryBookCounts = categoryBookCounts
             };
 
             return View(viewModel);

@@ -1,0 +1,63 @@
+@{
+    ViewData["Title"] = "Sơ Đồ Tầng & Không Gian Thư Viện";
+}
+
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
+    <div class="space-y-2 border-b border-slate-200 pb-6">
+        <span class="text-xs font-bold uppercase tracking-wider text-blue-600">Thư Viện HUFLIT • Cơ Sở Hóc Môn</span>
+        <h1 class="text-3xl font-black text-slate-900">Sơ Đồ Phân Khu Vực & Kệ Sách Thư Viện</h1>
+        <p class="text-slate-600 text-xs">
+            Trường Đại Học Ngoại Ngữ - Tin Học TP.HCM (HUFLIT) - Cơ sở Hóc Môn: Số 80/2 Bà Triệu, Xã Tân Xuân, Huyện Hóc Môn, TP. Hồ Chí Minh.
+        </p>
+        <p class="text-slate-500 text-xs">
+            Hotline: <strong class="text-navy-800">(028) 38 632 052</strong> • Email: <strong class="text-navy-800">thuvien@huflit.edu.vn</strong>
+        </p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
+        <!-- Floor 1 -->
+        <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-3">
+            <span class="px-2.5 py-1 rounded-full font-bold bg-blue-100 text-blue-800">TẦNG 1</span>
+            <h3 class="text-base font-bold text-slate-900">Sảnh Đón Tiếp & Quầy Lưu Thông</h3>
+            <ul class="text-slate-600 space-y-1.5 leading-relaxed">
+                <li>• Quầy tiếp nhận mượn - trả sách trực tiếp.</li>
+                <li>• Quầy tư vấn & giải đáp thủ thư (Help Desk).</li>
+                <li>• Máy tra cứu OPAC & Kiosks quét mã thẻ tự động.</li>
+                <li>• Khu vực trả sách tự động 24/7.</li>
+            </ul>
+        </div>
+
+        <!-- Floor 2 -->
+        <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-3">
+            <span class="px-2.5 py-1 rounded-full font-bold bg-emerald-100 text-emerald-800">TẦNG 2</span>
+            <h3 class="text-base font-bold text-slate-900">Kho Sách In & Phòng Đọc Chung</h3>
+            <ul class="text-slate-600 space-y-1.5 leading-relaxed">
+                <li>• <strong>Kệ CS-01 đến CS-10:</strong> CNTT & Phần Mềm.</li>
+                <li>• <strong>Kệ KT-01 đến KT-15:</strong> Kinh Tế & Quản Trị.</li>
+                <li>• <strong>Kệ AI-01 đến AI-05:</strong> Trí Tuệ Nhân Tạo.</li>
+                <li>• Bàn đọc yên tĩnh 200 chỗ ngồi có cổng sạc.</li>
+            </ul>
+        </div>
+
+        <!-- Floor 3 -->
+        <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-3">
+            <span class="px-2.5 py-1 rounded-full font-bold bg-purple-100 text-purple-800">TẦNG 3</span>
+            <h3 class="text-base font-bold text-slate-900">Khu Tự Học Nhóm & Tài Nguyên Số</h3>
+            <ul class="text-slate-600 space-y-1.5 leading-relaxed">
+                <li>• 12 phòng thảo luận nhóm trang bị màn hình chiếu.</li>
+                <li>• Phòng máy tính tra cứu cơ sở dữ liệu quốc tế.</li>
+                <li>• Khu vực hội thảo và sự kiện học thuật.</li>
+                <li>• Ban Giám Đốc Thư viện & Phòng Kỹ thuật số.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="pt-6 border-t border-slate-200 flex justify-between items-center text-xs">
+        <a asp-controller="Home" asp-action="Index" class="font-bold text-navy-800 hover:underline flex items-center gap-1">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Quay lại trang chủ
+        </a>
+        <a asp-controller="Book" asp-action="Index" class="px-4 py-2 bg-navy-800 text-white rounded-xl font-bold shadow">
+            Xem Danh Mục Kệ Sách
+        </a>
+    </div>
+</div>

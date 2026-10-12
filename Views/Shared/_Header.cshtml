@@ -3,13 +3,14 @@
 @{
     var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
     var userName = User.Identity?.Name ?? "Độc giả";
-    var userEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? "sinhvien@university.edu.vn";
     var studentCode = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "24DH112970";
+    var userEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? (studentCode.Contains("@") ? studentCode : $"{studentCode.ToLower()}@student.huflit.edu.vn");
     var cardStatus = User.FindFirst("CardStatus")?.Value ?? "Sử dụng được";
     var cardNumber = User.FindFirst("CardNumber")?.Value ?? $"LIB-{studentCode}";
     var isCardActive = cardStatus == "Sử dụng được";
-    var activeCount = User.FindFirst("ActiveLoansCount")?.Value ?? "2";
-    var isAdminOrLibrarian = User.IsInRole("Admin") || User.IsInRole("Librarian");
+    var activeCount = User.FindFirst("ActiveLoansCount")?.Value ?? "0";
+    var userAvatar = User.FindFirst("AvatarUrl")?.Value ?? "/uploads/avatars/default-avatar.svg";
+    var isAdminOrLibrarian = User.IsInRole("Admin") || User.IsInRole("Librarian") || User.IsInRole("ThuThu");
 }
 
 <!-- TOP ANNOUNCEMENT BAR -->
@@ -22,17 +23,13 @@
             </span>
             <span class="hidden md:inline text-slate-600">|</span>
             <span class="hidden md:flex items-center gap-1 text-slate-300">
-                <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-400"></i> Hotline: 1900 6868
+                <i data-lucide="phone" class="w-3.5 h-3.5 text-amber-400"></i> Hotline: (028) 38 632 052
             </span>
         </div>
         <div class="flex items-center gap-4">
-            <a asp-area="Admin" asp-controller="Borrow" asp-action="Index" class="inline-flex items-center gap-1 text-amber-400 hover:text-amber-300 transition-colors font-medium">
-                <i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Cổng Nghiệp Vụ Thủ Thư
-            </a>
-            <span class="text-slate-600">|</span>
             <a asp-controller="Home" asp-action="Index" asp-fragment="rules" class="hover:text-white transition-colors">Nội quy mượn trả</a>
             <span class="text-slate-600">|</span>
-            <a href="#help" onclick="alert('Vui lòng liên hệ quầy Thủ thư tại Tầng 1 hoặc gọi Hotline 1900 6868 để được trợ giúp.')" class="hover:text-white transition-colors">Trợ giúp</a>
+            <button type="button" onclick="window.showAppModal({ title: 'Hỗ Trợ Độc Giả HUFLIT', message: 'Vui lòng liên hệ Quầy Thủ thư tại Tầng 1 (Cơ sở Hóc Môn: Số 80/2 Bà Triệu, Xã Tân Xuân, Huyện Hóc Môn, TP.HCM)\nHotline: (028) 38 632 052 - Email: thuvien@huflit.edu.vn', type: 'info' })" class="hover:text-white transition-colors">Trợ giúp</button>
         </div>
     </div>
 </div>
@@ -49,7 +46,7 @@
                         <i data-lucide="book-open-check" class="w-6 h-6 text-amber-400"></i>
                     </div>
                     <div>
-                        <span class="block text-[10px] uppercase tracking-widest font-bold text-navy-800">Thư Viện Trung Tâm</span>
+                        <span class="block text-[10px] uppercase tracking-widest font-bold text-navy-800">Thư Viện HUFLIT</span>
                         <span class="text-xl font-black tracking-tight text-slate-900 group-hover:text-navy-800 transition-colors">
                             SMART<span class="text-blue-600">LIB</span>
                         </span>
@@ -142,18 +139,45 @@
                         }
                     </div>
 
-                    <!-- THÔNG BÁO CHUÔNG -->
-                    <button class="relative p-2 text-slate-500 hover:text-navy-800 hover:bg-slate-100 rounded-xl transition-colors" title="Thông báo mượn trả">
-                        <i data-lucide="bell" class="w-5 h-5"></i>
-                        <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full"></span>
-                    </button>
+                    <!-- THÔNG BÁO CHUÔNG CÓ DROPDOWN -->
+                    <div class="relative" id="notifMenuContainer">
+                        <button type="button" onclick="togglePublicNotificationDropdown(event)" 
+                                class="relative p-2 text-slate-500 hover:text-navy-800 hover:bg-slate-100 rounded-xl transition-colors" title="Thông báo mượn trả">
+                            <i data-lucide="bell" class="w-5 h-5"></i>
+                            <span id="publicNotifDot" class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full animate-pulse"></span>
+                        </button>
+                        <div id="publicNotificationDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-slate-100 p-3 z-50 text-xs animate-in fade-in slide-in-from-top-2 duration-150">
+                            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                                <span class="font-bold text-slate-900">Thông Báo Mượn Trả</span>
+                                <button type="button" onclick="markPublicNotificationsAsRead()" class="text-[10px] text-blue-600 font-semibold hover:underline">Đã đọc tất cả</button>
+                            </div>
+                            <div class="divide-y divide-slate-100 max-h-60 overflow-y-auto space-y-1 pt-1">
+                                <a asp-controller="Account" asp-action="Profile" asp-fragment="activeLoans" onclick="markPublicNotificationsAsRead()" class="block p-2.5 rounded-xl hover:bg-slate-50 transition-colors">
+                                    <p class="font-bold text-navy-800">Nhắc nhở hạn trả tài liệu</p>
+                                    <p class="text-[11px] text-slate-600">Quy định hạn mượn tối đa 15 ngày. Độc giả chú ý hoàn trả đúng hạn để tránh khóa thẻ.</p>
+                                    <span class="text-[9px] text-slate-400 mt-1 block">Hôm nay</span>
+                                </a>
+                                <a asp-controller="Account" asp-action="Profile" onclick="markPublicNotificationsAsRead()" class="block p-2.5 rounded-xl hover:bg-slate-50 transition-colors">
+                                    <p class="font-bold text-emerald-700">Trạng thái thẻ: @(isCardActive ? "Đang hoạt động" : "Bị khóa")</p>
+                                    <p class="text-[11px] text-slate-600">Thẻ @cardNumber có hạn sử dụng 1 năm tính từ ngày cấp.</p>
+                                    <span class="text-[9px] text-slate-400 mt-1 block">Hệ thống</span>
+                                </a>
+                            </div>
+                            <div class="pt-2 border-t border-slate-100 text-center">
+                                <a asp-controller="Account" asp-action="Profile" onclick="markPublicNotificationsAsRead()" class="text-[11px] font-bold text-navy-800 hover:underline">
+                                    Xem chi tiết trong Hồ sơ cá nhân
+                                </a>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- AVATAR + DROPDOWN MENU ĐỘC GIẢ -->
                     <div class="relative" id="userMenuContainer">
                         <button type="button" id="userMenuBtn" onclick="toggleUserDropdown(event)" 
                                 class="flex items-center gap-2 p-1.5 pl-2 rounded-2xl hover:bg-slate-100 border border-slate-200/80 transition-all focus:outline-none focus:ring-2 focus:ring-navy-800/20">
-                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" 
-                                 alt="Avatar" class="w-8 h-8 rounded-xl object-cover border border-slate-200 shadow-xs" />
+                            <img src="@userAvatar" alt="Avatar" 
+                                 class="w-8 h-8 rounded-xl object-cover border border-slate-200 shadow-xs" 
+                                 onerror="this.onerror=null; this.src='/uploads/avatars/default-avatar.svg';" />
                             <div class="hidden xl:block text-left text-xs leading-tight pr-1">
                                 <span class="font-bold text-slate-800 block truncate max-w-[120px]">@userName</span>
                                 <span class="text-[10px] text-slate-400 font-mono">@studentCode</span>
@@ -205,7 +229,7 @@
                                     <span>Lịch sử mượn - trả</span>
                                 </a>
 
-                                <a href="javascript:void(0)" onclick="alert('Tính năng đổi mật khẩu đang được kết nối với Cổng định danh sinh viên SSO.')"
+                                <a href="javascript:void(0)" onclick="window.showAppModal({ title: 'Đổi Mật Khẩu Độc Giả', message: 'Tài khoản độc giả được đồng bộ trực tiếp với Cổng thông tin Sinh viên HUFLIT.\nĐể đổi mật khẩu hoặc lấy lại mã PIN, vui lòng liên hệ trực tiếp Quầy Thủ thư Cơ sở Hóc Môn hoặc Phòng Đào tạo.', type: 'info' })"
                                    class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 hover:text-navy-800 transition-colors">
                                     <i data-lucide="key-round" class="w-4 h-4 text-slate-500"></i>
                                     <span>Đổi mật khẩu</span>
@@ -273,7 +297,8 @@
         {
             <div class="pt-3 border-t border-slate-100 space-y-2">
                 <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
-                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" class="w-10 h-10 rounded-xl object-cover" />
+                    <img src="@userAvatar" alt="Avatar" class="w-10 h-10 rounded-xl object-cover border border-slate-200" 
+                         onerror="this.onerror=null; this.src='/uploads/avatars/default-avatar.svg';" />
                     <div>
                         <p class="text-xs font-bold text-slate-800">@userName</p>
                         <p class="text-[11px] text-slate-500 font-mono">@cardNumber</p>
@@ -324,6 +349,21 @@
         }
     }
 
+    // Hàm bật/tắt dropdown thông báo
+    function togglePublicNotificationDropdown(event) {
+        if (event) event.stopPropagation();
+        const notifDropdown = document.getElementById('publicNotificationDropdown');
+        if (notifDropdown) {
+            notifDropdown.classList.toggle('hidden');
+        }
+        const userDropdown = document.getElementById('userDropdown');
+        if (userDropdown && !userDropdown.classList.contains('hidden')) {
+            userDropdown.classList.add('hidden');
+            const chevron = document.getElementById('userMenuChevron');
+            if (chevron) chevron.classList.remove('rotate-180');
+        }
+    }
+
     // Đóng dropdown khi click ra ngoài
     document.addEventListener('click', function (event) {
         const container = document.getElementById('userMenuContainer');
@@ -334,6 +374,31 @@
                 dropdown.classList.add('hidden');
                 if (chevron) chevron.classList.remove('rotate-180');
             }
+        }
+
+        const notifContainer = document.getElementById('notifMenuContainer');
+        const notifDropdown = document.getElementById('publicNotificationDropdown');
+        if (notifDropdown && !notifDropdown.classList.contains('hidden')) {
+            if (notifContainer && !notifContainer.contains(event.target)) {
+                notifDropdown.classList.add('hidden');
+            }
+        }
+    });
+
+    // Hàm đánh dấu đã đọc thông báo độc giả
+    function markPublicNotificationsAsRead() {
+        const dot = document.getElementById('publicNotifDot');
+        if (dot) dot.classList.add('hidden');
+        localStorage.setItem('user_notif_read', 'true');
+        if (window.showAppToast) {
+            window.showAppToast('success', 'Thông Báo', 'Đã đánh dấu đã đọc tất cả thông báo!');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        if (localStorage.getItem('user_notif_read') === 'true') {
+            const dot = document.getElementById('publicNotifDot');
+            if (dot) dot.classList.add('hidden');
         }
     });
 

@@ -21,17 +21,27 @@
         <div class="absolute right-32 -bottom-16 w-48 h-48 bg-amber-400/10 rounded-full blur-2xl pointer-events-none"></div>
 
         <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div class="flex items-center gap-5">
-                <div class="relative">
-                    <img src="@Model.AvatarUrl" alt="Avatar" 
-                         class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-amber-400/80 shadow-lg" />
-                    <span class="absolute -bottom-1 -right-1 p-1 rounded-lg bg-navy-900 border border-white/20 text-amber-400" title="Sinh viên chính quy">
+                <div class="relative group">
+                    <img id="userAvatarImg" src="@Model.AvatarUrl" alt="Avatar" 
+                         class="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover border-2 border-amber-400/80 shadow-lg" 
+                         onerror="this.onerror=null; this.src='/uploads/avatars/default-avatar.svg';" />
+                    <button type="button" onclick="document.getElementById('avatarFileInput').click()" 
+                            class="absolute inset-0 bg-navy-950/60 rounded-2xl flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer border border-amber-400/40"
+                            title="Tải lên ảnh mới (tối đa 2MB, JPG/PNG/WEBP)">
+                        <i data-lucide="camera" class="w-5 h-5 text-amber-300"></i>
+                        <span class="text-[9px] font-bold mt-0.5 text-amber-200">Đổi ảnh</span>
+                    </button>
+                    <span class="absolute -bottom-1 -right-1 p-1 rounded-lg bg-navy-900 border border-white/20 text-amber-400 pointer-events-none" title="Sinh viên chính quy">
                         <i data-lucide="graduation-cap" class="w-4 h-4"></i>
                     </span>
+                    <form id="avatarUploadForm" asp-controller="Account" asp-action="UploadAvatar" method="post" enctype="multipart/form-data" class="hidden">
+                        @Html.AntiForgeryToken()
+                        <input type="file" id="avatarFileInput" name="avatarFile" accept=".jpg,.jpeg,.png,.webp" onchange="handleAvatarFileSelected(event)" />
+                    </form>
                 </div>
                 <div class="space-y-1">
                     <div class="flex flex-wrap items-center gap-2.5">
-                        <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight">@Model.FullName</h1>
+                        <h1 id="profileFullNameBanner" class="text-xl sm:text-2xl font-black text-white tracking-tight">@Model.FullName</h1>
                         <span class="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-white/10 text-amber-300 border border-white/20">
                             MSSV: @Model.StudentCode
                         </span>
@@ -55,9 +65,13 @@
 
             <!-- Nút thao tác nhanh -->
             <div class="flex flex-wrap items-center gap-3">
+                <button type="button" onclick="openModal('changePasswordModal')" 
+                        class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold border border-white/20 shadow-sm transition-all flex items-center gap-2">
+                    <i data-lucide="key-round" class="w-4 h-4 text-amber-400"></i> Đổi Mật Khẩu
+                </button>
                 <button type="button" onclick="openModal('updateProfileModal')" 
                         class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold border border-white/20 shadow-sm transition-all flex items-center gap-2">
-                    <i data-lucide="edit-3" class="w-4 h-4 text-amber-400"></i> Cập Nhật Thông Tin
+                    <i data-lucide="edit-3" class="w-4 h-4 text-blue-300"></i> Cập Nhật Thông Tin
                 </button>
                 <a asp-controller="Book" asp-action="Index" 
                    class="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-navy-950 rounded-xl text-xs font-black shadow-md hover:shadow-lg transition-all flex items-center gap-2">
@@ -135,7 +149,7 @@
                     <div class="pt-2 border-t border-white/10 flex justify-between items-end">
                         <div>
                             <span class="text-[9px] text-slate-400 uppercase tracking-wider block">Chủ thẻ sinh viên</span>
-                            <span class="text-sm font-bold text-white tracking-wide uppercase">@Model.FullName</span>
+                            <span id="profileFullNameCard" class="text-sm font-bold text-white tracking-wide uppercase">@Model.FullName</span>
                         </div>
                         <div class="text-right">
                             <span class="text-[9px] text-slate-400 block">Hạn dùng (1 năm):</span>
@@ -194,10 +208,14 @@
                     </div>
                 </div>
 
-                <div class="pt-1">
+                <div class="pt-1 space-y-2">
                     <button type="button" onclick="openModal('updateProfileModal')" 
                             class="w-full py-2.5 px-4 rounded-xl border border-navy-800 text-navy-800 hover:bg-navy-50 text-xs font-bold transition-colors flex items-center justify-center gap-2">
                         <i data-lucide="settings-2" class="w-4 h-4"></i> Cập Nhật Hồ Sơ & Thông Tin Liên Hệ
+                    </button>
+                    <button type="button" onclick="openModal('changePasswordModal')" 
+                            class="w-full py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-bold transition-colors flex items-center justify-center gap-2">
+                        <i data-lucide="key-round" class="w-4 h-4 text-amber-500"></i> Đổi Mật Khẩu Đăng Nhập
                     </button>
                 </div>
             </div>
@@ -228,6 +246,81 @@
         <!-- ================= CỘT PHẢI (7 COLS): QUẢN LÝ SÁCH ĐANG MƯỢN & LỊCH SỬ ================= -->
         <div class="lg:col-span-7 space-y-8" id="activeLoans">
 
+            <!-- ================= SÁCH ĐANG ĐĂNG KÝ MƯỢN (CHỜ PHÊ DUYỆT) ================= -->
+            @if (Model.PendingLoans != null && Model.PendingLoans.Count > 0)
+            {
+                <div class="bg-amber-50/50 rounded-3xl border-2 border-amber-200 p-6 sm:p-7 shadow-sm space-y-5 animate-in fade-in duration-200">
+                    <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-amber-200/70">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-amber-700 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                                Chờ Thủ Thư Duyệt Cấp Sách
+                            </span>
+                            <h3 class="text-lg font-black text-slate-900 tracking-tight mt-0.5">Sách Đang Đăng Ký Mượn</h3>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                            @Model.PendingLoans.Count cuốn đang chờ duyệt
+                        </span>
+                    </div>
+
+                    <div class="p-3.5 rounded-2xl bg-white border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5">
+                        <i data-lucide="info" class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5"></i>
+                        <div class="space-y-0.5">
+                            <p class="font-bold">Đã giữ chỗ thành công trong kho!</p>
+                            <p class="text-[11px] text-slate-600 leading-relaxed">
+                                Bạn có thể đến <strong>Quầy Lưu Thông Tầng 1</strong> để xuất trình thẻ thư viện và nhận sách. Nếu đổi ý, bạn có thể <strong>Hủy Đăng Ký Mượn</strong> bất kỳ lúc nào để giải phóng quyền mượn sách.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        @foreach (var pItem in Model.PendingLoans)
+                        {
+                            <div class="bg-white rounded-2xl border border-amber-200/90 p-4 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-amber-300 transition-colors">
+                                <div class="flex items-center gap-3.5 min-w-0">
+                                    <img src="@pItem.CoverImageUrl" alt="@pItem.BookTitle"
+                                         class="w-12 h-16 object-cover rounded-xl shadow-xs border border-slate-200 flex-shrink-0"
+                                         onerror="this.onerror=null; this.src='/uploads/books/default-book.svg';" />
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono bg-amber-100 text-amber-800 border border-amber-200">
+                                                Phiếu #@pItem.BorrowId
+                                            </span>
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold font-mono bg-slate-100 text-slate-700">
+                                                @pItem.DisplayCode
+                                            </span>
+                                        </div>
+                                        <h4 class="font-extrabold text-slate-900 text-xs sm:text-sm truncate leading-tight" title="@pItem.BookTitle">
+                                            @pItem.BookTitle
+                                        </h4>
+                                        <p class="text-[11px] text-slate-500 truncate mt-0.5">@pItem.Author</p>
+                                        <div class="flex flex-wrap items-center gap-2 mt-1 text-[10px] text-slate-400">
+                                            <span>Ngày đặt: <strong class="text-slate-600 font-mono">@pItem.RequestDate.ToString("dd/MM/yyyy")</strong></span>
+                                            <span>•</span>
+                                            <span>Hạn trả dự kiến: <strong class="text-slate-600 font-mono">@pItem.DueDate.ToString("dd/MM/yyyy")</strong></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
+                                        <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-600"></i> Chờ duyệt
+                                    </span>
+                                    <form asp-controller="Account" asp-action="CancelBorrowRequest" method="post" onsubmit="return confirmCancelBorrow(event, @pItem.BorrowId, '@pItem.BookTitle')">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="borrowId" value="@pItem.BorrowId" />
+                                        <button type="submit" 
+                                                class="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 hover:text-rose-800 border border-rose-200 text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs">
+                                            <i data-lucide="x-circle" class="w-3.5 h-3.5 text-rose-500"></i> Hủy Mượn
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
             <!-- CARD 2: TIẾN ĐỘ & DANH SÁCH SÁCH ĐANG MƯỢN -->
             <div class="bg-white rounded-3xl border border-slate-200 p-6 sm:p-7 shadow-sm space-y-6">
 
@@ -240,7 +333,7 @@
                         </div>
                         <div class="flex items-center gap-2">
                             <span class="px-3 py-1 rounded-full text-xs font-black bg-navy-50 text-navy-800 border border-navy-200">
-                                Đang mượn: @Model.CurrentBorrowCount/@Model.MaxBorrowLimit cuốn
+                                Đang giữ: @(Model.ActiveLoans?.Count ?? 0)/@Model.MaxBorrowLimit cuốn
                             </span>
                         </div>
                     </div>
@@ -253,7 +346,7 @@
                         </div>
                         <p class="text-[11px] text-slate-500 flex items-center justify-between">
                             <span>Hạn mức tối đa: 3 cuốn/lần mượn</span>
-                            <span class="font-medium text-slate-700">Còn lại: @(Model.MaxBorrowLimit - Model.CurrentBorrowCount) suất mượn</span>
+                            <span class="font-medium text-slate-700">Đang sử dụng: @Model.CurrentBorrowCount cuốn (@(Model.MaxBorrowLimit - Model.CurrentBorrowCount) suất còn trống)</span>
                         </p>
                     </div>
 
@@ -261,7 +354,7 @@
                     {
                         <div class="p-3 rounded-xl bg-blue-50/70 border border-blue-200/80 text-[11px] text-blue-900 flex items-center gap-2">
                             <i data-lucide="info" class="w-4 h-4 text-blue-600 flex-shrink-0"></i>
-                            <span>Ràng buộc hệ thống: Bạn cần hoàn tất trả các cuốn sách này trước khi lập phiếu mượn tài liệu mới.</span>
+                            <span>Ràng buộc hệ thống: Theo quy chế thư viện, bạn cần hoàn tất trả các cuốn sách đang mượn trước khi lập phiếu mượn tài liệu mới.</span>
                         </div>
                     }
                 </div>
@@ -288,7 +381,8 @@
                                         <td class="py-3 px-3">
                                             <div class="flex items-center gap-3">
                                                 <img src="@item.CoverImageUrl" alt="@item.BookTitle" 
-                                                     class="w-10 h-14 object-cover rounded-lg shadow-xs border border-slate-200 flex-shrink-0" />
+                                                     class="w-10 h-14 object-cover rounded-lg shadow-xs border border-slate-200 flex-shrink-0" 
+                                                     onerror="this.onerror=null; this.src='/uploads/books/default-book.svg';" />
                                                 <div class="min-w-0 max-w-[200px]">
                                                     <h5 class="font-bold text-slate-900 leading-snug truncate" title="@item.BookTitle">
                                                         @item.BookTitle
@@ -474,7 +568,7 @@
             </button>
         </div>
 
-        <form asp-controller="Account" asp-action="UpdateProfile" method="post" class="space-y-4 pt-4">
+        <form id="updateProfileForm" asp-controller="Account" asp-action="UpdateProfile" method="post" onsubmit="handleUpdateProfile(event)" class="space-y-4 pt-4">
             @Html.AntiForgeryToken()
 
             <div>
@@ -612,6 +706,70 @@
     </div>
 </div>
 
+<!-- ================= MODAL 4: ĐỔI MẬT KHẨU TRỰC TIẾP ================= -->
+<div id="changePasswordModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-150">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <i data-lucide="key-round" class="w-5 h-5 text-amber-500"></i> Đổi Mật Khẩu Đăng Nhập
+            </h3>
+            <button type="button" onclick="closeModal('changePasswordModal')" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form id="changePasswordForm" asp-controller="Account" asp-action="ChangePassword" method="post" onsubmit="handleChangePassword(event)" class="space-y-4 pt-3">
+            @Html.AntiForgeryToken()
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Mật khẩu hiện tại <span class="text-rose-500">*</span></label>
+                <div class="relative">
+                    <input asp-for="PasswordModel.CurrentPassword" name="CurrentPassword" type="password" id="currentPasswordInput" required 
+                           placeholder="Nhập mật khẩu đang sử dụng"
+                           class="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none pr-10" />
+                    <button type="button" onclick="togglePasswordVisibility('currentPasswordInput', this)" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600">
+                        <i data-lucide="eye" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Mật khẩu mới (tối thiểu 6 ký tự) <span class="text-rose-500">*</span></label>
+                <div class="relative">
+                    <input asp-for="PasswordModel.NewPassword" name="NewPassword" type="password" id="newPasswordInput" required minlength="6"
+                           placeholder="Nhập mật khẩu mới"
+                           class="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none pr-10" />
+                    <button type="button" onclick="togglePasswordVisibility('newPasswordInput', this)" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600">
+                        <i data-lucide="eye" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Xác nhận mật khẩu mới <span class="text-rose-500">*</span></label>
+                <div class="relative">
+                    <input asp-for="PasswordModel.ConfirmPassword" name="ConfirmPassword" type="password" id="confirmPasswordInput" required minlength="6"
+                           placeholder="Nhập lại chính xác mật khẩu mới"
+                           class="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none pr-10" />
+                    <button type="button" onclick="togglePasswordVisibility('confirmPasswordInput', this)" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600">
+                        <i data-lucide="eye" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-3 bg-blue-50 rounded-xl border border-blue-200 text-[11px] text-blue-900 flex items-start gap-2">
+                <i data-lucide="shield-check" class="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5"></i>
+                <span>Sau khi đổi mật khẩu thành công, bạn sẽ sử dụng mật khẩu mới này cho tất cả các lần đăng nhập tiếp theo.</span>
+            </div>
+
+            <div class="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
+                <button type="button" onclick="closeModal('changePasswordModal')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">Hủy</button>
+                <button type="submit" class="px-5 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow">Lưu mật khẩu mới</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         function openModal(modalId) {
@@ -629,6 +787,111 @@
             }
         }
 
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            const icon = btn.querySelector('i');
+            if (icon) {
+                icon.setAttribute('data-lucide', isPassword ? 'eye-off' : 'eye');
+                if (window.lucide) lucide.createIcons();
+            }
+        }
+
+        async function handleChangePassword(e) {
+            e.preventDefault();
+            const form = document.getElementById('changePasswordForm');
+            if (!form) return;
+
+            const newPass = document.getElementById('newPasswordInput').value;
+            const confirmPass = document.getElementById('confirmPasswordInput').value;
+
+            if (newPass !== confirmPass) {
+                if (typeof window.showAppToast === 'function') {
+                    window.showAppToast('error', 'Lỗi xác nhận', 'Mật khẩu xác nhận không trùng khớp.');
+                }
+                return;
+            }
+
+            try {
+                const formData = new FormData(form);
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const res = await response.json();
+                    if (res.success) {
+                        closeModal('changePasswordModal');
+                        form.reset();
+                        if (typeof window.showAppToast === 'function') {
+                            window.showAppToast('success', 'Thành công!', res.message);
+                        } else if (typeof showNotification === 'function') {
+                            showNotification('success', 'Thành công!', res.message);
+                        }
+                    } else {
+                        if (typeof window.showAppToast === 'function') {
+                            window.showAppToast('error', 'Lỗi đổi mật khẩu', res.message || 'Có lỗi xảy ra.');
+                        } else if (typeof showNotification === 'function') {
+                            showNotification('error', 'Lỗi đổi mật khẩu', res.message || 'Có lỗi xảy ra.');
+                        }
+                    }
+                } else {
+                    form.submit();
+                }
+            } catch (err) {
+                form.submit();
+            }
+        }
+
+        async function confirmCancelBorrow(e, borrowId, bookTitle) {
+            e.preventDefault();
+            const form = e.target;
+            
+            const confirmed = typeof window.showAppConfirm === 'function' 
+                ? await window.showAppConfirm(`Bạn có chắc chắn muốn hủy yêu cầu đăng ký mượn cuốn sách "${bookTitle}" (Phiếu #${borrowId})?`, 'Xác Nhận Hủy Đăng Ký Mượn')
+                : confirm(`Bạn có chắc muốn hủy đăng ký mượn cuốn sách "${bookTitle}"?`);
+
+            if (confirmed) {
+                try {
+                    const formData = new FormData(form);
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        const res = await response.json();
+                        if (res.success) {
+                            if (typeof window.showAppToast === 'function') {
+                                window.showAppToast('success', 'Đã Hủy Yêu Cầu', res.message);
+                            }
+                            setTimeout(() => window.location.reload(), 800);
+                        } else {
+                            if (typeof window.showAppToast === 'function') {
+                                window.showAppToast('error', 'Không thể hủy', res.message);
+                            }
+                        }
+                    } else {
+                        form.submit();
+                    }
+                } catch (err) {
+                    form.submit();
+                }
+            }
+            return false;
+        }
+
         function openRenewModal(borrowId, bookTitle, currentDue) {
             document.getElementById('renewBorrowId').value = borrowId;
             document.getElementById('renewBookTitle').innerText = bookTitle;
@@ -641,6 +904,78 @@
             document.getElementById('reportBookTitle').innerText = bookTitle;
             document.getElementById('reportBookCode').innerText = bookCode;
             openModal('reportModal');
+        }
+
+        async function handleUpdateProfile(e) {
+            e.preventDefault();
+            const form = document.getElementById('updateProfileForm');
+            if (!form) return;
+
+            try {
+                const formData = new FormData(form);
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const res = await response.json();
+                    if (res.success) {
+                        closeModal('updateProfileModal');
+                        if (res.fullName) {
+                            const bannerName = document.getElementById('profileFullNameBanner');
+                            const cardName = document.getElementById('profileFullNameCard');
+                            if (bannerName) bannerName.innerText = res.fullName;
+                            if (cardName) cardName.innerText = res.fullName.toUpperCase();
+                        }
+                        if (typeof window.showAppToast === 'function') {
+                            window.showAppToast('success', 'Thành công!', res.message);
+                        } else if (typeof showNotification === 'function') {
+                            showNotification('success', 'Thành công!', res.message);
+                        }
+                    } else {
+                        if (typeof window.showAppToast === 'function') {
+                            window.showAppToast('error', 'Có lỗi', res.message || 'Có lỗi xảy ra.');
+                        } else if (typeof showNotification === 'function') {
+                            showNotification('error', 'Có lỗi', res.message || 'Có lỗi xảy ra.');
+                        }
+                    }
+                } else {
+                    form.submit();
+                }
+            } catch (err) {
+                form.submit();
+            }
+        }
+
+        function handleAvatarFileSelected(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Check file size (max 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                if (typeof window.showAppToast === 'function') {
+                    window.showAppToast('error', 'Lỗi tệp tin', 'Dung lượng ảnh vượt quá 2MB. Vui lòng chọn tệp nhỏ hơn.');
+                }
+                e.target.value = '';
+                return;
+            }
+
+            // Check extension
+            const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                if (typeof window.showAppToast === 'function') {
+                    window.showAppToast('error', 'Định dạng không hỗ trợ', 'Chỉ chấp nhận các tệp định dạng JPG, JPEG, PNG, WEBP.');
+                }
+                e.target.value = '';
+                return;
+            }
+
+            document.getElementById('avatarUploadForm').submit();
         }
 
         document.addEventListener('DOMContentLoaded', function () {

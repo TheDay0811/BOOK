@@ -20,8 +20,8 @@
                         <i data-lucide="book-marked" class="w-6 h-6 text-amber-400"></i>
                     </div>
                     <div>
-                        <span class="text-[11px] uppercase tracking-widest font-bold text-blue-300 block">Thư Viện Trung Tâm</span>
-                        <h3 class="text-base font-black text-white tracking-wider">SMART<span class="text-amber-400">LIB</span></h3>
+                        <span class="text-[11px] uppercase tracking-widest font-bold text-blue-300 block">Thư Viện HUFLIT</span>
+                        <h3 class="text-base font-black text-white tracking-wider">SMART<span class="text-amber-400">LIB</span> HÓC MÔN</h3>
                     </div>
                 </div>
 
@@ -130,7 +130,7 @@
                 <!-- Validation Summary -->
                 <div asp-validation-summary="ModelOnly" class="p-3 text-xs text-rose-800 bg-rose-50 border border-rose-200 rounded-xl" style="@(ViewData.ModelState.IsValid ? "display:none;" : "")"></div>
 
-                <form asp-controller="Account" asp-action="Register" method="post" class="space-y-4" id="registerForm" novalidate>
+                <form asp-controller="Account" asp-action="Register" method="post" class="space-y-4" id="registerForm" autocomplete="off" data-ms-no-sso="true" novalidate>
                     @Html.AntiForgeryToken()
 
                     <!-- Hidden Fields để bảo toàn thông tin Thẻ thư viện -->
@@ -174,7 +174,7 @@
                             </label>
                             <div class="relative">
                                 <i data-lucide="mail" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
-                                <input asp-for="Email" type="email" placeholder="student@university.edu.vn" 
+                                <input asp-for="Email" type="email" placeholder="sinhvien@huflit.edu.vn" 
                                        class="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:ring-1 focus:ring-navy-800 focus:outline-none transition-all" />
                             </div>
                             <span asp-validation-for="Email" class="text-[11px] text-rose-600 mt-1 block"></span>

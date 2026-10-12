@@ -2,6 +2,11 @@
 @{
     Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
     ViewData["Title"] = "Quản Lý Kho Sách & Đầu Sách";
+    var categories = ViewBag.Categories as List<SelectListItem> ?? new List<SelectListItem>();
+    var publishers = ViewBag.Publishers as List<SelectListItem> ?? new List<SelectListItem>();
+    var currentSearch = ViewBag.CurrentSearch as string ?? "";
+    var currentCategoryId = ViewBag.CurrentCategoryId as int?;
+    var currentStatus = ViewBag.CurrentStatus as string ?? "";
 }
 
 <div class="space-y-6">
@@ -10,50 +15,75 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
             <nav class="flex items-center gap-2 text-xs text-slate-500 mb-1">
-                <span>Quản lý dữ liệu</span>
+                <a asp-area="Admin" asp-controller="Home" asp-action="Index" class="hover:text-navy-800">Tổng quan</a>
                 <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
-                <span class="text-navy-800 font-bold">Danh mục đầu sách</span>
+                <span class="text-navy-800 font-bold">Danh mục tựa sách & Kho lưu trữ</span>
             </nav>
             <h1 class="text-2xl font-black text-slate-900 tracking-tight">Quản Lý Kho Sách & Đầu Sách</h1>
         </div>
 
         <button onclick="openBookModal()" 
                 class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2">
-            <i data-lucide="plus-circle" class="w-4 h-4"></i> Thêm Sách Mới
+            <i data-lucide="plus-circle" class="w-4 h-4"></i> Thêm Tựa Sách Mới
         </button>
     </div>
 
-    <!-- Toolbar Filters -->
-    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
+    <!-- Quy định Phân biệt Số lượng sách & Giới hạn mượn -->
+    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/80 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-xs shadow-sm">
+        <div class="flex items-start gap-3">
+            <div class="p-2.5 bg-blue-600 text-white rounded-xl flex-shrink-0 shadow-sm mt-0.5">
+                <i data-lucide="info" class="w-4 h-4"></i>
+            </div>
+            <div>
+                <span class="font-extrabold uppercase tracking-wide text-navy-900 text-[11px] block">Quy chuẩn nghiệp vụ Thư Viện HUFLIT</span>
+                <p class="text-slate-600 mt-1 leading-relaxed">
+                    • <strong>Số lượng cuốn sách (Đầu sách):</strong> Tổng số bản sao vật lý (001, 002, 003,...) của từng tựa sách được lưu trữ trong kho thư viện. Thủ thư có thể bấm icon <strong><i data-lucide="copy-plus" class="w-3.5 h-3.5 inline text-emerald-600"></i> Bổ sung cuốn</strong> để thêm số lượng.<br/>
+                    • <strong>Giới hạn mượn của độc giả:</strong> Mỗi sinh viên chỉ được phép mượn <strong>tối đa 3 mã sách</strong> trong <strong>thời hạn 15 ngày</strong> (nếu đang mượn sách thì phải trả xong mới được mượn tiếp).
+                </p>
+            </div>
+        </div>
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 flex-shrink-0">
+            <div class="px-3.5 py-2 bg-white border border-blue-200 rounded-xl font-bold text-navy-800 text-[11px] shadow-sm flex items-center gap-1.5">
+                <i data-lucide="shield-check" class="w-3.5 h-3.5 text-blue-600"></i>
+                Hạn mức độc giả: 3 cuốn / 15 ngày
+            </div>
+        </div>
+    </div>
+
+    <!-- Toolbar Filters (Form lọc thật) -->
+    <form method="get" asp-action="Index" 
+          class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
         <div class="flex items-center gap-2 w-full md:w-auto flex-1 max-w-md">
             <div class="relative w-full">
-                <input type="text" placeholder="Tìm theo tên sách, tác giả, mã ISBN..." 
+                <input type="text" name="search" value="@currentSearch" placeholder="Tìm theo tên sách, tác giả, mã sách..." 
                        class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none" />
                 <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
             </div>
         </div>
 
         <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
-            <select class="py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-navy-800 focus:outline-none">
+            <select name="categoryId" class="py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-navy-800 focus:outline-none">
                 <option value="">Tất cả thể loại</option>
-                <option>Công Nghệ Thông Tin</option>
-                <option>Kinh Tế & Quản Trị</option>
-                <option>Khoa Học Dữ Liệu</option>
-                <option>An Toàn Thông Tin</option>
+                @foreach (var cat in categories)
+                {
+                    <option value="@cat.Value" selected="@(currentCategoryId.ToString() == cat.Value)">@cat.Text</option>
+                }
             </select>
 
-            <select class="py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-navy-800 focus:outline-none">
-                <option value="">Tất cả tình trạng</option>
-                <option>Còn sách trong kho</option>
-                <option>Hết sách tạm thời</option>
-                <option>Đang bảo trì / phục hồi</option>
+            <select name="status" class="py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-navy-800 focus:outline-none">
+                <option value="" selected="@(string.IsNullOrEmpty(currentStatus))">Tất cả tình trạng</option>
+                <option value="available" selected="@(currentStatus == "available")">Còn sách sẵn sàng</option>
+                <option value="out_of_stock" selected="@(currentStatus == "out_of_stock")">Hết sách tạm thời</option>
             </select>
 
-            <button class="px-4 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl font-bold transition-colors">
-                Lọc
+            <button type="submit" class="px-5 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl font-bold transition-colors flex items-center gap-1.5">
+                <i data-lucide="filter" class="w-3.5 h-3.5"></i> Lọc
             </button>
+            <a asp-action="Index" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl font-semibold transition-colors">
+                Đặt lại
+            </a>
         </div>
-    </div>
+    </form>
 
     <!-- Data Table -->
     <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
@@ -62,7 +92,7 @@
                 <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
                     <tr>
                         <th class="py-3 px-4">Ảnh Bìa</th>
-                        <th class="py-3 px-4">Mã ISBN</th>
+                        <th class="py-3 px-4">Mã Sách</th>
                         <th class="py-3 px-4">Tên Đầu Sách</th>
                         <th class="py-3 px-4">Tác Giả & NXB</th>
                         <th class="py-3 px-4">Thể Loại</th>
@@ -72,57 +102,77 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200">
-                    @foreach (var book in Model)
+                    @if (Model != null && Model.Any())
                     {
-                        <tr class="hover:bg-slate-50/80 transition-colors">
-                            <td class="py-3 px-4">
-                                <img src="@book.CoverImageUrl" alt="Cover" class="w-10 h-14 object-cover rounded-lg shadow-sm border border-slate-200" />
-                            </td>
-                            <td class="py-3 px-4 font-mono font-bold text-slate-800">@book.ISBN</td>
-                            <td class="py-3 px-4 font-bold text-slate-900 max-w-xs">
-                                <p class="truncate">@book.Title</p>
-                                <span class="text-[11px] text-blue-600 font-normal">Kệ: @book.ShelfLocation</span>
-                            </td>
-                            <td class="py-3 px-4">
-                                <p class="font-semibold text-slate-800">@book.Author</p>
-                                <p class="text-slate-400">@book.PublisherName (@book.PublishYear)</p>
-                            </td>
-                            <td class="py-3 px-4">
-                                <span class="px-2.5 py-0.5 rounded-full font-semibold bg-blue-50 text-navy-800 border border-blue-100">
-                                    @book.CategoryName
-                                </span>
-                            </td>
-                            <td class="py-3 px-4 font-bold text-slate-800">
-                                <span class="@(book.AvailableCopies > 0 ? "text-emerald-600" : "text-rose-600")">
-                                    @book.AvailableCopies
-                                </span> / @book.TotalCopies bản
-                            </td>
-                            <td class="py-3 px-4">
-                                @if (book.AvailableCopies > 0)
-                                {
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Còn sách
+                        foreach (var book in Model)
+                        {
+                            <tr id="row-book-@book.Id" class="hover:bg-slate-50/80 transition-colors">
+                                <td class="py-3 px-4">
+                                    <img src="@(string.IsNullOrEmpty(book.CoverImageUrl) ? "/uploads/books/default-book.svg" : book.CoverImageUrl)" alt="Cover" 
+                                         class="w-10 h-14 object-cover rounded-lg shadow-sm border border-slate-200" 
+                                         onerror="this.onerror=null; this.src='/uploads/books/default-book.svg';" />
+                                </td>
+                                <td class="py-3 px-4 font-mono font-bold text-slate-800">@book.ISBN</td>
+                                <td class="py-3 px-4 font-bold text-slate-900 max-w-xs">
+                                    <p class="truncate">@book.Title</p>
+                                    <span class="text-[11px] text-blue-600 font-normal">@book.ShelfLocation</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <p class="font-semibold text-slate-800">@book.Author</p>
+                                    <p class="text-slate-400">@book.PublisherName (@book.PublishYear)</p>
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="px-2.5 py-0.5 rounded-full font-semibold bg-blue-50 text-navy-800 border border-blue-100">
+                                        @book.CategoryName
                                     </span>
-                                }
-                                else
-                                {
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold bg-rose-100 text-rose-800">
-                                        Hết sách
-                                    </span>
-                                }
-                            </td>
-                            <td class="py-3 px-4 text-right">
-                                <div class="flex items-center justify-end gap-1.5">
-                                    <button onclick="alert('Xem chi tiết sách #@book.Id')" class="p-1.5 text-slate-500 hover:text-navy-800 hover:bg-slate-100 rounded-lg" title="Xem chi tiết">
-                                        <i data-lucide="eye" class="w-4 h-4"></i>
-                                    </button>
-                                    <button onclick="alert('Chỉnh sửa sách #@book.Id')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg" title="Chỉnh sửa">
-                                        <i data-lucide="edit-3" class="w-4 h-4"></i>
-                                    </button>
-                                    <button onclick="if(confirm('Bạn có chắc muốn xóa đầu sách này?')) alert('Đã xóa sách thành công!');" class="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg" title="Xóa">
-                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                    </button>
-                                </div>
+                                </td>
+                                <td class="py-3 px-4 font-bold text-slate-800">
+                                    <span class="@(book.AvailableCopies > 0 ? "text-emerald-600" : "text-rose-600")">
+                                        @book.AvailableCopies
+                                    </span> / @book.TotalCopies bản
+                                </td>
+                                <td class="py-3 px-4">
+                                    @if (book.AvailableCopies > 0)
+                                    {
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Còn sách
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold bg-rose-100 text-rose-800">
+                                            Hết sách
+                                        </span>
+                                    }
+                                </td>
+                                <td class="py-3 px-4 text-right">
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        <a asp-action="Details" asp-route-id="@book.Id" 
+                                           class="p-1.5 text-slate-500 hover:text-navy-800 hover:bg-slate-100 rounded-lg transition-colors" title="Xem chi tiết & danh sách bản sao">
+                                            <i data-lucide="eye" class="w-4 h-4"></i>
+                                        </a>
+                                        <button onclick="openAddCopiesModal(@book.Id, '@Html.Raw(book.Title.Replace("'", "\\'"))', '@book.ISBN', @book.TotalCopies)" 
+                                                class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Bổ sung số lượng cuốn sách (Thêm bản sao)">
+                                            <i data-lucide="copy-plus" class="w-4 h-4"></i>
+                                        </button>
+                                        <button onclick="openEditBookModal(@book.Id)" 
+                                                class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Chỉnh sửa thông tin">
+                                            <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                        </button>
+                                        <button onclick="confirmDeleteBook(@book.Id, '@book.Title')" 
+                                                class="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Xóa tựa sách">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="8" class="text-center py-10 text-slate-400 italic">
+                                Không tìm thấy đầu sách nào phù hợp với bộ lọc.
                             </td>
                         </tr>
                     }
@@ -130,14 +180,8 @@
             </table>
         </div>
 
-        <!-- Pagination -->
         <div class="p-4 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-slate-500">
-            <span>Hiển thị <strong>1 - 5</strong> trên tổng số <strong>12.450</strong> đầu sách</span>
-            <div class="flex gap-1">
-                <button class="w-7 h-7 rounded-lg bg-navy-800 text-white font-bold">1</button>
-                <button class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-700">2</button>
-                <button class="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-700">3</button>
-            </div>
+            <span>Tổng cộng: <strong>@(Model?.Count ?? 0)</strong> đầu sách trong danh sách</span>
         </div>
     </div>
 
@@ -145,7 +189,7 @@
 
 <!-- ================= MODAL THÊM SÁCH MỚI ================= -->
 <div id="bookModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/60 backdrop-blur-sm">
-    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-2xl w-full overflow-hidden">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         <div class="bg-navy-900 text-white p-5 flex items-center justify-between">
             <h3 class="font-bold text-base flex items-center gap-2">
                 <i data-lucide="book-plus" class="w-5 h-5 text-amber-400"></i> Thêm Đầu Sách Mới Vào Kho
@@ -155,49 +199,70 @@
             </button>
         </div>
 
-        <form onsubmit="event.preventDefault(); alert('Đã thêm đầu sách mới thành công!'); closeBookModal();" class="p-6 space-y-4 text-xs">
+        <form asp-action="Create" method="post" enctype="multipart/form-data" class="p-6 space-y-4 text-xs">
+            @Html.AntiForgeryToken()
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block font-bold text-slate-700 uppercase mb-1">Tên đầu sách <span class="text-rose-500">*</span></label>
-                    <input type="text" required placeholder="Ví dụ: Thiết Kế Kiến Trúc..." class="w-full p-2.5 bg-slate-50 border rounded-xl" />
+                    <input type="text" name="Title" required placeholder="Ví dụ: Thiết Kế Kiến Trúc Phần Mềm..." class="w-full p-2.5 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none focus:border-navy-800" />
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 uppercase mb-1">Mã ISBN <span class="text-rose-500">*</span></label>
-                    <input type="text" required placeholder="978-604-..." class="w-full p-2.5 bg-slate-50 border rounded-xl font-mono" />
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Mã tựa sách (Code) <span class="text-rose-500">*</span></label>
+                    <input type="text" name="BookCode" placeholder="Để trống hệ thống tự sinh mã (VD: BK-2026-01)..." class="w-full p-2.5 bg-slate-50 border rounded-xl font-mono focus:bg-white focus:outline-none focus:border-navy-800" />
                 </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                    <label class="block font-bold text-slate-700 uppercase mb-1">Tác giả</label>
-                    <input type="text" placeholder="Tên tác giả..." class="w-full p-2.5 bg-slate-50 border rounded-xl" />
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Tác giả <span class="text-rose-500">*</span></label>
+                    <input type="text" name="Author" required placeholder="Tên tác giả..." class="w-full p-2.5 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none focus:border-navy-800" />
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 uppercase mb-1">Thể loại / Chuyên ngành</label>
-                    <select class="w-full p-2.5 bg-slate-50 border rounded-xl">
-                        <option>Công Nghệ Thông Tin</option>
-                        <option>Kinh Tế & Quản Trị</option>
-                        <option>Khoa Học Dữ Liệu</option>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Thể loại / Chuyên ngành <span class="text-rose-500">*</span></label>
+                    <select name="CategoryId" required class="w-full p-2.5 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none focus:border-navy-800">
+                        @foreach (var cat in categories)
+                        {
+                            <option value="@cat.Value">@cat.Text</option>
+                        }
                     </select>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 uppercase mb-1">Nhà xuất bản</label>
-                    <input type="text" placeholder="NXB Bách Khoa..." class="w-full p-2.5 bg-slate-50 border rounded-xl" />
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Nhà xuất bản <span class="text-rose-500">*</span></label>
+                    <select name="PublisherId" required class="w-full p-2.5 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none focus:border-navy-800">
+                        @foreach (var pub in publishers)
+                        {
+                            <option value="@pub.Value">@pub.Text</option>
+                        }
+                    </select>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                    <label class="block font-bold text-slate-700 uppercase mb-1">Tổng số bản sao</label>
-                    <input type="number" min="1" value="5" class="w-full p-2.5 bg-slate-50 border rounded-xl" />
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Số bản sao ban đầu (Cuốn) <span class="text-rose-500">*</span></label>
+                    <input type="number" name="InitialCopiesCount" min="1" max="50" value="3" required class="w-full p-2.5 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none focus:border-navy-800" />
+                    <span class="text-[10px] text-slate-400 mt-0.5 block">Tự động sinh các số KS 001, 002...</span>
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 uppercase mb-1">Năm phát hành</label>
-                    <input type="number" value="2024" class="w-full p-2.5 bg-slate-50 border rounded-xl" />
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Năm xuất bản <span class="text-rose-500">*</span></label>
+                    <input type="number" name="PublishYear" value="@DateTime.Today.Year" required class="w-full p-2.5 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none focus:border-navy-800" />
                 </div>
                 <div>
                     <label class="block font-bold text-slate-700 uppercase mb-1">Vị trí kệ sách</label>
-                    <input type="text" placeholder="Tầng 2 - Kệ B4..." class="w-full p-2.5 bg-slate-50 border rounded-xl" />
+                    <input type="text" name="ShelfLocation" placeholder="Kệ A1 - Tầng 2" value="Kệ A1 - Tầng 2" class="w-full p-2.5 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none focus:border-navy-800" />
+                </div>
+            </div>
+
+            <!-- Upload Ảnh Bìa Sách -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Tải ảnh bìa sách (.jpg, .png, .webp)</label>
+                    <input type="file" name="ImageFile" accept="image/png,image/jpeg,image/webp" class="w-full text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-navy-50 file:text-navy-800 hover:file:bg-navy-100" />
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Hoặc đường dẫn ảnh bìa (URL)</label>
+                    <input type="text" name="CoverImageUrl" placeholder="https://images.unsplash.com/..." class="w-full p-2 bg-white border rounded-xl focus:bg-white focus:outline-none focus:border-navy-800" />
                 </div>
             </div>
 
@@ -209,9 +274,263 @@
     </div>
 </div>
 
+<!-- ================= MODAL CHỈNH SỬA SÁCH ================= -->
+<div id="editBookModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/60 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-xl w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div class="bg-navy-900 text-white p-5 flex items-center justify-between">
+            <h3 class="font-bold text-base flex items-center gap-2">
+                <i data-lucide="edit-3" class="w-5 h-5 text-amber-400"></i> Chỉnh Sửa Thông Tin Đầu Sách
+            </h3>
+            <button onclick="closeEditBookModal()" class="text-slate-400 hover:text-white p-1">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form id="editBookForm" asp-action="Edit" method="post" enctype="multipart/form-data" onsubmit="handleEditBookSubmit(event)" class="p-6 space-y-4 text-xs">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="BookId" id="editBookId" />
+
+            <div>
+                <label class="block font-bold text-slate-700 uppercase mb-1">Tên đầu sách <span class="text-rose-500">*</span></label>
+                <input type="text" name="Title" id="editTitle" required class="w-full p-2.5 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none focus:border-navy-800" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Tác giả <span class="text-rose-500">*</span></label>
+                    <input type="text" name="Author" id="editAuthor" required class="w-full p-2.5 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none focus:border-navy-800" />
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Năm xuất bản <span class="text-rose-500">*</span></label>
+                    <input type="number" name="PublishYear" id="editPublishYear" required class="w-full p-2.5 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none focus:border-navy-800" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Thể loại / Chuyên ngành</label>
+                    <select name="CategoryId" id="editCategoryId" required class="w-full p-2.5 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none focus:border-navy-800">
+                        @foreach (var cat in categories)
+                        {
+                            <option value="@cat.Value">@cat.Text</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Nhà xuất bản</label>
+                    <select name="PublisherId" id="editPublisherId" required class="w-full p-2.5 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none focus:border-navy-800">
+                        @foreach (var pub in publishers)
+                        {
+                            <option value="@pub.Value">@pub.Text</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <!-- Preview và Cập nhật Ảnh Bìa -->
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                <div class="sm:col-span-3 flex justify-center">
+                    <img id="editImagePreview" src="/uploads/books/default-book.svg" 
+                         alt="Ảnh bìa" class="w-16 h-22 object-cover rounded-xl border border-slate-300 shadow-sm" 
+                         onerror="this.onerror=null; this.src='/uploads/books/default-book.svg';" />
+                </div>
+                <div class="sm:col-span-9 space-y-2">
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">Thay đổi ảnh bìa (File)</label>
+                        <input type="file" name="ImageFile" id="editImageFile" accept="image/png,image/jpeg,image/webp" onchange="previewSelectedEditImage(event)" 
+                               class="w-full text-xs text-slate-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-navy-800 hover:file:bg-blue-100" />
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 uppercase mb-1">Hoặc cập nhật URL ảnh</label>
+                        <input type="text" name="CoverImageUrl" id="editCoverImageUrl" placeholder="https://..." class="w-full p-2 bg-white border rounded-xl focus:outline-none focus:border-navy-800" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-3 border-t flex justify-end gap-2">
+                <button type="button" onclick="closeEditBookModal()" class="px-4 py-2 font-bold text-slate-600 hover:bg-slate-100 rounded-xl">Hủy</button>
+                <button type="submit" class="px-5 py-2 font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow">Lưu Thay Đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ================= MODAL BỔ SUNG SỐ LƯỢNG CUỐN SÁCH (THÊM BẢN SAO) ================= -->
+<div id="addCopiesModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/60 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div class="bg-navy-900 text-white p-5 flex items-center justify-between">
+            <h3 class="font-bold text-base flex items-center gap-2">
+                <i data-lucide="copy-plus" class="w-5 h-5 text-amber-400"></i> Bổ Sung Số Lượng Cuốn Sách
+            </h3>
+            <button onclick="closeAddCopiesModal()" class="text-slate-400 hover:text-white transition-colors">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form method="post" asp-action="AddCopies" class="p-6 space-y-4 text-xs">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="addCopiesBookId" name="bookId" />
+
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 space-y-1">
+                <p class="text-slate-500 text-[11px]">Tựa sách được chọn:</p>
+                <p id="addCopiesBookTitle" class="text-sm font-bold text-slate-900 line-clamp-2"></p>
+                <div class="flex items-center gap-2 pt-1">
+                    <span id="addCopiesBookIsbn" class="font-mono text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded"></span>
+                    <span id="addCopiesCurrentCount" class="text-[11px] text-slate-600 font-semibold"></span>
+                </div>
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-700 uppercase tracking-wider text-[11px] mb-1.5">
+                    Số lượng cuốn muốn bổ sung thêm <span class="text-rose-500">*</span>
+                </label>
+                <input type="number" name="numberOfCopies" min="1" max="50" value="5" required
+                       class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 text-sm font-bold text-slate-900" />
+                <p class="text-[11px] text-slate-500 mt-1">Hệ thống sẽ tự động sinh số kiểm soát tiếp nối (ví dụ: 004, 005, 006...).</p>
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-700 uppercase tracking-wider text-[11px] mb-1.5">
+                    Vị trí kệ / Ghi chú lưu kho
+                </label>
+                <input type="text" name="shelfLocation" placeholder="Kho lưu thông - Kệ IT Tầng 2..."
+                       class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 text-sm" />
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button type="button" onclick="closeAddCopiesModal()" 
+                        class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-colors">
+                    Hủy bỏ
+                </button>
+                <button type="submit" 
+                        class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-colors shadow-sm flex items-center gap-1.5">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Xác nhận thêm cuốn
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @section Scripts {
     <script>
-        function openBookModal() { document.getElementById('bookModal')?.classList.remove('hidden'); lucide.createIcons(); }
-        function closeBookModal() { document.getElementById('bookModal')?.classList.add('hidden'); }
+        function openAddCopiesModal(bookId, title, isbn, totalCopies) {
+            document.getElementById('addCopiesBookId').value = bookId;
+            document.getElementById('addCopiesBookTitle').textContent = title;
+            document.getElementById('addCopiesBookIsbn').textContent = isbn;
+            document.getElementById('addCopiesCurrentCount').textContent = `Hiện có: ${totalCopies} cuốn`;
+            document.getElementById('addCopiesModal')?.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeAddCopiesModal() {
+            document.getElementById('addCopiesModal')?.classList.add('hidden');
+        }
+
+        function openBookModal() { 
+            document.getElementById('bookModal')?.classList.remove('hidden'); 
+            lucide.createIcons(); 
+        }
+
+        function closeBookModal() { 
+            document.getElementById('bookModal')?.classList.add('hidden'); 
+        }
+
+        function previewSelectedEditImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('editImagePreview').src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function openEditBookModal(id) {
+            try {
+                const res = await fetch('/Admin/Book/GetBook/' + id);
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('editBookId').value = data.id;
+                    document.getElementById('editTitle').value = data.title;
+                    document.getElementById('editAuthor').value = data.author;
+                    document.getElementById('editPublishYear').value = data.publishYear;
+                    document.getElementById('editCategoryId').value = data.categoryId;
+                    document.getElementById('editPublisherId').value = data.publisherId;
+                    
+                    const coverUrl = data.coverImageUrl || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=200&auto=format&fit=crop&q=80';
+                    document.getElementById('editImagePreview').src = coverUrl;
+                    document.getElementById('editCoverImageUrl').value = data.coverImageUrl || '';
+                    document.getElementById('editImageFile').value = '';
+
+                    document.getElementById('editBookModal')?.classList.remove('hidden');
+                    lucide.createIcons();
+                } else {
+                    window.showAppToast('error', 'Lỗi', data.message || 'Không tìm thấy sách.');
+                }
+            } catch (err) {
+                window.showAppToast('error', 'Lỗi kết nối', 'Lỗi kết nối khi lấy thông tin sách.');
+            }
+        }
+
+        function closeEditBookModal() {
+            document.getElementById('editBookModal')?.classList.add('hidden');
+        }
+
+        async function handleEditBookSubmit(e) {
+            e.preventDefault();
+            const form = document.getElementById('editBookForm');
+            if (!form) return;
+
+            try {
+                const formData = new FormData(form);
+                const res = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.showAppToast('success', 'Thành công', data.message);
+                    closeEditBookModal();
+                    setTimeout(() => window.location.reload(), 800);
+                } else {
+                    window.showAppToast('error', 'Lỗi cập nhật', data.message || 'Có lỗi xảy ra.');
+                }
+            } catch (err) {
+                form.submit();
+            }
+        }
+
+        async function confirmDeleteBook(id, title) {
+            window.showAppConfirm({
+                title: 'Xóa Tựa Sách Khỏi Kho',
+                message: `Bạn có chắc chắn muốn xóa tựa sách "${title}" và toàn bộ bản sao trong kho? Hành động này không thể hoàn tác nếu không còn sách cho mượn.`,
+                confirmText: 'Xác Nhận Xóa',
+                cancelText: 'Hủy Bỏ',
+                onConfirm: async () => {
+                    try {
+                        const res = await fetch('/Admin/Book/Delete/' + id, {
+                            method: 'POST',
+                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            const row = document.getElementById('row-book-' + id);
+                            if (row) {
+                                row.style.transition = 'all 0.4s ease';
+                                row.style.opacity = '0';
+                                setTimeout(() => row.remove(), 400);
+                            }
+                            window.showAppToast('success', 'Đã xóa', data.message);
+                        } else {
+                            window.showAppToast('error', 'Không thể xóa', data.message || 'Không thể xóa sách.');
+                        }
+                    } catch (err) {
+                        window.showAppToast('error', 'Lỗi', 'Lỗi kết nối máy chủ khi xóa sách.');
+                    }
+                }
+            });
+        }
     </script>
 }

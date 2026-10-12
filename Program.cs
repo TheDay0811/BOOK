@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using BOOK.Data;
+using BOOK.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddHttpClient<ILibraryChatService, GeminiService>();
 
 // Cấu hình Authentication Cookie cho toàn bộ hệ thống
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

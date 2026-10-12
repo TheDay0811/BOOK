@@ -1,5 +1,6 @@
+@model BOOK.Models.ViewModels.HomeIndexViewModel
 @{
-    ViewData["Title"] = "Trang Chủ - Hệ Thống Thư Viện Hiện Đại";
+    ViewData["Title"] = "Trang Chủ - Hệ Thống Thư Viện Hiện Đại SmartLib";
 }
 
 <!-- HERO BANNER SECTION -->
@@ -22,7 +23,7 @@
             </h1>
 
             <p class="text-base sm:text-lg text-slate-300 font-normal leading-relaxed max-w-2xl">
-                Truy cập ngay kho tàng hơn 50.000 đầu sách in, giáo trình chuyên ngành và hàng triệu tài liệu nghiên cứu số hóa chất lượng cao.
+                Truy cập ngay kho tàng tài liệu giáo trình chuyên ngành, các công trình nghiên cứu khoa học và ấn phẩm học thuật chất lượng cao tại Thư viện Trung tâm.
             </p>
 
             <!-- BIG HERO SEARCH BAR -->
@@ -49,21 +50,21 @@
                     <span>•</span>
                     <a asp-controller="Book" asp-action="Index" asp-route-searchQuery="Trí tuệ nhân tạo" class="hover:text-amber-300 underline decoration-slate-600">Trí tuệ nhân tạo</a>
                     <span>•</span>
-                    <a asp-controller="Book" asp-action="Index" asp-route-searchQuery="Quản trị" class="hover:text-amber-300 underline decoration-slate-600">Quản trị kinh doanh</a>
-                    <span>•</span>
                     <a asp-controller="Book" asp-action="Index" asp-route-searchQuery="An toàn thông tin" class="hover:text-amber-300 underline decoration-slate-600">An toàn thông tin</a>
+                    <span>•</span>
+                    <a asp-controller="Book" asp-action="Index" asp-route-searchQuery="Kinh tế" class="hover:text-amber-300 underline decoration-slate-600">Kinh tế & Quản trị</a>
                 </div>
             </div>
 
             <!-- Quick Academic Stats -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-10 border-t border-white/10">
                 <div>
-                    <h3 class="text-2xl sm:text-3xl font-extrabold text-white">50.000+</h3>
-                    <p class="text-xs text-slate-400 mt-0.5">Đầu sách in lưu trữ</p>
+                    <h3 class="text-2xl sm:text-3xl font-extrabold text-white">@(Model.TotalBooksCount > 0 ? Model.TotalBooksCount.ToString() : "50.000+")</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Tựa sách in lưu trữ</p>
                 </div>
                 <div>
-                    <h3 class="text-2xl sm:text-3xl font-extrabold text-white">120.000+</h3>
-                    <p class="text-xs text-slate-400 mt-0.5">Tài liệu số hóa</p>
+                    <h3 class="text-2xl sm:text-3xl font-extrabold text-white">@(Model.TotalCopiesCount > 0 ? Model.TotalCopiesCount.ToString() : "120.000+")</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Bản sao sẵn sàng</p>
                 </div>
                 <div>
                     <h3 class="text-2xl sm:text-3xl font-extrabold text-amber-400">24/7</h3>
@@ -78,7 +79,7 @@
     </div>
 </div>
 
-<!-- FEATURED CATEGORIES SECTION -->
+<!-- FEATURED CATEGORIES SECTION (DỮ LIỆU THẬT TỪ DATABASE) -->
 <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
     <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
         <div>
@@ -91,183 +92,95 @@
     </div>
 
     <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        <a asp-controller="Book" asp-action="Index" class="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-navy-800 shadow-sm hover:shadow-md transition-all text-center flex flex-col items-center">
-            <div class="w-12 h-12 rounded-xl bg-blue-50 text-navy-800 flex items-center justify-center group-hover:scale-110 transition-transform mb-3">
-                <i data-lucide="code-2" class="w-6 h-6"></i>
-            </div>
-            <h4 class="font-bold text-slate-900 text-xs sm:text-sm">Công Nghệ TT</h4>
-            <span class="text-[11px] text-slate-400 mt-1">1.250 đầu sách</span>
-        </a>
-
-        <a asp-controller="Book" asp-action="Index" class="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-navy-800 shadow-sm hover:shadow-md transition-all text-center flex flex-col items-center">
-            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center group-hover:scale-110 transition-transform mb-3">
-                <i data-lucide="brain-circuit" class="w-6 h-6"></i>
-            </div>
-            <h4 class="font-bold text-slate-900 text-xs sm:text-sm">Khoa Học DL</h4>
-            <span class="text-[11px] text-slate-400 mt-1">680 đầu sách</span>
-        </a>
-
-        <a asp-controller="Book" asp-action="Index" class="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-navy-800 shadow-sm hover:shadow-md transition-all text-center flex flex-col items-center">
-            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center group-hover:scale-110 transition-transform mb-3">
-                <i data-lucide="trending-up" class="w-6 h-6"></i>
-            </div>
-            <h4 class="font-bold text-slate-900 text-xs sm:text-sm">Kinh Tế & QT</h4>
-            <span class="text-[11px] text-slate-400 mt-1">2.400 đầu sách</span>
-        </a>
-
-        <a asp-controller="Book" asp-action="Index" class="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-navy-800 shadow-sm hover:shadow-md transition-all text-center flex flex-col items-center">
-            <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center group-hover:scale-110 transition-transform mb-3">
-                <i data-lucide="shield-check" class="w-6 h-6"></i>
-            </div>
-            <h4 class="font-bold text-slate-900 text-xs sm:text-sm">An Toàn TT</h4>
-            <span class="text-[11px] text-slate-400 mt-1">450 đầu sách</span>
-        </a>
-
-        <a asp-controller="Book" asp-action="Index" class="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-navy-800 shadow-sm hover:shadow-md transition-all text-center flex flex-col items-center">
-            <div class="w-12 h-12 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center group-hover:scale-110 transition-transform mb-3">
-                <i data-lucide="languages" class="w-6 h-6"></i>
-            </div>
-            <h4 class="font-bold text-slate-900 text-xs sm:text-sm">Ngoại Ngữ</h4>
-            <span class="text-[11px] text-slate-400 mt-1">890 đầu sách</span>
-        </a>
-
-        <a asp-controller="Book" asp-action="Index" class="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-navy-800 shadow-sm hover:shadow-md transition-all text-center flex flex-col items-center">
-            <div class="w-12 h-12 rounded-xl bg-cyan-50 text-cyan-700 flex items-center justify-center group-hover:scale-110 transition-transform mb-3">
-                <i data-lucide="book-heart" class="w-6 h-6"></i>
-            </div>
-            <h4 class="font-bold text-slate-900 text-xs sm:text-sm">KH Xã Hội</h4>
-            <span class="text-[11px] text-slate-400 mt-1">1.100 đầu sách</span>
-        </a>
+        @if (Model.Categories != null && Model.Categories.Any())
+        {
+            foreach (var cat in Model.Categories)
+            {
+                <a asp-controller="Book" asp-action="Index" asp-route-categoryId="@cat.Id" 
+                   class="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-navy-800 shadow-sm hover:shadow-md transition-all text-center flex flex-col items-center">
+                    <div class="w-12 h-12 rounded-xl @cat.ColorClass flex items-center justify-center group-hover:scale-110 transition-transform mb-3">
+                        <i data-lucide="@cat.IconName" class="w-6 h-6"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-900 text-xs sm:text-sm line-clamp-1">@cat.Name</h4>
+                    <span class="text-[11px] text-slate-400 mt-1">@cat.BookCount đầu sách</span>
+                </a>
+            }
+        }
     </div>
 </section>
 
-<!-- NEW ARRIVALS & POPULAR SECTION -->
+<!-- TOP SÁCH NỔI BẬT & ĐƯỢC MƯỢN NHIỀU NHẤT (DỮ LIỆU THẬT TỪ DATABASE) -->
 <section id="featured" class="bg-white border-y border-slate-200 py-16">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
         <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
-                <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Mới cập nhật trong tháng</span>
-                <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">Tài Liệu & Sách Mới Tiếp Nhận</h2>
+                <span class="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
+                    <i data-lucide="flame" class="w-4 h-4 text-amber-500"></i> Xu hướng học thuật & Thống kê mượn
+                </span>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">Top Sách Nổi Bật & Được Mượn Nhiều Nhất</h2>
+                <p class="text-xs sm:text-sm text-slate-500 mt-1">Tuyển tập các giáo trình chuyên ngành và đầu sách có số lượt sinh viên mượn và quan tâm nhiều nhất.</p>
             </div>
-            <a asp-controller="Book" asp-action="Index" class="text-xs font-bold text-navy-800 hover:text-blue-600 flex items-center gap-1">
+            <a asp-controller="Book" asp-action="Index" class="text-xs font-bold text-navy-800 hover:text-blue-600 flex items-center gap-1 flex-shrink-0">
                 Khám phá toàn bộ kho sách <i data-lucide="arrow-right" class="w-4 h-4"></i>
             </a>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Book 1 -->
-            <div class="bg-slate-50 rounded-2xl border border-slate-200 p-4 hover:shadow-lg transition-all flex flex-col justify-between group">
-                <div>
-                    <div class="relative aspect-[3/4] rounded-xl overflow-hidden bg-slate-200 mb-3 shadow-sm">
-                        <img src="https://images.unsplash.com/photo-1532012164546-f432f2e3777a?w=400&auto=format&fit=crop&q=80" 
-                             alt="Sách" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                        <span class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                            Còn 5 cuốn
-                        </span>
-                    </div>
-                    <span class="text-[11px] font-bold text-blue-600 uppercase">CNTT & Phần Mềm</span>
-                    <h4 class="font-bold text-sm text-slate-900 mt-1 line-clamp-2">
-                        <a asp-controller="Book" asp-action="Details" asp-route-id="1" class="hover:text-navy-800">
-                            Thiết Kế Kiến Trúc Phần Mềm Doanh Nghiệp
-                        </a>
-                    </h4>
-                    <p class="text-xs text-slate-500 mt-1">Martin Fowler & TS. Đặng Văn Nam</p>
-                </div>
-                <div class="pt-3 mt-3 border-t border-slate-200 flex items-center justify-between">
-                    <span class="text-[11px] text-slate-500 font-mono">Kệ: B4-03</span>
-                    <a asp-controller="Book" asp-action="Details" asp-route-id="1" 
-                       class="px-3 py-1.5 bg-navy-800 hover:bg-navy-900 text-white rounded-lg text-xs font-bold transition-colors">
-                        Chi tiết
-                    </a>
-                </div>
-            </div>
+            @if (Model.PopularBooks != null && Model.PopularBooks.Any())
+            {
+                foreach (var book in Model.PopularBooks)
+                {
+                    <div class="bg-slate-50 rounded-2xl border border-slate-200 p-4 hover:shadow-lg hover:border-slate-300 transition-all flex flex-col justify-between group">
+                        <div>
+                            <div class="relative aspect-[3/4] rounded-xl overflow-hidden bg-slate-200 mb-3 shadow-sm">
+                                <img src="@(string.IsNullOrEmpty(book.CoverImageUrl) ? "/uploads/books/default-book.svg" : book.CoverImageUrl)" 
+                                     alt="@book.Title" class="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                     onerror="this.onerror=null; this.src='/uploads/books/default-book.svg';" />
+                                
+                                <!-- Badges -->
+                                <div class="absolute top-2 left-2 flex flex-col gap-1">
+                                    @if (book.BorrowCount > 0)
+                                    {
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white shadow-sm flex items-center gap-1">
+                                            <i data-lucide="flame" class="w-3 h-3"></i> @book.BorrowCount lượt mượn
+                                        </span>
+                                    }
+                                </div>
 
-            <!-- Book 2 -->
-            <div class="bg-slate-50 rounded-2xl border border-slate-200 p-4 hover:shadow-lg transition-all flex flex-col justify-between group">
-                <div>
-                    <div class="relative aspect-[3/4] rounded-xl overflow-hidden bg-slate-200 mb-3 shadow-sm">
-                        <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400&auto=format&fit=crop&q=80" 
-                             alt="Sách" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                        <span class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                            Còn 2 cuốn
-                        </span>
+                                <span class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold @(book.AvailableCopies > 0 ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : "bg-rose-100 text-rose-800 border border-rose-200")">
+                                    @(book.AvailableCopies > 0 ? $"Còn {book.AvailableCopies}/{book.TotalCopies} cuốn" : "Hết sách")
+                                </span>
+                            </div>
+                            <span class="text-[11px] font-bold text-blue-600 uppercase">@book.CategoryName</span>
+                            <h4 class="font-bold text-sm text-slate-900 mt-1 line-clamp-2">
+                                <a asp-controller="Book" asp-action="Details" asp-route-id="@book.Id" class="hover:text-navy-800 transition-colors">
+                                    @book.Title
+                                </a>
+                            </h4>
+                            <p class="text-xs text-slate-500 mt-1 truncate">@book.Author</p>
+                        </div>
+                        <div class="pt-3 mt-3 border-t border-slate-200 flex items-center justify-between">
+                            <span class="text-[11px] text-slate-500 font-mono">@book.ShelfLocation</span>
+                            <a asp-controller="Book" asp-action="Details" asp-route-id="@book.Id" 
+                               class="px-3.5 py-1.5 bg-navy-800 hover:bg-navy-900 text-white rounded-lg text-xs font-bold transition-colors">
+                                Chi tiết
+                            </a>
+                        </div>
                     </div>
-                    <span class="text-[11px] font-bold text-purple-600 uppercase">Trí Tuệ Nhân Tạo</span>
-                    <h4 class="font-bold text-sm text-slate-900 mt-1 line-clamp-2">
-                        <a asp-controller="Book" asp-action="Details" asp-route-id="2" class="hover:text-navy-800">
-                            Học Máy & Trí Tuệ Nhân Tạo Ứng Dụng
-                        </a>
-                    </h4>
-                    <p class="text-xs text-slate-500 mt-1">PGS. TS. Lương Chi Mai</p>
+                }
+            }
+            else
+            {
+                <div class="col-span-full py-12 text-center text-slate-400">
+                    Chưa có dữ liệu sách trong hệ thống.
                 </div>
-                <div class="pt-3 mt-3 border-t border-slate-200 flex items-center justify-between">
-                    <span class="text-[11px] text-slate-500 font-mono">Kệ: AI-01</span>
-                    <a asp-controller="Book" asp-action="Details" asp-route-id="2" 
-                       class="px-3 py-1.5 bg-navy-800 hover:bg-navy-900 text-white rounded-lg text-xs font-bold transition-colors">
-                        Chi tiết
-                    </a>
-                </div>
-            </div>
-
-            <!-- Book 3 -->
-            <div class="bg-slate-50 rounded-2xl border border-slate-200 p-4 hover:shadow-lg transition-all flex flex-col justify-between group">
-                <div>
-                    <div class="relative aspect-[3/4] rounded-xl overflow-hidden bg-slate-200 mb-3 shadow-sm">
-                        <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&auto=format&fit=crop&q=80" 
-                             alt="Sách" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                        <span class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800">
-                            Hết sách
-                        </span>
-                    </div>
-                    <span class="text-[11px] font-bold text-amber-600 uppercase">Kinh Tế Chiến Lược</span>
-                    <h4 class="font-bold text-sm text-slate-900 mt-1 line-clamp-2">
-                        <a asp-controller="Book" asp-action="Details" asp-route-id="3" class="hover:text-navy-800">
-                            Quản Trị Chiến Lược & Chuyển Đổi Số
-                        </a>
-                    </h4>
-                    <p class="text-xs text-slate-500 mt-1">Michael Porter & GS. Vũ Minh Khương</p>
-                </div>
-                <div class="pt-3 mt-3 border-t border-slate-200 flex items-center justify-between">
-                    <span class="text-[11px] text-slate-500 font-mono">Kệ: KT-12</span>
-                    <a asp-controller="Book" asp-action="Details" asp-route-id="3" 
-                       class="px-3 py-1.5 bg-navy-800 hover:bg-navy-900 text-white rounded-lg text-xs font-bold transition-colors">
-                        Chi tiết
-                    </a>
-                </div>
-            </div>
-
-            <!-- Book 4 -->
-            <div class="bg-slate-50 rounded-2xl border border-slate-200 p-4 hover:shadow-lg transition-all flex flex-col justify-between group">
-                <div>
-                    <div class="relative aspect-[3/4] rounded-xl overflow-hidden bg-slate-200 mb-3 shadow-sm">
-                        <img src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400&auto=format&fit=crop&q=80" 
-                             alt="Sách" class="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                        <span class="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                            Còn 7 cuốn
-                        </span>
-                    </div>
-                    <span class="text-[11px] font-bold text-teal-600 uppercase">Mật Mã & An Ninh</span>
-                    <h4 class="font-bold text-sm text-slate-900 mt-1 line-clamp-2">
-                        <a asp-controller="Book" asp-action="Details" asp-route-id="4" class="hover:text-navy-800">
-                            Cơ Sở An Toàn Thông Tin & Mật Mã
-                        </a>
-                    </h4>
-                    <p class="text-xs text-slate-500 mt-1">TS. Nguyễn Quốc Toàn</p>
-                </div>
-                <div class="pt-3 mt-3 border-t border-slate-200 flex items-center justify-between">
-                    <span class="text-[11px] text-slate-500 font-mono">Kệ: CS-05</span>
-                    <a asp-controller="Book" asp-action="Details" asp-route-id="4" 
-                       class="px-3 py-1.5 bg-navy-800 hover:bg-navy-900 text-white rounded-lg text-xs font-bold transition-colors">
-                        Chi tiết
-                    </a>
-                </div>
-            </div>
+            }
         </div>
     </div>
 </section>
 
 <!-- HOW IT WORKS: 4 SIMPLE STEPS -->
-<section id="guide" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+<section id="rules" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
     <div class="text-center max-w-2xl mx-auto mb-12">
         <span class="text-xs font-bold uppercase tracking-wider text-blue-600">Quy trình tiện lợi</span>
         <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">4 Bước Đặt Mượn Sách Dễ Dàng</h2>
@@ -288,7 +201,7 @@
                 02
             </div>
             <h4 class="font-bold text-slate-900 text-base">Đặt Mượn Online</h4>
-            <p class="text-xs text-slate-500 leading-relaxed">Nhấn nút "Đặt mượn trực tuyến", chọn ngày hẹn lấy và cam kết tuân thủ nội quy.</p>
+            <p class="text-xs text-slate-500 leading-relaxed">Nhấn nút "Đặt mượn trực tuyến", chọn thời hạn (tối đa 15 ngày, tối đa 3 cuốn) và cam kết tuân thủ quy định.</p>
         </div>
 
         <div class="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm text-center space-y-3 relative">
@@ -296,7 +209,7 @@
                 03
             </div>
             <h4 class="font-bold text-slate-900 text-base">Nhận Sách Tại Quầy</h4>
-            <p class="text-xs text-slate-500 leading-relaxed">Xuất trình thẻ độc giả (hoặc mã QR) tại Quầy Lưu Thông để thủ thư bàn giao sách.</p>
+            <p class="text-xs text-slate-500 leading-relaxed">Xuất trình thẻ độc giả (hoặc mã MSSV) tại Quầy Lưu Thông để thủ thư bàn giao sách.</p>
         </div>
 
         <div class="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm text-center space-y-3 relative">
@@ -304,7 +217,14 @@
                 04
             </div>
             <h4 class="font-bold text-slate-900 text-base">Gia Hạn / Hoàn Trả</h4>
-            <p class="text-xs text-slate-500 leading-relaxed">Chủ động gia hạn trực tuyến trước hạn hoặc trả sách đúng quy định để tránh phí phạt.</p>
+            <p class="text-xs text-slate-500 leading-relaxed">Chủ động gia hạn trước hạn hoặc trả sách đúng hạn để bảo vệ quyền sử dụng thẻ thư viện.</p>
         </div>
+    </div>
+
+    <div class="text-center mt-10">
+        <a asp-controller="Home" asp-action="Rules" 
+           class="inline-flex items-center gap-2 px-6 py-3 bg-slate-100 hover:bg-slate-200 text-navy-800 font-bold rounded-2xl text-xs transition-colors">
+            <i data-lucide="file-text" class="w-4 h-4 text-amber-500"></i> Xem Toàn Bộ Nội Quy & Quy Chế Mượn Trả
+        </a>
     </div>
 </section>

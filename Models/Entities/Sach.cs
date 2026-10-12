@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace BOOK.Models.Entities
 {
@@ -9,6 +9,7 @@ namespace BOOK.Models.Entities
         public string TenSach { get; set; } = string.Empty;
         public string TacGia { get; set; } = string.Empty;
         public int NamXuatBan { get; set; }
+        public string? HinhAnh { get; set; }
 
         public int MaTheLoai { get; set; }
         public TheLoai TheLoai { get; set; } = null!;

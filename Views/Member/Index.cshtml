@@ -110,7 +110,7 @@
                                         {
                                             <span class="text-xs text-slate-400">Đã hết lượt gia hạn</span>
                                         }
-                                        <button onclick="alert('Đã thông báo quầy thủ thư bạn sẽ đến trả sách trong ngày hôm nay.')" 
+                                        <button onclick="window.showAppToast('info', 'Báo Trả Sách', 'Đã ghi nhận thông báo đến quầy thủ thư bạn sẽ đến trả sách trong ngày hôm nay.')" 
                                                 class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors">
                                             Báo Trả Sách
                                         </button>
@@ -236,10 +236,10 @@
 
 @section Scripts {
     <script>
-        function requestRenewal(borrowId) {
-            const reason = prompt('Nhập lý do xin gia hạn (Ví dụ: Đang làm bài tập nhóm, cần thêm thời gian tham khảo):', 'Đang làm đồ án môn học');
-            if (reason) {
-                alert('Yêu cầu xin gia hạn mượn sách đã gửi đến Thủ thư. Vui lòng kiểm tra lại sau 2 giờ.');
+        async function requestRenewal(borrowId) {
+            const confirmed = await window.showAppConfirm('Bạn có chắc chắn muốn gửi yêu cầu gia hạn thêm 07 ngày cho phiếu mượn #' + borrowId + '?', 'Xác Nhận Xin Gia Hạn');
+            if (confirmed) {
+                window.showAppToast('success', 'Đã Gửi Yêu Cầu', 'Yêu cầu xin gia hạn mượn sách đã gửi đến Thủ thư. Vui lòng kiểm tra lại sau ít phút.');
             }
         }
     </script>

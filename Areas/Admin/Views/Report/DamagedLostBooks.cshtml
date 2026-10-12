@@ -19,7 +19,7 @@
         </div>
 
         <div class="flex items-center gap-2">
-            <button onclick="alert('Đang xuất biên bản thanh lý định dạng Excel (.xlsx)...');" 
+            <button onclick="if (window.showAppToast) window.showAppToast('info', 'Hệ thống đang chuẩn bị xuất biên bản thanh lý Excel (.xlsx)...');" 
                     class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow transition-all flex items-center gap-2">
                 <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Xuất Excel Thanh Lý
             </button>
@@ -126,77 +126,106 @@
             <span class="text-xs text-slate-500">Số lượng: <strong>@Model.Records.Count cuốn</strong></span>
         </div>
 
-        <div class="overflow-x-auto rounded-2xl border border-slate-200">
-            <table class="w-full text-left text-xs text-slate-600">
-                <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
-                    <tr>
-                        <th class="py-3 px-4">Mã Sách</th>
-                        <th class="py-3 px-4">Số Kiểm Soát</th>
-                        <th class="py-3 px-4">Tên Tựa Sách</th>
-                        <th class="py-3 px-4">Tình Trạng</th>
-                        <th class="py-3 px-4">Ngày Ghi Nhận</th>
-                        <th class="py-3 px-4">Độc Giả Liên Quan</th>
-                        <th class="py-3 px-4">Bồi Thường</th>
-                        <th class="py-3 px-4">Mô Tả & Ghi Chú</th>
-                        <th class="py-3 px-4 text-right">Trạng Thái Thanh Lý</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-200">
-                    @foreach (var rec in Model.Records)
-                    {
-                        <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="py-3 px-4 font-mono font-bold text-navy-800">@rec.BookCode</td>
-                            <td class="py-3 px-4 font-mono font-black text-sm text-slate-900">@rec.ControlNumber</td>
-                            <td class="py-3 px-4 font-bold text-slate-900 max-w-xs">
-                                <p class="truncate">@rec.BookTitle</p>
-                                <span class="text-[10px] text-slate-400 font-normal">Chuyên ngành: @rec.CategoryName</span>
-                            </td>
-                            <td class="py-3 px-4">
-                                @if (rec.ConditionStatus == "Hỏng")
-                                {
-                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                                        ⚠️ Hỏng
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
-                                        ⛔ Mất
-                                    </span>
-                                }
-                            </td>
-                            <td class="py-3 px-4 text-slate-500">@rec.RecordedDate.ToString("dd/MM/yyyy")</td>
-                            <td class="py-3 px-4">
-                                <p class="font-bold text-slate-800">@rec.StudentName</p>
-                                <span class="text-[10px] font-mono text-slate-400">@rec.StudentCode</span>
-                            </td>
-                            <td class="py-3 px-4">
-                                @if (rec.CompensationStatus == "Đã bồi thường")
-                                {
-                                    <span class="font-bold text-emerald-700">
-                                        ✓ Đã bồi thường (@rec.CompensationAmount.ToString("N0") đ)
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="font-bold text-rose-600">
-                                        ✗ Chưa bồi thường (Thẻ đang khóa)
-                                    </span>
-                                }
-                            </td>
-                            <td class="py-3 px-4 text-slate-600 italic max-w-xs truncate">
-                                "@rec.Notes"
-                            </td>
-                            <td class="py-3 px-4 text-right">
-                                <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                                    @rec.LiquidationStatus
-                                </span>
-                            </td>
+        @if (Model.Records != null && Model.Records.Any())
+        {
+            <div class="overflow-x-auto rounded-2xl border border-slate-200">
+                <table class="w-full text-left text-xs text-slate-600">
+                    <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
+                        <tr>
+                            <th class="py-3 px-4">Mã Sách</th>
+                            <th class="py-3 px-4">Số Kiểm Soát</th>
+                            <th class="py-3 px-4">Tên Tựa Sách</th>
+                            <th class="py-3 px-4">Tình Trạng</th>
+                            <th class="py-3 px-4">Ngày Ghi Nhận</th>
+                            <th class="py-3 px-4">Độc Giả Liên Quan</th>
+                            <th class="py-3 px-4">Bồi Thường</th>
+                            <th class="py-3 px-4">Mô Tả & Ghi Chú</th>
+                            <th class="py-3 px-4 text-right">Trạng Thái Thanh Lý</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        @foreach (var rec in Model.Records)
+                        {
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="py-3 px-4 font-mono font-bold text-navy-800">@rec.BookCode</td>
+                                <td class="py-3 px-4 font-mono font-black text-sm text-slate-900">@rec.ControlNumber</td>
+                                <td class="py-3 px-4 font-bold text-slate-900 max-w-xs">
+                                    <p class="truncate">@rec.BookTitle</p>
+                                    <span class="text-[10px] text-slate-400 font-normal">Chuyên ngành: @rec.CategoryName</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    @if (rec.ConditionStatus == "Hỏng")
+                                    {
+                                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                            ⚠️ Hỏng
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                                            ⛔ Mất
+                                        </span>
+                                    }
+                                </td>
+                                <td class="py-3 px-4 text-slate-500">@rec.RecordedDate.ToString("dd/MM/yyyy")</td>
+                                <td class="py-3 px-4">
+                                    <p class="font-bold text-slate-800">@rec.StudentName</p>
+                                    <span class="text-[10px] font-mono text-slate-400">@rec.StudentCode</span>
+                                </td>
+                                <td class="py-3 px-4">
+                                    @if (rec.CompensationStatus == "Đã bồi thường")
+                                    {
+                                        <span class="font-bold text-emerald-700">
+                                            ✓ Đã bồi thường (@rec.CompensationAmount.ToString("N0") đ)
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <div class="space-y-1.5">
+                                            <span class="font-bold text-rose-600 block">
+                                                ✗ Chưa bồi thường (Thẻ đang khóa)
+                                            </span>
+                                            @if (rec.ChiTietId > 0)
+                                            {
+                                                <form method="post" asp-area="Admin" asp-controller="Report" asp-action="ConfirmCompensation"
+                                                      onsubmit="return confirm('Xác nhận độc giả @rec.StudentName đã nộp tiền bồi thường để mở khóa thẻ?');">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="chiTietId" value="@rec.ChiTietId" />
+                                                    <button type="submit" 
+                                                            class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold shadow-sm transition-colors inline-flex items-center gap-1">
+                                                        <i data-lucide="check" class="w-3 h-3"></i> Thu Tiền & Mở Khóa Thẻ
+                                                    </button>
+                                                </form>
+                                            }
+                                        </div>
+                                    }
+                                </td>
+                                <td class="py-3 px-4 text-slate-600 italic max-w-xs truncate">
+                                    "@rec.Notes"
+                                </td>
+                                <td class="py-3 px-4 text-right">
+                                    <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                        @rec.LiquidationStatus
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="p-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-3">
+                    <i data-lucide="shield-check" class="w-8 h-8"></i>
+                </div>
+                <h4 class="font-bold text-slate-800 text-sm">Chưa có tài liệu nào bị ghi nhận Hỏng hoặc Mất</h4>
+                <p class="text-xs text-slate-500 mt-1 max-w-md mx-auto">
+                    Toàn bộ kho sách hiện đang ở trạng thái an toàn hoặc lưu thông bình thường. Khi có sách bị ghi nhận hỏng hoặc mất tại Quầy Thu Hồi, danh sách sẽ tự động được tổng hợp tại đây để phục vụ thanh lý.
+                </p>
+            </div>
+        }
     </div>
 
 </div>
