@@ -43,7 +43,7 @@
                         <div>
                             <span class="text-[9px] uppercase tracking-widest text-amber-300 font-bold block">Thẻ Độc Giả Sinh Viên</span>
                             <span class="text-sm sm:text-base font-mono font-black text-white tracking-wider" id="previewCardNum">
-                                @(string.IsNullOrWhiteSpace(Model.StudentCode) ? "LIB-22110098" : $"LIB-{Model.StudentCode.Trim().ToUpper()}")
+                                @(string.IsNullOrWhiteSpace(Model.StudentCode) ? "LIB-24DH112970" : $"LIB-{Model.StudentCode.Trim().ToUpper()}")
                             </span>
                         </div>
                         <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-400/20 text-emerald-300 border border-emerald-400/40 flex items-center gap-1.5">
@@ -67,10 +67,10 @@
                     <div class="pt-1">
                         <span class="text-[9px] text-slate-400 block uppercase tracking-wider font-semibold">Họ và tên độc giả</span>
                         <h4 class="text-sm sm:text-base font-bold text-white tracking-wide truncate mt-0.5" id="previewName">
-                            @(string.IsNullOrWhiteSpace(Model.FullName) ? "Nguyễn Văn A" : Model.FullName)
+                            @(string.IsNullOrWhiteSpace(Model.FullName) ? "Nguyễn Văn An" : Model.FullName)
                         </h4>
                         <span class="text-xs text-blue-200 font-mono block mt-0.5" id="previewStudentCode">
-                            MSSV: @(string.IsNullOrWhiteSpace(Model.StudentCode) ? "22110098" : Model.StudentCode)
+                            MSSV: @(string.IsNullOrWhiteSpace(Model.StudentCode) ? "24DH112970" : Model.StudentCode)
                         </span>
                     </div>
 
@@ -147,7 +147,7 @@
                             </label>
                             <div class="relative">
                                 <i data-lucide="user" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
-                                <input asp-for="FullName" id="inputFullName" placeholder="Ví dụ: Trần Văn Hoàng" 
+                                <input asp-for="FullName" id="inputFullName" placeholder="Ví dụ: Nguyễn Văn An" 
                                        class="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:ring-1 focus:ring-navy-800 focus:outline-none transition-all" />
                             </div>
                             <span asp-validation-for="FullName" class="text-[11px] text-rose-600 mt-1 block"></span>
@@ -159,7 +159,7 @@
                             </label>
                             <div class="relative">
                                 <i data-lucide="hash" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
-                                <input asp-for="StudentCode" id="inputStudentCode" placeholder="Ví dụ: 22110098" 
+                                <input asp-for="StudentCode" id="inputStudentCode" placeholder="Ví dụ: 24DH112970" 
                                        class="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:ring-1 focus:ring-navy-800 focus:outline-none font-mono transition-all" />
                             </div>
                             <span asp-validation-for="StudentCode" class="text-[11px] text-rose-600 mt-1 block"></span>
@@ -277,14 +277,14 @@
             const code = codeInput ? codeInput.value.trim() : '';
 
             if (previewName) {
-                previewName.innerText = name || 'Nguyễn Văn A';
+                previewName.innerText = name || 'Nguyễn Văn An';
             }
 
             if (previewCode) {
-                previewCode.innerText = 'MSSV: ' + (code || '22110098');
+                previewCode.innerText = 'MSSV: ' + (code || '24DH112970');
             }
 
-            const cardNumber = code ? ('LIB-' + code.toUpperCase()) : 'LIB-22110098';
+            const cardNumber = code ? ('LIB-' + code.toUpperCase()) : 'LIB-24DH112970';
             if (previewCard) {
                 previewCard.innerText = cardNumber;
             }

@@ -35,6 +35,7 @@ namespace BOOK.Models.ViewModels
         public AdminKpiCardViewModel KpiOverdueBooks { get; set; } = new();
 
         public List<QuickPendingBorrowViewModel> RecentPendingRequests { get; set; } = new();
+        public int PendingBorrowsCount { get; set; }
         
         // Chart statistics
         public List<string> MonthlyLabels { get; set; } = new();
@@ -62,5 +63,12 @@ namespace BOOK.Models.ViewModels
         public int OverdueBorrows { get; set; }
         public decimal TotalCompensations { get; set; }
         public List<TopBorrowedBookViewModel> TopBooks { get; set; } = new();
+    }
+
+    public class UnifiedReportViewModel
+    {
+        public BorrowAnalyticsReportViewModel Analytics { get; set; } = new();
+        public DamagedLostReportViewModel DamagedLost { get; set; } = new();
+        public string ActiveTab { get; set; } = "overview";
     }
 }

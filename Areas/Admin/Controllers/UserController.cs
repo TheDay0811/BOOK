@@ -51,7 +51,7 @@ namespace BOOK.Areas.Admin.Controllers
                 .Include(tk => tk.TheThuVien)
                 .ToListAsync();
 
-            var currentUsername = User.Identity?.Name ?? "";
+            var currentUsername = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.Identity?.Name ?? "";
 
             var users = taiKhoans.Select(tk => new SystemUserViewModel
             {
@@ -69,6 +69,7 @@ namespace BOOK.Areas.Admin.Controllers
                 },
                 IsActive = tk.TheThuVien == null || tk.TheThuVien.TinhTrangSuDung == "Sử dụng được",
                 IsCurrentAdmin = tk.Username.Equals("admin@huflit.edu.vn", System.StringComparison.OrdinalIgnoreCase) ||
+                                 tk.Username.Equals("admin", System.StringComparison.OrdinalIgnoreCase) ||
                                  tk.Username.Equals(currentUsername, System.StringComparison.OrdinalIgnoreCase)
             }).ToList();
 
@@ -90,8 +91,9 @@ namespace BOOK.Areas.Admin.Controllers
                 return Json(new { success = false, message = "Không tìm thấy người dùng." });
             }
 
-            var currentUsername = User.Identity?.Name ?? "";
+            var currentUsername = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.Identity?.Name ?? "";
             bool isCurrentAdmin = tk.Username.Equals("admin@huflit.edu.vn", System.StringComparison.OrdinalIgnoreCase) ||
+                                 tk.Username.Equals("admin", System.StringComparison.OrdinalIgnoreCase) ||
                                  tk.Username.Equals(currentUsername, System.StringComparison.OrdinalIgnoreCase);
 
             int activeCount = 0;
@@ -142,8 +144,9 @@ namespace BOOK.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var currentUsername = User.Identity?.Name ?? "";
+            var currentUsername = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.Identity?.Name ?? "";
             bool isCurrentAdmin = tk.Username.Equals("admin@huflit.edu.vn", System.StringComparison.OrdinalIgnoreCase) ||
+                                 tk.Username.Equals("admin", System.StringComparison.OrdinalIgnoreCase) ||
                                  tk.Username.Equals(currentUsername, System.StringComparison.OrdinalIgnoreCase);
 
             tk.FullName = string.IsNullOrWhiteSpace(model.FullName) ? tk.FullName : model.FullName.Trim();
@@ -153,12 +156,15 @@ namespace BOOK.Areas.Admin.Controllers
             // Nếu không phải là tài khoản Admin hiện tại, cho phép sửa role và thông tin thẻ
             if (!isCurrentAdmin)
             {
-                tk.Role = model.Role switch
+                if (!string.IsNullOrWhiteSpace(model.Role))
                 {
-                    "Admin" => "Admin",
-                    "Thủ thư" => "Librarian",
-                    _ => "SinhVien"
-                };
+                    tk.Role = model.Role switch
+                    {
+                        "Admin" => "Admin",
+                        "Thủ thư" or "Librarian" => "Librarian",
+                        _ => "SinhVien"
+                    };
+                }
 
                 if (tk.TheThuVien != null)
                 {
@@ -172,6 +178,10 @@ namespace BOOK.Areas.Admin.Controllers
                         tk.TheThuVien.NgayHetHan = model.CardExpiryDate.Value;
                     }
                 }
+            }
+            else
+            {
+                tk.Role = "Admin";
             }
 
             await _context.SaveChangesAsync();
@@ -191,8 +201,9 @@ namespace BOOK.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var currentUsername = User.Identity?.Name ?? "";
+            var currentUsername = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.Identity?.Name ?? "";
             if (user.Username.Equals("admin@huflit.edu.vn", System.StringComparison.OrdinalIgnoreCase) ||
+                user.Username.Equals("admin", System.StringComparison.OrdinalIgnoreCase) ||
                 user.Username.Equals(currentUsername, System.StringComparison.OrdinalIgnoreCase))
             {
                 TempData["Error"] = "Không thể thay đổi vai trò hoặc giáng quyền tài khoản Quản trị viên đang đăng nhập!";
@@ -202,7 +213,7 @@ namespace BOOK.Areas.Admin.Controllers
             user.Role = newRole switch
             {
                 "Admin" => "Admin",
-                "Thủ thư" => "Librarian",
+                "Thủ thư" or "Librarian" => "Librarian",
                 _ => "SinhVien"
             };
 
@@ -226,8 +237,9 @@ namespace BOOK.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var currentUsername = User.Identity?.Name ?? "";
+            var currentUsername = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.Identity?.Name ?? "";
             if (user.Username.Equals("admin@huflit.edu.vn", System.StringComparison.OrdinalIgnoreCase) ||
+                user.Username.Equals("admin", System.StringComparison.OrdinalIgnoreCase) ||
                 user.Username.Equals(currentUsername, System.StringComparison.OrdinalIgnoreCase))
             {
                 TempData["Error"] = "Không thể khóa tài khoản Quản trị viên tối cao đang vận hành!";

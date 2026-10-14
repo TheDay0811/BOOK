@@ -2,12 +2,14 @@
 @{
     ViewData["Title"] = Model.Book.Title;
     var userCardStatus = Model.UserCardStatus;
-    var hasUnreturnedBooks = Model.HasUnreturnedBooks;
+    var hasUnreturnedBooks = Model.HasUnreturnedBooks; // true when currentBorrowedCount >= 3
+    var hasOverdueBooks = Model.HasOverdueBooks;
+    var alreadyHoldingThisBook = Model.AlreadyHoldingThisBook;
     var currentBorrowedCount = Model.CurrentBorrowedCount;
     var maxAllowedBorrow = Math.Max(0, 3 - currentBorrowedCount);
     var isAuthenticated = Model.IsUserAuthenticated;
     var nextCopy = Model.Copies.FirstOrDefault(c => c.Status == "Còn");
-    var canBorrow = isAuthenticated && Model.Book.IsAvailable && userCardStatus == "Sử dụng được" && !hasUnreturnedBooks && currentBorrowedCount < 3;
+    var canBorrow = isAuthenticated && Model.Book.IsAvailable && userCardStatus == "Sử dụng được" && !hasUnreturnedBooks && !hasOverdueBooks && !alreadyHoldingThisBook && currentBorrowedCount < 3;
 }
 
 <!-- BREADCRUMB -->
@@ -150,31 +152,82 @@
                     }
                     else
                     {
-                        <div class="p-4 rounded-2xl border text-xs space-y-2 @(userCardStatus == "Sử dụng được" && !hasUnreturnedBooks ? "bg-emerald-50/70 border-emerald-200 text-emerald-800" : "bg-rose-50 border-rose-200 text-rose-800")">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2 font-bold">
-                                    <i data-lucide="@(userCardStatus == "Sử dụng được" && !hasUnreturnedBooks ? "check-circle-2" : "alert-octagon")" class="w-4 h-4"></i>
-                                    <span>Trạng thái Thẻ thư viện: <strong>@userCardStatus</strong></span>
+                        <!-- THẺ THÔNG TIN TÌNH TRẠNG THẺ & HỘP THÔNG BÁO NGHIỆP VỤ HIỆN ĐẠI -->
+                        <div class="rounded-2xl border p-4 space-y-3 transition-all text-xs
+                            @(userCardStatus != "Sử dụng được" ? "bg-rose-50/90 border-rose-200" :
+                              hasOverdueBooks ? "bg-amber-50 border-amber-200" :
+                              alreadyHoldingThisBook ? "bg-sky-50 border-sky-200" :
+                              hasUnreturnedBooks ? "bg-amber-50 border-amber-200" :
+                              "bg-emerald-50/80 border-emerald-200")">
+                            
+                            <div class="flex items-center justify-between pb-2 border-b @(userCardStatus != "Sử dụng được" ? "border-rose-200/60" : "border-slate-200/60")">
+                                <div class="flex items-center gap-2 font-bold text-sm">
+                                    @if (userCardStatus != "Sử dụng được")
+                                    {
+                                        <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+                                        <span class="text-rose-900">Thẻ thư viện: <strong>@userCardStatus</strong> (Bị khóa)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                        <span class="text-emerald-900">Thẻ thư viện: <strong>Hoạt động bình thường</strong></span>
+                                    }
                                 </div>
-                                <span>Đang mượn: <strong>@currentBorrowedCount / 3 cuốn</strong></span>
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold @(currentBorrowedCount >= 3 ? "bg-amber-200 text-amber-900" : "bg-white/80 text-navy-900 shadow-sm border border-slate-200")">
+                                    Đang mượn: <strong>@currentBorrowedCount / 3 cuốn</strong>
+                                </span>
                             </div>
-                            @if (hasUnreturnedBooks)
+
+                            <!-- BOX THÔNG BÁO CHI TIẾT THEO TÌNH HUỐNG -->
+                            @if (userCardStatus != "Sử dụng được")
                             {
-                                <p class="text-rose-700 font-medium">
-                                    ⚠️ Ràng buộc nghiệp vụ: Bạn đang có phiếu mượn sách chưa trả. <strong>Chỉ được mượn tiếp sau khi đã hoàn tất trả sách.</strong>
-                                </p>
+                                <div class="flex items-start gap-2.5 text-rose-800">
+                                    <i data-lucide="shield-alert" class="w-4 h-4 text-rose-600 mt-0.5 shrink-0"></i>
+                                    <div>
+                                        <p class="font-bold">Thẻ thư viện hiện đang bị tạm khóa</p>
+                                        <p class="text-[11px] text-rose-700 mt-0.5">Tài khoản của bạn đang có sách hỏng, mất chưa thanh toán bồi thường hoặc thẻ đã hết hạn. Vui lòng đến <strong>Quầy thủ thư</strong> để kiểm tra và xử lý mở lại thẻ.</p>
+                                    </div>
+                                </div>
                             }
-                            else if (userCardStatus != "Sử dụng được")
+                            else if (hasOverdueBooks)
                             {
-                                <p class="text-rose-700 font-medium">
-                                    ⛔ Thẻ của bạn đang bị khóa do làm mất/hỏng sách chưa bồi thường hoặc hết hạn. Vui lòng liên hệ quầy thủ thư để xử lý.
-                                </p>
+                                <div class="flex items-start gap-2.5 text-amber-900">
+                                    <i data-lucide="clock-alert" class="w-4 h-4 text-amber-600 mt-0.5 shrink-0"></i>
+                                    <div>
+                                        <p class="font-bold">Đang có sách mượn quá hạn</p>
+                                        <p class="text-[11px] text-amber-800 mt-0.5">Bạn có cuốn sách đã quá hạn trả. Vui lòng mang sách đến hoàn trả tại quầy trước khi đăng ký mượn thêm tài liệu mới.</p>
+                                    </div>
+                                </div>
+                            }
+                            else if (alreadyHoldingThisBook)
+                            {
+                                <div class="flex items-start gap-2.5 text-sky-900">
+                                    <i data-lucide="info" class="w-4 h-4 text-sky-600 mt-0.5 shrink-0"></i>
+                                    <div>
+                                        <p class="font-bold">Bạn đang mượn hoặc đã đăng ký tựa sách này</p>
+                                        <p class="text-[11px] text-sky-800 mt-0.5">Mỗi độc giả chỉ được mượn 01 cuốn của cùng một tựa sách tại một thời điểm. Bạn vẫn có thể mượn tối đa <strong>@maxAllowedBorrow cuốn sách khác nhau</strong>.</p>
+                                    </div>
+                                </div>
+                            }
+                            else if (hasUnreturnedBooks)
+                            {
+                                <div class="flex items-start gap-2.5 text-amber-900">
+                                    <i data-lucide="alert-circle" class="w-4 h-4 text-amber-600 mt-0.5 shrink-0"></i>
+                                    <div>
+                                        <p class="font-bold">Đã đạt giới hạn mượn (3/3 cuốn)</p>
+                                        <p class="text-[11px] text-amber-800 mt-0.5">Bạn đang giữ tối đa 3 cuốn sách được phép mượn cùng lúc. Hãy hoàn trả ít nhất 1 cuốn tại quầy tiếp nhận để tiếp tục mượn các tựa sách mới.</p>
+                                    </div>
+                                </div>
                             }
                             else
                             {
-                                <p class="text-emerald-700">
-                                    ✓ Thẻ hợp lệ. Bạn được chọn mượn thêm tối đa <strong>@maxAllowedBorrow cuốn</strong> (Hạn mượn tối đa 15 ngày).
-                                </p>
+                                <div class="flex items-start gap-2.5 text-emerald-800">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600 mt-0.5 shrink-0"></i>
+                                    <div>
+                                        <p class="font-bold">Thẻ đủ điều kiện mượn sách</p>
+                                        <p class="text-[11px] text-emerald-700 mt-0.5">Bạn được phép mượn thêm tối đa <strong>@maxAllowedBorrow cuốn sách khác nhau</strong>. Hạn trả sách tiêu chuẩn: <strong>15 ngày</strong> kể từ ngày mượn.</p>
+                                    </div>
+                                </div>
                             }
                         </div>
                     }
@@ -202,9 +255,9 @@
                     {
                         <button disabled 
                                 class="px-8 py-3.5 bg-slate-200 text-slate-400 rounded-2xl font-bold text-sm cursor-not-allowed flex items-center gap-2"
-                                title="@(Model.Book.IsAvailable ? "Tài khoản của bạn không đủ điều kiện mượn theo quy định" : "Hiện tại tất cả bản sao của tựa sách này đều đang được cho mượn")">
+                                title="@(!Model.Book.IsAvailable ? "Hiện tại tất cả bản sao của tựa sách này đều đang được cho mượn" : alreadyHoldingThisBook ? "Bạn đang giữ tựa sách này" : "Tài khoản của bạn tạm thời chưa thể mượn thêm")">
                             <i data-lucide="lock" class="w-4 h-4"></i>
-                            @(Model.Book.IsAvailable ? "Không Đủ Điều Kiện Mượn" : "Đã Hết Sách Trong Kho")
+                            @(!Model.Book.IsAvailable ? "Đã Hết Sách Trong Kho" : alreadyHoldingThisBook ? "Đang Mượn Tựa Sách Này" : "Chưa Thể Mượn Thêm")
                         </button>
                     }
 
@@ -258,18 +311,29 @@
                            class="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-700 font-semibold" />
                 </div>
                 <div>
-                    <label class="block font-bold text-slate-700 uppercase mb-1">Hạn trả (Tối đa 15 ngày) <span class="text-rose-500">*</span></label>
-                    <input type="date" name="DueDate" required 
-                           value="@DateTime.Today.AddDays(15).ToString("yyyy-MM-dd")"
-                           min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")"
-                           max="@DateTime.Today.AddDays(15).ToString("yyyy-MM-dd")"
-                           class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-navy-800 focus:outline-none font-bold text-navy-800" />
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Hạn trả (dd/mm/yyyy) <span class="text-rose-500">*</span></label>
+                    <div class="relative">
+                        <input type="text" id="displayDueDate" readonly 
+                               value="@DateTime.Today.AddDays(15).ToString("dd/MM/yyyy")"
+                               onclick="openDatePicker()"
+                               class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:border-navy-800 focus:outline-none font-bold text-navy-800 cursor-pointer pr-10" />
+                        <button type="button" onclick="openDatePicker()" class="absolute right-2.5 top-2.5 text-slate-400 hover:text-navy-800">
+                            <i data-lucide="calendar" class="w-4 h-4"></i>
+                        </button>
+                        <input type="date" id="actualDueDate" name="DueDate" required 
+                               value="@DateTime.Today.AddDays(15).ToString("yyyy-MM-dd")"
+                               min="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")"
+                               max="@DateTime.Today.AddDays(15).ToString("yyyy-MM-dd")"
+                               class="sr-only" 
+                               onchange="onDateChanged(this.value)" />
+                    </div>
+                    <span class="text-[10px] text-slate-400 mt-0.5 block">Nhấp để chọn ngày (tối đa 15 ngày)</span>
                 </div>
             </div>
 
             <!-- Cam kết bồi thường theo đúng Case Study -->
             <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-[11px] leading-relaxed">
-                <strong>Cam kết quy chế:</strong> Độc giả mượn tối đa 3 cuốn. Nếu làm <strong>Mất</strong> hoặc <strong>Hỏng</strong> sách, Thẻ thư viện sẽ lập tức bị chuyển sang trạng thái <em>"Không sử dụng"</em> và chỉ được mở lại sau khi hoàn tất bồi thường.
+                <strong>Cam kết quy chế:</strong> Độc giả mượn tối đa 3 cuốn sách khác nhau. Nếu làm <strong>Mất</strong> hoặc <strong>Hỏng</strong> sách, Thẻ thư viện sẽ lập tức bị chuyển sang trạng thái <em>"Không sử dụng"</em> và chỉ được mở lại sau khi hoàn tất bồi thường tại quầy.
             </div>
 
             <label class="flex items-start gap-2 text-slate-600 cursor-pointer pt-1">
@@ -371,6 +435,25 @@
                 }
             } catch (err) {
                 form.submit();
+            }
+        }
+
+        function openDatePicker() {
+            const input = document.getElementById('actualDueDate');
+            if (!input) return;
+            if (input.showPicker) {
+                input.showPicker();
+            } else {
+                input.focus();
+            }
+        }
+
+        function onDateChanged(val) {
+            if (!val) return;
+            const parts = val.split('-');
+            if (parts.length === 3) {
+                const display = document.getElementById('displayDueDate');
+                if (display) display.value = parts[2] + '/' + parts[1] + '/' + parts[0];
             }
         }
     </script>

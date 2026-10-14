@@ -7,17 +7,17 @@ namespace BOOK.ViewModels
     public class MemberProfileViewModel
     {
         // Thông tin độc giả / sinh viên
-        public string FullName { get; set; } = "Trần Văn Hoàng";
-        public string StudentCode { get; set; } = "24DH112970";
-        public string Email { get; set; } = "hoang.tv@student.university.edu.vn";
-        public string PhoneNumber { get; set; } = "0912 345 678";
-        public string Faculty { get; set; } = "Khoa Công Nghệ Thông Tin";
-        public string AvatarUrl { get; set; } = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80";
+        public string FullName { get; set; } = string.Empty;
+        public string StudentCode { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
+        public string Faculty { get; set; } = "Khoa Công Nghệ Thông Tin (HUFLIT)";
+        public string AvatarUrl { get; set; } = "/uploads/avatars/default-avatar.svg";
 
         // Thông tin Thẻ thư viện liên kết
-        public string CardNumber { get; set; } = "LIB-24DH112970";
-        public DateTime CardIssueDate { get; set; } = DateTime.Today.AddMonths(-6);
-        public DateTime CardExpiryDate { get; set; } = DateTime.Today.AddMonths(6);
+        public string CardNumber { get; set; } = string.Empty;
+        public DateTime CardIssueDate { get; set; } = DateTime.Today;
+        public DateTime CardExpiryDate { get; set; } = DateTime.Today.AddYears(1);
         public string CardStatus { get; set; } = "Sử dụng được"; // "Sử dụng được" hoặc "Không sử dụng"
         
         public bool IsCardLocked => CardStatus != "Sử dụng được" || DateTime.Today > CardExpiryDate;
@@ -39,7 +39,7 @@ namespace BOOK.ViewModels
         public List<BorrowHistoryItemViewModel> HistoryLoans { get; set; } = new();
 
         // Tổng kết phí phạt & bồi thường
-        public decimal TotalFinesPaid { get; set; } = 36000;
+        public decimal TotalFinesPaid { get; set; } = 0;
         public decimal TotalUnpaidFines { get; set; } = 0;
         public bool HasUnpaidFines => TotalUnpaidFines > 0;
 
@@ -157,7 +157,7 @@ namespace BOOK.ViewModels
         public string Email { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Vui lòng nhập Số điện thoại.")]
-        [RegularExpression(@"^(0[3|5|7|8|9])[0-9]{8}$", ErrorMessage = "Số điện thoại không hợp lệ.")]
+        [RegularExpression(@"^(\+84|0)[0-9\s\.\-]{8,13}$", ErrorMessage = "Số điện thoại không hợp lệ (ví dụ: 0912345678).")]
         [Display(Name = "Số điện thoại")]
         public string PhoneNumber { get; set; } = string.Empty;
 

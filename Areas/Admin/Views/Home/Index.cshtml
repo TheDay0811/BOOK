@@ -146,90 +146,117 @@
                 <canvas id="categoryDistributionChart"></canvas>
             </div>
 
-            <div class="pt-2 grid grid-cols-2 gap-2 text-[11px] text-slate-600 border-t border-slate-100">
-                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span> CNTT: 35%</div>
-                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Kinh tế: 25%</div>
-                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> AI & Data: 18%</div>
-                <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span> An ninh TT: 12%</div>
+            <div class="pt-2 flex flex-wrap gap-2 text-[11px] text-slate-600 border-t border-slate-100">
+                @for (int i = 0; i < Math.Min(Model.CategoryLabels.Count, 4); i++)
+                {
+                    var colors = new[] { "bg-blue-600", "bg-emerald-500", "bg-amber-500", "bg-indigo-500" };
+                    var color = colors[i % colors.Length];
+                    <div class="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg">
+                        <span class="w-2.5 h-2.5 rounded-full @color"></span>
+                        <span class="font-medium text-slate-700">@Model.CategoryLabels[i]:</span>
+                        <strong class="text-navy-900">@(i < Model.CategoryBookCounts.Count ? Model.CategoryBookCounts[i] : 0)</strong>
+                    </div>
+                }
             </div>
         </div>
     </div>
 
-    <!-- BẢNG NHANH: TOP 5 YÊU CẦU MƯỢN MỚI CẦN DUYỆT GẤP -->
-    <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-100">
+    <!-- LUỒNG NGHIỆP VỤ LƯU THÔNG SÁCH CHUẨN THƯ VIỆN HUFLIT (THEO QUY TRÌNH 4 BƯỚC) -->
+    <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
             <div>
                 <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <i data-lucide="bell-ring" class="w-5 h-5 text-amber-500"></i>
-                    Yêu Cầu Mượn Sách Mới Nhất Cần Phê Duyệt (Top 5)
+                    <i data-lucide="git-pull-request" class="w-5 h-5 text-blue-600"></i>
+                    Quy Trình Nghiệp Vụ Mượn - Trả - Bồi Thường Sách Chuẩn
                 </h3>
-                <p class="text-xs text-slate-400">Độc giả đã đặt mượn trực tuyến và đang chờ thủ thư chuẩn bị sách tại quầy</p>
+                <p class="text-xs text-slate-500 mt-0.5">Vận hành đồng bộ theo 4 mắt xích: Sinh viên mượn → Duyệt yêu cầu → In phiếu → Tiếp nhận trả → Thu phạt bồi thường</p>
             </div>
-
-            <a asp-area="Admin" asp-controller="Borrow" asp-action="Index" 
-               class="text-xs font-bold text-navy-800 hover:text-blue-600 flex items-center gap-1">
-                Xem toàn bộ 24 yêu cầu <i data-lucide="arrow-right" class="w-4 h-4"></i>
-            </a>
+            <div class="flex items-center gap-2">
+                <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span> Hệ thống đang vận hành
+                </span>
+            </div>
         </div>
 
-        <div class="overflow-x-auto rounded-2xl border border-slate-200">
-            <table class="w-full text-left text-xs text-slate-600">
-                <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-200">
-                    <tr>
-                        <th class="py-3 px-4">Mã Phiếu</th>
-                        <th class="py-3 px-4">Độc Giả (MSSV)</th>
-                        <th class="py-3 px-4">Tên Sách Mượn & ISBN</th>
-                        <th class="py-3 px-4">Thời Điểm Đặt</th>
-                        <th class="py-3 px-4">Hạn Đến Lấy</th>
-                        <th class="py-3 px-4">Độ Ưu Tiên</th>
-                        <th class="py-3 px-4 text-right">Phê Duyệt Nhanh</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-200">
-                    @foreach (var item in Model.RecentPendingRequests)
-                    {
-                        <tr class="hover:bg-slate-50 transition-colors">
-                            <td class="py-3.5 px-4 font-mono font-bold text-navy-800">@item.RequestCode</td>
-                            <td class="py-3.5 px-4">
-                                <p class="font-bold text-slate-900">@item.MemberName</p>
-                                <span class="text-slate-400 text-[11px]">MSSV: @item.MemberCode</span>
-                            </td>
-                            <td class="py-3.5 px-4 max-w-xs">
-                                <p class="font-semibold text-slate-800 truncate">@item.BookTitle</p>
-                                <span class="text-slate-400 text-[10px] font-mono">ISBN: @item.BookISBN</span>
-                            </td>
-                            <td class="py-3.5 px-4 text-slate-500">@item.RequestDate.ToString("HH:mm - dd/MM")</td>
-                            <td class="py-3.5 px-4 font-semibold text-amber-600">@item.PickupDueDate.ToString("dd/MM/yyyy")</td>
-                            <td class="py-3.5 px-4">
-                                @if (item.Priority == "Gấp")
-                                {
-                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
-                                        ⚡ Gấp
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700">
-                                        Bình thường
-                                    </span>
-                                }
-                            </td>
-                            <td class="py-3.5 px-4 text-right">
-                                <div class="flex items-center justify-end gap-1.5">
-                                    <button onclick="approveFast('@item.RequestCode')" 
-                                            class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-sm transition-colors flex items-center gap-1">
-                                        <i data-lucide="check" class="w-3.5 h-3.5"></i> Duyệt Nhanh
-                                    </button>
-                                    <button onclick="rejectFast('@item.RequestCode')" 
-                                            class="px-2.5 py-1.5 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 rounded-xl font-bold transition-colors">
-                                        Hủy
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <!-- BƯỚC 1 -->
+            <div class="p-5 rounded-2xl border border-blue-200 bg-blue-50/50 hover:bg-blue-50 transition-all flex flex-col justify-between space-y-4">
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="w-8 h-8 rounded-xl bg-blue-600 text-white font-black text-sm flex items-center justify-center shadow-sm">1</span>
+                        @if (Model.PendingBorrowsCount > 0)
+                        {
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-navy-900 animate-pulse">
+                                @Model.PendingBorrowsCount chờ duyệt
+                            </span>
+                        }
+                    </div>
+                    <h4 class="font-bold text-sm text-navy-950">Phê Duyệt Mượn Trực Tuyến</h4>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Sinh viên gửi yêu cầu đặt mượn từ Cổng thông tin (tối đa 3 cuốn). Thủ thư kiểm tra thẻ và phê duyệt cấp sách.
+                    </p>
+                </div>
+                <a asp-area="Admin" asp-controller="Borrow" asp-action="Index"
+                   class="w-full py-2.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow text-center transition-colors flex items-center justify-center gap-1.5">
+                    <i data-lucide="check-square" class="w-4 h-4"></i> Mở Quầy Duyệt Mượn
+                </a>
+            </div>
+
+            <!-- BƯỚC 2 -->
+            <div class="p-5 rounded-2xl border border-indigo-200 bg-indigo-50/50 hover:bg-indigo-50 transition-all flex flex-col justify-between space-y-4">
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="w-8 h-8 rounded-xl bg-indigo-600 text-white font-black text-sm flex items-center justify-center shadow-sm">2</span>
+                        <span class="text-[10px] font-bold text-indigo-700 uppercase">Khổ A5/A4</span>
+                    </div>
+                    <h4 class="font-bold text-sm text-indigo-950">In Phiếu Mượn & Giao Sách</h4>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        In phiếu mượn kèm mã vạch, thông tin độc giả, số kiểm soát cuốn sách và chữ ký cam kết bồi thường khi làm hỏng/mất.
+                    </p>
+                </div>
+                <a asp-area="Admin" asp-controller="Borrow" asp-action="Index"
+                   class="w-full py-2.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow text-center transition-colors flex items-center justify-center gap-1.5">
+                    <i data-lucide="printer" class="w-4 h-4"></i> Danh Sách In Phiếu
+                </a>
+            </div>
+
+            <!-- BƯỚC 3 -->
+            <div class="p-5 rounded-2xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-50 transition-all flex flex-col justify-between space-y-4">
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="w-8 h-8 rounded-xl bg-emerald-600 text-white font-black text-sm flex items-center justify-center shadow-sm">3</span>
+                        <span class="text-[10px] font-bold text-emerald-700 uppercase">Quầy trả sách</span>
+                    </div>
+                    <h4 class="font-bold text-sm text-emerald-950">Quầy Tiếp Nhận & Kiểm Kê</h4>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Sinh viên mang sách đến trả. Thủ thư tra cứu mã phiếu/số thẻ, kiểm tra nguyên vẹn hay rách/hỏng trang để xác nhận vào kho.
+                    </p>
+                </div>
+                <a asp-area="Admin" asp-controller="Borrow" asp-action="Return"
+                   class="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow text-center transition-colors flex items-center justify-center gap-1.5">
+                    <i data-lucide="scan-barcode" class="w-4 h-4"></i> Quầy Tiếp Nhận Trả
+                </a>
+            </div>
+
+            <!-- BƯỚC 4 -->
+            <div class="p-5 rounded-2xl border border-amber-200 bg-amber-50/50 hover:bg-amber-50 transition-all flex flex-col justify-between space-y-4">
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="w-8 h-8 rounded-xl bg-amber-600 text-white font-black text-sm flex items-center justify-center shadow-sm">4</span>
+                        <span class="text-[10px] font-bold text-amber-700 uppercase">Mở khóa thẻ</span>
+                    </div>
+                    <h4 class="font-bold text-sm text-amber-950">Thanh Toán Bồi Thường Tại Chỗ</h4>
+                    <p class="text-xs text-slate-600 leading-relaxed">
+                        Áp dụng mức phí chuẩn khi sách hỏng (50k) hoặc mất (100k). Thu tiền tại quầy, xuất biên lai và mở khóa thẻ thư viện ngay lập tức.
+                    </p>
+                </div>
+                <a asp-area="Admin" asp-controller="Borrow" asp-action="Payment"
+                   class="w-full py-2.5 px-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow text-center transition-colors flex items-center justify-center gap-1.5">
+                    <i data-lucide="credit-card" class="w-4 h-4"></i> Quầy Thu Phí Bồi Thường
+                </a>
+            </div>
+
         </div>
     </div>
 
@@ -237,14 +264,58 @@
 
 @section Scripts {
     <script>
-        function approveFast(code) {
-            alert('Đã duyệt thành công phiếu mượn ' + code + '! Độc giả đã nhận được tin nhắn hẹn lấy sách tại quầy 1.');
+        async function approveFast(id, code) {
+            if (!confirm(`Xác nhận duyệt và cấp sách cho phiếu mượn ${code}?`)) return;
+            try {
+                const res = await fetch(`/Admin/Borrow/ApproveBorrowRequest?requestId=${id}`, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (typeof window.showAppToast === 'function') {
+                        window.showAppToast('success', 'Thành công', data.message);
+                    } else {
+                        alert(data.message);
+                    }
+                    setTimeout(() => location.reload(), 600);
+                } else {
+                    if (typeof window.showAppToast === 'function') {
+                        window.showAppToast('error', 'Lỗi duyệt', data.message);
+                    } else {
+                        alert(data.message);
+                    }
+                }
+            } catch (err) {
+                alert('Lỗi kết nối khi gửi yêu cầu phê duyệt: ' + err.message);
+            }
         }
 
-        function rejectFast(code) {
-            const reason = prompt('Nhập lý do từ chối yêu cầu ' + code + ':', 'Sách đang bảo trì / Thẻ độc giả cần gia hạn');
-            if (reason) {
-                alert('Đã từ chối yêu cầu ' + code + ' thành công.');
+        async function rejectFast(id, code) {
+            const reason = prompt(`Nhập lý do từ chối phiếu mượn ${code}:`, 'Sách đang bảo trì kho / Hạn mức thẻ độc giả không đủ');
+            if (reason === null) return;
+            try {
+                const res = await fetch(`/Admin/Borrow/RejectBorrowRequest?requestId=${id}&reason=${encodeURIComponent(reason)}`, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (typeof window.showAppToast === 'function') {
+                        window.showAppToast('success', 'Đã từ chối', data.message);
+                    } else {
+                        alert(data.message);
+                    }
+                    setTimeout(() => location.reload(), 600);
+                } else {
+                    if (typeof window.showAppToast === 'function') {
+                        window.showAppToast('error', 'Lỗi từ chối', data.message);
+                    } else {
+                        alert(data.message);
+                    }
+                }
+            } catch (err) {
+                alert('Lỗi kết nối khi gửi yêu cầu từ chối: ' + err.message);
             }
         }
 

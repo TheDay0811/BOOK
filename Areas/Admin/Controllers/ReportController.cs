@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -21,7 +21,7 @@ namespace BOOK.Areas.Admin.Controllers
         }
 
         // GET: /Admin/Report/Index
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string tab = "overview", int? year = null, string? condition = null)
         {
             var totalBorrows = await _context.PhieuMuons.CountAsync();
             var activeBorrows = await _context.PhieuMuons.CountAsync(p => p.TrangThai == "Đang mượn");
@@ -50,7 +50,7 @@ namespace BOOK.Areas.Admin.Controllers
                 .Take(5)
                 .ToListAsync();
 
-            var viewModel = new BorrowAnalyticsReportViewModel
+            var analyticsModel = new BorrowAnalyticsReportViewModel
             {
                 TotalBorrows = totalBorrows,
                 ActiveBorrows = activeBorrows,
@@ -59,14 +59,8 @@ namespace BOOK.Areas.Admin.Controllers
                 TopBooks = topBooks
             };
 
-            return View(viewModel);
-        }
-
-        // GET: /Admin/Report/DamagedLostBooks
-        public async Task<IActionResult> DamagedLostBooks(int? year, string? condition)
-        {
+            // Dữ liệu Sách hỏng / mất & Thanh lý
             var conditionFilter = condition ?? "Tất cả";
-
             var query = _context.DauSachs
                 .Include(d => d.Sach).ThenInclude(s => s.TheLoai)
                 .Include(d => d.ChiTietPhieuMuons)
@@ -106,24 +100,37 @@ namespace BOOK.Areas.Admin.Controllers
                     ConditionStatus = d.TinhTrang,
                     RecordedDate = lastChiTiet?.NgayTraThucTe ?? DateTime.Today,
                     Notes = d.GhiChu,
-                    StudentName = lastChiTiet?.PhieuMuon.The.HoTen ?? "(Không rõ)",
+                    StudentName = lastChiTiet?.PhieuMuon.The.HoTen ?? "(Chưa có người mượn)",
                     StudentCode = lastChiTiet?.PhieuMuon.The.TaiKhoan.Username ?? "",
                     CompensationStatus = (lastChiTiet != null && lastChiTiet.DaBoiThuong) ? "Đã bồi thường" : "Chưa bồi thường",
-                    CompensationAmount = lastChiTiet?.TienBoiThuong ?? 0,
+                    CompensationAmount = lastChiTiet?.TienBoiThuong ?? (d.TinhTrang == "Hỏng" ? 50000 : 100000),
                     LiquidationStatus = "Đề xuất thanh lý"
                 };
             })
             .Where(r => (year == null) || r.RecordedDate.Year == year)
             .ToList();
 
-            var model = new DamagedLostReportViewModel
+            var damagedLostModel = new DamagedLostReportViewModel
             {
                 SelectedYear = year ?? DateTime.Today.Year,
                 SelectedCondition = conditionFilter,
                 Records = records
             };
 
-            return View(model);
+            var viewModel = new UnifiedReportViewModel
+            {
+                Analytics = analyticsModel,
+                DamagedLost = damagedLostModel,
+                ActiveTab = tab
+            };
+
+            return View(viewModel);
+        }
+
+        // GET: /Admin/Report/DamagedLostBooks -> Chuyển hướng sang Tab Sách Hỏng ở Index
+        public IActionResult DamagedLostBooks(int? year, string? condition)
+        {
+            return RedirectToAction(nameof(Index), new { tab = "damaged", year, condition });
         }
 
         // POST: /Admin/Report/ConfirmCompensation
@@ -139,13 +146,13 @@ namespace BOOK.Areas.Admin.Controllers
             if (chiTiet == null)
             {
                 TempData["Error"] = "Không tìm thấy thông tin lượt mượn hỏng/mất này.";
-                return RedirectToAction(nameof(DamagedLostBooks));
+                return RedirectToAction(nameof(Index), new { tab = "damaged" });
             }
 
             chiTiet.DaBoiThuong = true;
             if (chiTiet.TienBoiThuong == 0)
             {
-                chiTiet.TienBoiThuong = 150000;
+                chiTiet.TienBoiThuong = chiTiet.TinhTrangTra == "Hỏng" ? 50000 : 100000;
             }
 
             var card = chiTiet.PhieuMuon.The;
@@ -155,15 +162,15 @@ namespace BOOK.Areas.Admin.Controllers
                                (c.TinhTrangTra == "Mất" || c.TinhTrangTra == "Hỏng") &&
                                !c.DaBoiThuong);
 
-            if (!hasOtherUncompensated)
+            if (!hasOtherUncompensated && card.NgayHetHan >= DateTime.Today)
             {
                 card.TinhTrangSuDung = "Sử dụng được";
             }
 
             await _context.SaveChangesAsync();
 
-            TempData["Success"] = $"Đã ghi nhận bồi thường {chiTiet.TienBoiThuong:N0} đ từ độc giả {card.HoTen} ({card.SoThe}). Thẻ thư viện đã được khôi phục thành công: '{card.TinhTrangSuDung}'!";
-            return RedirectToAction(nameof(DamagedLostBooks));
+            TempData["Success"] = $"Đã ghi nhận bồi thường {chiTiet.TienBoiThuong:N0} đ từ độc giả {card.HoTen} ({card.SoThe}). Thẻ thư viện: '{card.TinhTrangSuDung}'!";
+            return RedirectToAction(nameof(Index), new { tab = "damaged" });
         }
 
         // GET: /Admin/Report/Settings (Cấu hình hệ thống quy chế - Chỉ dành cho Admin)

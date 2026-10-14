@@ -74,6 +74,10 @@
                         <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
                             <span class="w-2 h-2 rounded-full bg-rose-500"></span> @Model.CurrentCardStatus (Đang bị khóa)
                         </span>
+                        <button type="button" onclick="confirmCounterPayment('@Model.CardNumber')" 
+                                class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow transition-colors flex items-center gap-1.5 cursor-pointer">
+                            <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> Đã Thu Phạt & Mở Khóa Thẻ
+                        </button>
                     }
                 </div>
             </div>
@@ -82,10 +86,9 @@
             <div class="mt-4 p-3.5 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5">
                 <i data-lucide="alert-circle" class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5"></i>
                 <div class="space-y-0.5">
-                    <p class="font-bold">Quy định nghiệp vụ Case Study Thư Viện:</p>
+                    <p class="font-bold">Quy định bồi thường tài liệu tại quầy:</p>
                     <p class="text-[11px] text-amber-800">
-                        • Nếu ghi nhận <span class="font-bold text-rose-700">"Hỏng"</span> hoặc <span class="font-bold text-rose-700">"Mất"</span>, hệ thống sẽ tự động chuyển thẻ thư viện của sinh viên thành <strong>"Không sử dụng"</strong>.
-                        Sinh viên cần hoàn tất bồi thường tại quầy hoặc Cổng sinh viên để được mở khóa thẻ.
+                        • Nếu sách có sự cố "Hỏng" hoặc "Mất", Thủ thư ghi nhận mức phí bồi thường. Nếu sinh viên nộp tiền ngay tại quầy, hãy tích chọn <strong>"Đã thu tiền tại quầy"</strong> để thẻ sinh viên không bị khóa.
                     </p>
                 </div>
             </div>
@@ -113,6 +116,7 @@
                             <th class="py-3 px-4">Hạn Trả</th>
                             <th class="py-3 px-4">Tình Trạng Khi Nhận Lại</th>
                             <th class="py-3 px-4">Tiền Bồi Thường (VNĐ)</th>
+                            <th class="py-3 px-4 text-center">Thu Tiền Tại Quầy</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200">
@@ -140,11 +144,17 @@
                                     </select>
                                 </td>
                                 <td class="py-3.5 px-4">
-                                    <div class="relative w-36">
-                                        <input type="number" id="feeInput_@i" name="fees" value="0" min="0" step="1000" 
-                                               class="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs text-rose-600 focus:bg-white focus:border-navy-800 focus:outline-none" />
-                                        <span class="absolute right-3 top-2 text-[10px] text-slate-400 pointer-events-none">đ</span>
+                                    <div class="relative w-40">
+                                        <input type="number" id="feeInput_@i" name="fees" value="0" readonly
+                                               class="w-full py-2 px-3 bg-slate-100 border border-slate-200 rounded-xl font-bold text-xs text-rose-600 focus:outline-none cursor-not-allowed" />
+                                        <span class="absolute right-3 top-2 text-[10px] text-slate-400 pointer-events-none">đ (Quy chế)</span>
                                     </div>
+                                </td>
+                                <td class="py-3.5 px-4 text-center">
+                                    <label class="inline-flex items-center gap-1.5 cursor-pointer bg-slate-50 hover:bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-slate-200 transition-colors">
+                                        <input type="checkbox" name="paidStatuses" value="@i" id="paidCheckbox_@i" class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer" />
+                                        <span class="text-[11px] font-bold text-slate-700">Đã thu tiền</span>
+                                    </label>
                                 </td>
                             </tr>
                         }
@@ -185,6 +195,7 @@
     <script>
         function handleConditionChange(selectEl, index) {
             const feeInput = document.getElementById('feeInput_' + index);
+            const paidCb = document.getElementById('paidCheckbox_' + index);
             if (!feeInput) return;
 
             if (selectEl.value === 'Hỏng') {
@@ -193,6 +204,34 @@
                 feeInput.value = 100000;
             } else {
                 feeInput.value = 0;
+                if (paidCb) paidCb.checked = false;
+            }
+        }
+
+        async function confirmCounterPayment(cardNumber) {
+            if (!confirm(`Xác nhận đã thu toàn bộ phí bồi thường và kích hoạt lại thẻ ${cardNumber}?`)) return;
+            try {
+                const res = await fetch(`/Admin/Borrow/ConfirmCounterPayment?cardNumber=${encodeURIComponent(cardNumber)}`, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (typeof window.showAppToast === 'function') {
+                        window.showAppToast('success', 'Thành công', data.message);
+                    } else {
+                        alert(data.message);
+                    }
+                    setTimeout(() => location.reload(), 700);
+                } else {
+                    if (typeof window.showAppToast === 'function') {
+                        window.showAppToast('error', 'Lỗi', data.message);
+                    } else {
+                        alert(data.message);
+                    }
+                }
+            } catch (err) {
+                alert('Lỗi kết nối: ' + err.message);
             }
         }
     </script>

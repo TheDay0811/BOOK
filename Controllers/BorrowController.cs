@@ -81,15 +81,31 @@ namespace BOOK.Controllers
                 return RedirectToAction("Details", "Book", new { id = model.BookId });
             }
 
-            // 4. Ràng buộc: Kiểm tra số sách đang mượn & sách chưa trả
+            // 4. Ràng buộc: Kiểm tra số sách đang mượn & chờ duyệt (tối đa 3 cuốn)
             var activeLoansCount = the.PhieuMuons
                 .Where(p => p.TrangThai == "Đang mượn" || p.TrangThai == "Chờ duyệt")
                 .SelectMany(p => p.ChiTiets)
                 .Count(c => c.NgayTraThucTe == null);
 
-            if (activeLoansCount > 0)
+            if (activeLoansCount >= 3)
             {
-                var errorMsg = "Bạn đang giữ sách chưa hoàn trả. Theo quy định chỉ được mượn tối đa 3 cuốn và phải trả hết mới được mượn tiếp.";
+                var errorMsg = "Bạn đã mượn hoặc đang chờ duyệt 3 cuốn sách (đã đạt giới hạn tối đa 3 cuốn của Thư viện HUFLIT). Vui lòng hoàn trả các cuốn sách đang giữ trước khi mượn tiếp.";
+                if (isAjax)
+                {
+                    return Json(new { success = false, message = errorMsg });
+                }
+                TempData["Error"] = errorMsg;
+                return RedirectToAction("Details", "Book", new { id = model.BookId });
+            }
+
+            var alreadyHoldingThisBook = the.PhieuMuons
+                .Where(p => p.TrangThai == "Đang mượn" || p.TrangThai == "Chờ duyệt")
+                .SelectMany(p => p.ChiTiets)
+                .Any(c => c.NgayTraThucTe == null && c.DauSach != null && c.DauSach.MaSach == model.BookId);
+
+            if (alreadyHoldingThisBook)
+            {
+                var errorMsg = "Bạn hiện đang mượn hoặc đang đăng ký mượn cuốn sách này. Theo quy chế, mỗi độc giả chỉ được mượn 1 bản sao của cùng một tựa sách.";
                 if (isAjax)
                 {
                     return Json(new { success = false, message = errorMsg });
@@ -127,7 +143,7 @@ namespace BOOK.Controllers
                 MaThe = the.MaThe,
                 NgayMuon = DateTime.Today,
                 HanTra = dueDate,
-                TrangThai = "Chờ duyệt", // Tạo yêu cầu chờ duyệt, hoặc Đang mượn
+                TrangThai = "Chờ duyệt",
                 ChiTiets = new()
                 {
                     new ChiTietPhieuMuon
@@ -142,6 +158,30 @@ namespace BOOK.Controllers
             availableCopy.TinhTrang = "Cho mượn";
 
             _context.PhieuMuons.Add(phieuMuon);
+
+            // 8. Tạo thông báo cho Độc giả và Ban Quản Trị / Thủ thư
+            _context.ThongBaos.Add(new ThongBao
+            {
+                TargetUser = the.TaiKhoan.Username,
+                Title = "Đã gửi yêu cầu mượn sách thành công",
+                Message = $"Bạn đã đăng ký mượn cuốn \"{availableCopy.Sach.TenSach}\" (Phiếu #{phieuMuon.MaPhieuMuon}, Bản số KS: {availableCopy.SoKiemSoat}). Vui lòng chờ Thủ thư duyệt và đến quầy nhận sách.",
+                LinkUrl = "/Account/Profile#activeLoans",
+                Type = "Info",
+                DaDoc = false,
+                CreatedAt = DateTime.Now
+            });
+
+            _context.ThongBaos.Add(new ThongBao
+            {
+                TargetUser = "AdminGroup",
+                Title = "Yêu cầu mượn sách mới",
+                Message = $"Độc giả {the.HoTen} (MSSV: {the.TaiKhoan.Username}) vừa đặt mượn cuốn \"{availableCopy.Sach.TenSach}\" (Phiếu #{phieuMuon.MaPhieuMuon}).",
+                LinkUrl = "/Admin/Home/Index",
+                Type = "Warning",
+                DaDoc = false,
+                CreatedAt = DateTime.Now
+            });
+
             await _context.SaveChangesAsync();
 
             var successMsg = $"Đặt mượn thành công cuốn sách \"{availableCopy.Sach.TenSach}\" (Số KS: [{availableCopy.SoKiemSoat}]). Hạn trả: {dueDate:dd/MM/yyyy}. Vui lòng đến Quầy Lưu Thông Tầng 1 để nhận sách!";

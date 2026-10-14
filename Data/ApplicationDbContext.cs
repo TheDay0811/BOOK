@@ -16,6 +16,7 @@ namespace BOOK.Data
         public DbSet<TheThuVien> TheThuViens => Set<TheThuVien>();
         public DbSet<PhieuMuon> PhieuMuons => Set<PhieuMuon>();
         public DbSet<ChiTietPhieuMuon> ChiTietPhieuMuons => Set<ChiTietPhieuMuon>();
+        public DbSet<ThongBao> ThongBaos => Set<ThongBao>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

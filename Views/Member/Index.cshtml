@@ -167,11 +167,11 @@
                 <p class="text-xs text-slate-300 mt-1">Sử dụng ứng dụng Banking ngân hàng bất kỳ để quét mã thanh toán tức thì.</p>
             </div>
 
-            <!-- VietQR Code Graphic Mockup -->
+            <!-- VietQR Code Graphic -->
             <div class="bg-white p-4 rounded-2xl max-w-[200px] mx-auto shadow-lg text-center">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=vietqr_mock_fine_22110098" 
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=vietqr_fine_@(string.IsNullOrEmpty(Model.MemberCode) ? "HUFLIT" : Model.MemberCode)" 
                      alt="VietQR nộp phạt" class="w-full h-auto mx-auto rounded-lg" />
-                <span class="text-[10px] font-bold text-slate-800 block mt-2">NOPPHAT @Model.MemberCode</span>
+                <span class="text-[10px] font-bold text-slate-800 block mt-2">NOPPHAT @(string.IsNullOrEmpty(Model.MemberCode) ? "HUFLIT" : Model.MemberCode)</span>
             </div>
 
             <!-- Banking Info -->

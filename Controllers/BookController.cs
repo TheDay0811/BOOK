@@ -180,6 +180,8 @@ namespace BOOK.Controllers
             // Trạng thái thẻ và quyền mượn của độc giả đang đăng nhập
             string userCardStatus = "Sử dụng được";
             bool hasUnreturnedBooks = false;
+            bool hasOverdueBooks = false;
+            bool alreadyHoldingThisBook = false;
             int currentBorrowedCount = 0;
             bool isAuthenticated = User.Identity?.IsAuthenticated ?? false;
 
@@ -191,17 +193,25 @@ namespace BOOK.Controllers
                     var the = await _context.TheThuViens
                         .Include(t => t.PhieuMuons)
                             .ThenInclude(p => p.ChiTiets)
+                                .ThenInclude(c => c.DauSach)
                         .FirstOrDefaultAsync(t => t.TaiKhoan.Username == studentCode);
 
                     if (the != null)
                     {
                         userCardStatus = (DateTime.Today > the.NgayHetHan) ? "Không sử dụng" : the.TinhTrangSuDung;
-                        var activeCount = the.PhieuMuons
+                        var activeLoans = the.PhieuMuons
                             .Where(p => p.TrangThai == "Đang mượn" || p.TrangThai == "Chờ duyệt")
+                            .ToList();
+
+                        var activeCopies = activeLoans
                             .SelectMany(p => p.ChiTiets)
-                            .Count(c => c.NgayTraThucTe == null);
-                        currentBorrowedCount = activeCount;
-                        hasUnreturnedBooks = activeCount > 0;
+                            .Where(c => c.NgayTraThucTe == null)
+                            .ToList();
+
+                        currentBorrowedCount = activeCopies.Count;
+                        hasUnreturnedBooks = currentBorrowedCount >= 3;
+                        hasOverdueBooks = activeLoans.Any(p => p.TrangThai == "Đang mượn" && p.HanTra < DateTime.Today);
+                        alreadyHoldingThisBook = activeCopies.Any(c => c.DauSach != null && c.DauSach.MaSach == id);
                     }
                 }
             }
@@ -214,6 +224,8 @@ namespace BOOK.Controllers
                 RelatedBooks = related,
                 UserCardStatus = userCardStatus,
                 HasUnreturnedBooks = hasUnreturnedBooks,
+                HasOverdueBooks = hasOverdueBooks,
+                AlreadyHoldingThisBook = alreadyHoldingThisBook,
                 CurrentBorrowedCount = currentBorrowedCount,
                 IsUserAuthenticated = isAuthenticated
             };

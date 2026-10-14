@@ -33,17 +33,17 @@ namespace BOOK.Models.ViewModels
         public string VietQrUrl { get; set; } = string.Empty;
         public string BankName { get; set; } = "Ngân hàng TMCP Ngoại Thương Việt Nam (Vietcombank)";
         public string AccountNumber { get; set; } = "102888666999";
-        public string AccountHolder { get; set; } = "THƯ VIỆN ĐẠI HỌC QUỐC GIA";
-        public string TransferDescription { get; set; } = "NOPPHAT 22110098";
+        public string AccountHolder { get; set; } = "THƯ VIỆN ĐẠI HỌC NGOẠI NGỮ TIN HỌC TPHCM (HUFLIT)";
+        public string TransferDescription { get; set; } = "NOPPHAT HUFLIT";
     }
 
     public class MemberPortalViewModel
     {
-        public string FullName { get; set; } = "Trần Văn Hoàng";
-        public string MemberCode { get; set; } = "22110098";
-        public string Email { get; set; } = "hoang.tv@student.edu.vn";
-        public string PhoneNumber { get; set; } = "0912 333 444";
-        public string Faculty { get; set; } = "Khoa Công Nghệ Thông Tin";
+        public string FullName { get; set; } = string.Empty;
+        public string MemberCode { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
+        public string Faculty { get; set; } = "Khoa Công Nghệ Thông Tin (HUFLIT)";
         public DateTime ExpiryDate { get; set; } = DateTime.Today.AddYears(1);
 
         public List<MemberActiveBorrowViewModel> ActiveLoans { get; set; } = new();

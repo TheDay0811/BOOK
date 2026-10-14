@@ -188,4 +188,32 @@ namespace BOOK.Models.ViewModels
 
         public List<DamagedLostBookRecordViewModel> Records { get; set; } = new();
     }
+
+    // ================= 6. QUẦY THANH TOÁN BỒI THƯỜNG TẠI CHỖ =================
+    public class UnpaidFineItemViewModel
+    {
+        public int ChiTietId { get; set; }
+        public int PhieuMuonId { get; set; }
+        public string BookTitle { get; set; } = string.Empty;
+        public string BookCode { get; set; } = string.Empty;
+        public string ControlNumber { get; set; } = string.Empty;
+        public string IncidentType { get; set; } = "Hỏng"; // Hỏng, Mất, Quá hạn
+        public DateTime IncidentDate { get; set; }
+        public decimal FineAmount { get; set; } = 50000;
+        public string Description { get; set; } = string.Empty;
+    }
+
+    public class PaymentDeskViewModel
+    {
+        public string SearchTerm { get; set; } = string.Empty;
+        public string CardNumber { get; set; } = string.Empty;
+        public string StudentName { get; set; } = string.Empty;
+        public string StudentCode { get; set; } = string.Empty;
+        public string CardStatus { get; set; } = string.Empty;
+        public DateTime CardExpiryDate { get; set; }
+        public List<UnpaidFineItemViewModel> UnpaidFines { get; set; } = new();
+        public decimal TotalAmount => UnpaidFines.Sum(f => f.FineAmount);
+        public bool HasSearched { get; set; } = false;
+        public bool CardFound { get; set; } = false;
+    }
 }

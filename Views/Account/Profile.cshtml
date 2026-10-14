@@ -209,6 +209,13 @@
                 </div>
 
                 <div class="pt-1 space-y-2">
+                    @if (Model.HasUnpaidFines)
+                    {
+                        <button type="button" onclick="openModal('confirmPaymentModal')" 
+                                class="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 animate-pulse cursor-pointer">
+                            <i data-lucide="receipt" class="w-4 h-4"></i> Xác Nhận Đã Thanh Toán Bồi Thường
+                        </button>
+                    }
                     <button type="button" onclick="openModal('updateProfileModal')" 
                             class="w-full py-2.5 px-4 rounded-xl border border-navy-800 text-navy-800 hover:bg-navy-50 text-xs font-bold transition-colors flex items-center justify-center gap-2">
                         <i data-lucide="settings-2" class="w-4 h-4"></i> Cập Nhật Hồ Sơ & Thông Tin Liên Hệ
@@ -233,7 +240,7 @@
                     </li>
                     <li class="flex items-start gap-2">
                         <span class="text-navy-800 font-bold">•</span>
-                        <span>Phải trả hết số sách đang giữ trước khi được mượn các cuốn sách mới.</span>
+                        <span>Tổng số sách đang mượn và đang chờ duyệt tối đa <strong>3 cuốn sách</strong> cùng lúc. Độc giả có thể tiếp tục mượn thêm sách nếu chưa đạt hạn mức 3 cuốn.</span>
                     </li>
                     <li class="flex items-start gap-2">
                         <span class="text-navy-800 font-bold">•</span>
@@ -572,39 +579,45 @@
             @Html.AntiForgeryToken()
 
             <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Họ và tên sinh viên</label>
-                <input asp-for="UpdateModel.FullName" value="@Model.FullName" required 
-                       class="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none" />
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Họ và tên độc giả</label>
+                <input asp-for="UpdateModel.FullName" name="FullName" id="profileFullNameInput" value="@Model.FullName" readonly 
+                       class="w-full px-3.5 py-2 text-xs bg-slate-100 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed font-medium select-none" />
+                <p class="text-[11px] text-amber-700 mt-1.5 flex items-start gap-1.5 bg-amber-50 p-2 rounded-lg border border-amber-200/60">
+                    <i data-lucide="info" class="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5"></i>
+                    <span>Họ tên được in cố định trên thẻ thư viện vật lý và không thể tự chỉnh sửa. Để đính chính họ tên, vui lòng mang thẻ sinh viên/CCCD đến quầy Thủ thư cơ sở Hóc Môn.</span>
+                </p>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Mã sinh viên (MSSV)</label>
-                    <input asp-for="UpdateModel.StudentCode" value="@Model.StudentCode" readonly 
+                    <input asp-for="UpdateModel.StudentCode" name="StudentCode" id="profileStudentCodeInput" value="@Model.StudentCode" readonly 
                            class="w-full px-3.5 py-2 text-xs bg-slate-100 border border-slate-200 rounded-xl font-mono text-slate-500 cursor-not-allowed" />
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Số điện thoại</label>
-                    <input asp-for="UpdateModel.PhoneNumber" value="@Model.PhoneNumber" required 
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Số điện thoại <span class="text-rose-500">*</span></label>
+                    <input asp-for="UpdateModel.PhoneNumber" name="PhoneNumber" id="profilePhoneNumberInput" value="@Model.PhoneNumber" required 
                            class="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none font-mono" />
                 </div>
             </div>
 
             <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Địa chỉ Email</label>
-                <input asp-for="UpdateModel.Email" value="@Model.Email" type="email" required 
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Địa chỉ Email <span class="text-rose-500">*</span></label>
+                <input asp-for="UpdateModel.Email" name="Email" id="profileEmailInput" value="@Model.Email" type="email" required 
                        class="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none" />
             </div>
 
             <div>
                 <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Khoa / Đơn vị quản lý</label>
-                <input asp-for="UpdateModel.Faculty" value="@Model.Faculty" required 
+                <input asp-for="UpdateModel.Faculty" name="Faculty" id="profileFacultyInput" value="@Model.Faculty" required 
                        class="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none" />
             </div>
 
             <div class="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
                 <button type="button" onclick="closeModal('updateProfileModal')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">Hủy bỏ</button>
-                <button type="submit" class="px-5 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow">Lưu thay đổi</button>
+                <button type="submit" class="px-5 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow flex items-center gap-1.5">
+                    <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i> Lưu thay đổi
+                </button>
             </div>
         </form>
     </div>
@@ -765,6 +778,47 @@
             <div class="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
                 <button type="button" onclick="closeModal('changePasswordModal')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">Hủy</button>
                 <button type="submit" class="px-5 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow">Lưu mật khẩu mới</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ================= MODAL 5: XÁC NHẬN THANH TOÁN BỒI THƯỜNG ================= -->
+<div id="confirmPaymentModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-150">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <i data-lucide="receipt" class="w-5 h-5 text-amber-500"></i> Xác Nhận Nộp Phí Bồi Thường
+            </h3>
+            <button type="button" onclick="closeModal('confirmPaymentModal')" class="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form asp-controller="Account" asp-action="ConfirmStudentPayment" method="post" class="space-y-4 pt-3">
+            @Html.AntiForgeryToken()
+
+            <div class="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-900 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="font-bold">Tổng phí bồi thường cần nộp:</span>
+                    <span class="text-base font-extrabold text-rose-600">@Model.TotalUnpaidFines.ToString("N0") VNĐ</span>
+                </div>
+                <p class="text-[11px] leading-relaxed text-amber-800">
+                    Vui lòng nộp trực tiếp tiền mặt tại Quầy Thủ thư Tầng 1 (Cơ sở Hóc Môn: Số 80/2 Bà Triệu, Xã Tân Xuân, Hóc Môn) hoặc chuyển khoản đến tài khoản Thư viện HUFLIT với cú pháp: <strong>@Model.StudentCode - @Model.CardNumber - Bồi Thường</strong>.
+                </p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Ghi chú xác nhận nộp phí</label>
+                <textarea name="note" rows="3" required placeholder="Ví dụ: Đã nộp tiền mặt 50.000đ tại quầy Thủ thư lúc 10h sáng nay..." 
+                          class="w-full px-3.5 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none"></textarea>
+            </div>
+
+            <div class="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
+                <button type="button" onclick="closeModal('confirmPaymentModal')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">Đóng</button>
+                <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow">
+                    Gửi Thông Báo Cho Thủ Thư
+                </button>
             </div>
         </form>
     </div>
@@ -937,6 +991,7 @@
                         } else if (typeof showNotification === 'function') {
                             showNotification('success', 'Thành công!', res.message);
                         }
+                        setTimeout(() => window.location.reload(), 700);
                     } else {
                         if (typeof window.showAppToast === 'function') {
                             window.showAppToast('error', 'Có lỗi', res.message || 'Có lỗi xảy ra.');

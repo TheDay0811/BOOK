@@ -11,37 +11,39 @@ namespace BOOK.Data
         public static void Seed(ApplicationDbContext context)
         {
             // =========================================================================
-            // BƯỚC 1: LÀM SẠCH DỮ LIỆU DEMO CŨ (NẾU CÓ)
+            // BƯỚC 1: LÀM SẠCH DỮ LIỆU DEMO CŨ NẾU CÒN TỒN TẠI (CHỈ XÓA DỮ LIỆU DEMO)
             // =========================================================================
-            // Xóa tất cả các phiếu mượn & chi tiết phiếu mượn demo cũ
-            var oldChiTiets = context.ChiTietPhieuMuons.ToList();
-            if (oldChiTiets.Any())
-            {
-                context.ChiTietPhieuMuons.RemoveRange(oldChiTiets);
-                context.SaveChanges();
-            }
-
-            var oldPhieus = context.PhieuMuons.ToList();
-            if (oldPhieus.Any())
-            {
-                context.PhieuMuons.RemoveRange(oldPhieus);
-                context.SaveChanges();
-            }
-
-            // Xóa thẻ thư viện của các tài khoản sinh viên demo cũ (giữ trống cho SV đăng ký thật)
-            var oldCards = context.TheThuViens.ToList();
-            if (oldCards.Any())
-            {
-                context.TheThuViens.RemoveRange(oldCards);
-                context.SaveChanges();
-            }
-
-            // Chỉ xóa các tài khoản demo cũ nếu có (bảo tồn tài khoản sinh viên thật tự đăng ký)
+            var demoUsernames = new[] { "sv001", "sv002", "testuser", "demo" };
             var oldDemoAccounts = context.TaiKhoans
-                .Where(t => (t.Username == "sv001" || t.Username == "sv002" || t.Username == "testuser") && t.Role != "Admin" && t.Role != "Librarian")
+                .Where(t => demoUsernames.Contains(t.Username) && t.Role != "Admin" && t.Role != "Librarian")
                 .ToList();
+
             if (oldDemoAccounts.Any())
             {
+                var demoUserIds = oldDemoAccounts.Select(a => a.MaTK).ToList();
+                var demoCards = context.TheThuViens
+                    .Where(t => demoUserIds.Contains(t.MaTK))
+                    .ToList();
+
+                if (demoCards.Any())
+                {
+                    var demoCardIds = demoCards.Select(c => c.MaThe).ToList();
+                    var demoLoans = context.PhieuMuons
+                        .Where(p => demoCardIds.Contains(p.MaThe))
+                        .ToList();
+
+                    if (demoLoans.Any())
+                    {
+                        var demoLoanIds = demoLoans.Select(l => l.MaPhieuMuon).ToList();
+                        var demoDetails = context.ChiTietPhieuMuons
+                            .Where(d => demoLoanIds.Contains(d.MaPhieuMuon))
+                            .ToList();
+
+                        context.ChiTietPhieuMuons.RemoveRange(demoDetails);
+                        context.PhieuMuons.RemoveRange(demoLoans);
+                    }
+                    context.TheThuViens.RemoveRange(demoCards);
+                }
                 context.TaiKhoans.RemoveRange(oldDemoAccounts);
                 context.SaveChanges();
             }
@@ -59,6 +61,27 @@ namespace BOOK.Data
                     context.DauSachs.RemoveRange(mb.DauSachs);
                 }
                 context.Sachs.RemoveRange(mockBooks);
+                context.SaveChanges();
+            }
+
+            // Đảm bảo mọi tài khoản Sinh Viên thật đã đăng ký đều có Thẻ thư viện liên kết
+            var studentAccountsWithoutCard = context.TaiKhoans
+                .Include(t => t.TheThuVien)
+                .Where(t => t.Role == "SinhVien" && t.TheThuVien == null)
+                .ToList();
+
+            foreach (var sv in studentAccountsWithoutCard)
+            {
+                sv.TheThuVien = new TheThuVien
+                {
+                    SoThe = $"LIB-{sv.Username.Trim().ToUpper()}",
+                    HoTen = !string.IsNullOrWhiteSpace(sv.FullName) ? sv.FullName : sv.Username,
+                    NgayHetHan = DateTime.Today.AddYears(1),
+                    TinhTrangSuDung = "Sử dụng được"
+                };
+            }
+            if (studentAccountsWithoutCard.Any())
+            {
                 context.SaveChanges();
             }
 

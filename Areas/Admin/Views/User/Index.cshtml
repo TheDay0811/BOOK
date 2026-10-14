@@ -196,7 +196,7 @@
             </button>
         </div>
 
-        <form id="editUserForm" method="post" asp-action="Edit" class="space-y-4">
+        <form id="editUserForm" method="post" asp-area="Admin" asp-controller="User" asp-action="Edit" class="space-y-4">
             @Html.AntiForgeryToken()
             <input type="hidden" name="Id" id="editUserId" />
 

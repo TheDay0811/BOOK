@@ -30,15 +30,30 @@ namespace BOOK.Areas.Admin.Controllers
             var overdueBorrows = await _context.PhieuMuons.CountAsync(p => p.TrangThai == "Đang mượn" && p.HanTra < DateTime.Today);
             var lostOrDamagedCopies = await _context.DauSachs.CountAsync(d => d.TinhTrang == "Mất" || d.TinhTrang == "Hỏng");
 
-            // Danh sách phiếu mượn gần nhất
+            var pendingBorrowsCount = await _context.PhieuMuons.CountAsync(p => p.TrangThai == "Chờ duyệt");
+
+            // Danh sách phiếu mượn chờ duyệt gần nhất (nếu không có thì lấy các phiếu gần nhất)
             var recentLoans = await _context.PhieuMuons
                 .Include(p => p.The)
                 .Include(p => p.ChiTiets)
                     .ThenInclude(c => c.DauSach)
                         .ThenInclude(d => d.Sach)
+                .Where(p => p.TrangThai == "Chờ duyệt")
                 .OrderByDescending(p => p.NgayMuon)
                 .Take(5)
                 .ToListAsync();
+
+            if (!recentLoans.Any())
+            {
+                recentLoans = await _context.PhieuMuons
+                    .Include(p => p.The)
+                    .Include(p => p.ChiTiets)
+                        .ThenInclude(c => c.DauSach)
+                            .ThenInclude(d => d.Sach)
+                    .OrderByDescending(p => p.NgayMuon)
+                    .Take(5)
+                    .ToListAsync();
+            }
 
             var recentPending = recentLoans.Select(p =>
             {
@@ -64,14 +79,38 @@ namespace BOOK.Areas.Admin.Controllers
             // Thống kê theo thể loại từ CSDL thật
             var categories = await _context.TheLoais
                 .Include(t => t.Sachs)
+                .Where(t => t.Sachs.Any())
                 .ToListAsync();
 
             var categoryLabels = categories.Any() 
                 ? categories.Select(c => c.TenTheLoai).ToList() 
-                : new List<string> { "Công nghệ thông tin", "Kinh tế", "Ngoại ngữ" };
+                : new List<string> { "Kho chung" };
             var categoryBookCounts = categories.Any() 
                 ? categories.Select(c => c.Sachs.Count).ToList() 
-                : new List<int> { 0, 0, 0 };
+                : new List<int> { totalBooks };
+
+            // Thống kê 6 tháng gần nhất từ CSDL thật
+            var now = DateTime.Today;
+            var monthlyLabels = new List<string>();
+            var monthlyBorrowCounts = new List<int>();
+            var monthlyReturnCounts = new List<int>();
+
+            for (int i = 5; i >= 0; i--)
+            {
+                var targetMonth = now.AddMonths(-i);
+                var monthStart = new DateTime(targetMonth.Year, targetMonth.Month, 1);
+                var monthEnd = monthStart.AddMonths(1);
+
+                monthlyLabels.Add($"T{targetMonth.Month}/{targetMonth.Year % 100}");
+                
+                var borrowsInMonth = await _context.PhieuMuons
+                    .CountAsync(p => p.NgayMuon >= monthStart && p.NgayMuon < monthEnd);
+                monthlyBorrowCounts.Add(borrowsInMonth);
+
+                var returnsInMonth = await _context.ChiTietPhieuMuons
+                    .CountAsync(c => c.NgayTraThucTe.HasValue && c.NgayTraThucTe.Value >= monthStart && c.NgayTraThucTe.Value < monthEnd);
+                monthlyReturnCounts.Add(returnsInMonth);
+            }
 
             var viewModel = new AdminDashboardViewModel
             {
@@ -116,9 +155,10 @@ namespace BOOK.Areas.Admin.Controllers
                     ColorClass = "rose"
                 },
                 RecentPendingRequests = recentPending,
-                MonthlyLabels = new List<string> { "T5", "T6", "T7", "T8", "T9", "T10" },
-                MonthlyBorrowCounts = new List<int> { 12, 18, 25, 30, 42, activeBorrows },
-                MonthlyReturnCounts = new List<int> { 10, 15, 22, 28, 38, Math.Max(0, activeBorrows - overdueBorrows) },
+                PendingBorrowsCount = pendingBorrowsCount,
+                MonthlyLabels = monthlyLabels,
+                MonthlyBorrowCounts = monthlyBorrowCounts,
+                MonthlyReturnCounts = monthlyReturnCounts,
                 CategoryLabels = categoryLabels,
                 CategoryBookCounts = categoryBookCounts
             };

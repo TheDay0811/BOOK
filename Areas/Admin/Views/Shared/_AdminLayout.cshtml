@@ -127,27 +127,19 @@
                     <a asp-area="Admin" asp-controller="Borrow" asp-action="Return" 
                        class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-colors @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Borrow" && ViewContext.RouteData.Values["Action"]?.ToString() == "Return" ? "bg-navy-800 text-white" : "text-slate-400 hover:text-white hover:bg-navy-900")">
                         <i data-lucide="scan-barcode" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i>
-                        <span class="sidebar-text">Quầy Thu Hồi & Đánh Giá</span>
+                        <span class="sidebar-text">Quầy Thu Hồi & Tiếp Nhận</span>
+                    </a>
+
+                    <a asp-area="Admin" asp-controller="Borrow" asp-action="Payment" 
+                       class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-colors @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Borrow" && ViewContext.RouteData.Values["Action"]?.ToString() == "Payment" ? "bg-navy-800 text-white" : "text-slate-400 hover:text-white hover:bg-navy-900")">
+                        <i data-lucide="credit-card" class="w-4 h-4 text-amber-400 flex-shrink-0"></i>
+                        <span class="sidebar-text">Quầy Thu Phí Bồi Thường</span>
                     </a>
 
                     <a asp-area="Admin" asp-controller="Borrow" asp-action="Create" 
                        class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-colors @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Borrow" && ViewContext.RouteData.Values["Action"]?.ToString() == "Create" ? "bg-navy-800 text-white" : "text-slate-400 hover:text-white hover:bg-navy-900")">
                         <i data-lucide="plus-circle" class="w-4 h-4 text-teal-400 flex-shrink-0"></i>
                         <span class="sidebar-text">Lập Phiếu Mượn Trực Tiếp</span>
-                    </a>
-
-                    <a asp-area="Admin" asp-controller="Borrow" asp-action="Index" 
-                       class="flex items-center justify-between px-3 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-navy-900 transition-colors">
-                        <div class="flex items-center gap-3">
-                            <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-400 flex-shrink-0"></i>
-                            <span class="sidebar-text">Xử Lý Quá Hạn & Phạt</span>
-                        </div>
-                        @if (overdueBorrowsCount > 0)
-                        {
-                            <span class="sidebar-text px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                                @overdueBorrowsCount
-                            </span>
-                        }
                     </a>
                 </div>
 
@@ -183,15 +175,9 @@
                     </div>
 
                     <a asp-area="Admin" asp-controller="Report" asp-action="Index" 
-                       class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-colors @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Report" && ViewContext.RouteData.Values["Action"]?.ToString() == "Index" ? "bg-navy-800 text-white" : "text-slate-400 hover:text-white hover:bg-navy-900")">
+                       class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-colors @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Report" ? "bg-navy-800 text-white" : "text-slate-400 hover:text-white hover:bg-navy-900")">
                         <i data-lucide="bar-chart-3" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i>
-                        <span class="sidebar-text">Báo Cáo & Top Sách Mượn</span>
-                    </a>
-
-                    <a asp-area="Admin" asp-controller="Report" asp-action="DamagedLostBooks" 
-                       class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-colors @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Report" && ViewContext.RouteData.Values["Action"]?.ToString() == "DamagedLostBooks" ? "bg-navy-800 text-white" : "text-slate-400 hover:text-white hover:bg-navy-900")">
-                        <i data-lucide="alert-octagon" class="w-4 h-4 text-rose-400 flex-shrink-0"></i>
-                        <span class="sidebar-text">Sách Hỏng & Thanh Lý</span>
+                        <span class="sidebar-text">Báo Cáo & Phân Tích Dữ Liệu</span>
                     </a>
                 </div>
 
@@ -257,20 +243,11 @@
                         <!-- Notification Dropdown Panel -->
                         <div id="notificationDropdown" class="hidden absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50">
                             <div class="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
-                                <span class="text-xs font-bold text-slate-900">Thông báo mới</span>
-                                <button type="button" onclick="markAdminNotificationsAsRead()" class="text-[10px] font-semibold text-blue-600 hover:underline">Đánh dấu đã đọc</button>
+                                <span class="text-xs font-bold text-slate-900">Thông báo hệ thống</span>
+                                <button type="button" onclick="markAdminNotificationsAsRead()" class="text-[10px] font-semibold text-blue-600 hover:underline cursor-pointer">Đánh dấu đã đọc</button>
                             </div>
-                            <div class="divide-y divide-slate-100 max-h-64 overflow-y-auto text-xs">
-                                <a asp-area="Admin" asp-controller="Borrow" asp-action="Index" onclick="markAdminNotificationsAsRead()" class="block p-3 hover:bg-slate-50 transition-colors">
-                                    <p class="font-bold text-slate-800">Yêu cầu mượn trực tuyến</p>
-                                    <p class="text-[11px] text-slate-500">@(pendingBorrowsCount > 0 ? $"Có {pendingBorrowsCount} yêu cầu mượn đang chờ duyệt." : "Không có yêu cầu mượn mới nào.")</p>
-                                    <span class="text-[10px] text-slate-400 mt-1 block">Hệ thống</span>
-                                </a>
-                                <a asp-area="Admin" asp-controller="Borrow" asp-action="Index" onclick="markAdminNotificationsAsRead()" class="block p-3 hover:bg-slate-50 transition-colors">
-                                    <p class="font-bold text-rose-600">Cảnh báo quá hạn</p>
-                                    <p class="text-[11px] text-slate-500">@(overdueBorrowsCount > 0 ? $"Có {overdueBorrowsCount} phiếu mượn quá hạn cần thu hồi." : "Hiện không có tài liệu nào trễ hạn.")</p>
-                                    <span class="text-[10px] text-slate-400 mt-1 block">Hệ thống</span>
-                                </a>
+                            <div id="adminNotifList" class="divide-y divide-slate-100 max-h-64 overflow-y-auto text-xs">
+                                <p class="text-slate-400 text-center py-4 text-xs">Đang tải thông báo...</p>
                             </div>
                             <div class="p-2 border-t border-slate-100 text-center">
                                 <a asp-area="Admin" asp-controller="Borrow" asp-action="Index" onclick="markAdminNotificationsAsRead()" class="text-xs font-bold text-navy-800 hover:underline">
@@ -366,20 +343,74 @@
             }
         });
 
-        function markAdminNotificationsAsRead() {
-            const dot = document.getElementById('adminNotifDot');
-            if (dot) dot.classList.add('hidden');
-            localStorage.setItem('admin_notif_read', 'true');
-            if (window.showAppToast) {
-                window.showAppToast('success', 'Thông Báo', 'Đã đánh dấu đã đọc tất cả thông báo!');
+        // Tải và đánh dấu thông báo hệ thống Admin thật từ CSDL
+        async function loadAdminNotifications() {
+            try {
+                const res = await fetch('/Notification/GetNotifications');
+                const data = await res.json();
+                if (data.success) {
+                    const dot = document.getElementById('adminNotifDot');
+                    if (dot) {
+                        if (data.unreadCount > 0) {
+                            dot.classList.remove('hidden');
+                        } else {
+                            dot.classList.add('hidden');
+                        }
+                    }
+                    const list = document.getElementById('adminNotifList');
+                    if (list) {
+                        if (!data.notifications || data.notifications.length === 0) {
+                            list.innerHTML = '<p class="text-slate-400 text-center py-4 text-xs">Hiện không có thông báo mới nào.</p>';
+                        } else {
+                            list.innerHTML = data.notifications.map(n => `
+                                <a href="${n.linkUrl}" onclick="handleAdminNotifClick(${n.id}, event, '${n.linkUrl}')" 
+                                   class="block p-3 hover:bg-slate-50 transition-colors ${!n.isRead ? 'bg-amber-50/50' : ''}">
+                                    <div class="flex items-start justify-between gap-1">
+                                        <p class="font-bold text-xs ${n.type === 'Warning' ? 'text-amber-800' : (n.type === 'Error' ? 'text-rose-700' : 'text-slate-800')}">${n.title}</p>
+                                        ${!n.isRead ? '<span class="w-1.5 h-1.5 rounded-full bg-amber-500 flex-shrink-0 mt-1"></span>' : ''}
+                                    </div>
+                                    <p class="text-[11px] text-slate-600 mt-0.5 leading-snug">${n.message}</p>
+                                    <span class="text-[10px] text-slate-400 mt-1 block font-mono">${n.timeAgo}</span>
+                                </a>
+                            `).join('');
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Lỗi tải thông báo Admin:', e);
+            }
+        }
+
+        async function markAdminNotificationsAsRead() {
+            try {
+                const res = await fetch('/Notification/MarkAsRead', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    const dot = document.getElementById('adminNotifDot');
+                    if (dot) dot.classList.add('hidden');
+                    const unreadIndicators = document.querySelectorAll('#adminNotifList span.bg-amber-500');
+                    unreadIndicators.forEach(el => el.remove());
+                    const unreadRows = document.querySelectorAll('#adminNotifList .bg-amber-50\\/50');
+                    unreadRows.forEach(el => el.classList.remove('bg-amber-50/50'));
+                    if (window.showAppToast) {
+                        window.showAppToast('success', 'Thông Báo', 'Đã đánh dấu đã đọc tất cả thông báo!');
+                    }
+                }
+            } catch (e) {}
+        }
+
+        async function handleAdminNotifClick(id, event, url) {
+            event.preventDefault();
+            try {
+                await fetch(`/Notification/MarkAsRead?id=${id}`, { method: 'POST' });
+            } catch (e) {}
+            if (url && url !== '#') {
+                window.location.href = url;
             }
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-            if (localStorage.getItem('admin_notif_read') === 'true') {
-                const dot = document.getElementById('adminNotifDot');
-                if (dot) dot.classList.add('hidden');
-            }
+            loadAdminNotifications();
         });
 
         // ================= GLOBAL APP MODAL & TOAST HELPERS FOR ADMIN =================

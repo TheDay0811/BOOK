@@ -1,0 +1,179 @@
+@model BOOK.Models.Entities.PhieuMuon
+@{
+    Layout = null;
+    var ticketCode = $"PM-{Model.MaPhieuMuon:D4}";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>In Phiếu Mượn Sách - @ticketCode - Thư Viện HUFLIT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Libre+Barcode+39+Text&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #0f172a;
+        }
+        .barcode {
+            font-family: 'Libre Barcode 39 Text', cursive;
+            font-size: 38px;
+            letter-spacing: 2px;
+        }
+        @@media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background: #ffffff !important;
+                padding: 0 !important;
+            }
+            .print-container {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen py-8 px-4 flex flex-col items-center">
+
+    <!-- ACTION BUTTONS (NO-PRINT) -->
+    <div class="no-print w-full max-w-3xl mb-6 flex items-center justify-between bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+        <a href="/Admin/Borrow" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+            ← Quay Lại Quản Lý Mượn Trả
+        </a>
+        <div class="flex items-center gap-2">
+            <button onclick="window.print()" class="px-5 py-2.5 bg-blue-700 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-2 cursor-pointer">
+                🖨️ In Phiếu Mượn Sách (A5/A4)
+            </button>
+        </div>
+    </div>
+
+    <!-- TICKET CONTAINER (KHỔ CHUẨN A5/A4 IN ẤN) -->
+    <div class="print-container w-full max-w-3xl bg-white p-8 sm:p-12 rounded-3xl shadow-xl border border-slate-200 space-y-6">
+        
+        <!-- HEADER TRƯỜNG & THƯ VIỆN -->
+        <div class="flex items-start justify-between pb-6 border-b-2 border-slate-900 gap-4">
+            <div>
+                <p class="text-[11px] font-bold tracking-widest text-slate-500 uppercase">ỦY BAN NHÂN DÂN TP. HỒ CHÍ MINH</p>
+                <h2 class="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-tight">TRƯỜNG ĐẠI HỌC NGOẠI NGỮ - TIN HỌC TP.HCM (HUFLIT)</h2>
+                <h3 class="text-xs font-bold text-blue-900 uppercase">TRUNG TÂM THÔNG TIN - THƯ VIỆN CƠ SỞ HÓC MÔN</h3>
+                <p class="text-[10px] text-slate-500 mt-0.5">Địa chỉ: QL22, Tân Xuân, Hóc Môn, TP. Hồ Chí Minh • ĐT: (028) 3863 2052</p>
+            </div>
+            <div class="text-right flex-shrink-0">
+                <div class="barcode leading-none text-slate-900">*@ticketCode*</div>
+                <p class="text-[11px] font-mono font-bold text-slate-700">Mã phiếu: <strong>@ticketCode</strong></p>
+                <span class="inline-block mt-1 px-2.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-[10px] font-bold text-slate-700 uppercase">
+                    @Model.TrangThai
+                </span>
+            </div>
+        </div>
+
+        <!-- TITLE -->
+        <div class="text-center space-y-1">
+            <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight uppercase">
+                PHIẾU MƯỢN SÁCH & TÀI LIỆU HỌC TẬP
+            </h1>
+            <p class="text-xs text-slate-500 italic">
+                (Áp dụng theo Quy chế lưu thông tài liệu của Thư viện Trường Đại học HUFLIT)
+            </p>
+        </div>
+
+        <!-- THÔNG TIN ĐỘC GIẢ & THỜI HẠN -->
+        <div class="grid grid-cols-2 gap-4 text-xs p-4 bg-slate-50 rounded-2xl border border-slate-200">
+            <div class="space-y-1.5">
+                <p>Họ và tên độc giả: <strong class="text-slate-900 uppercase font-black">@(Model.The?.HoTen ?? "Sinh viên")</strong></p>
+                <p>Mã số sinh viên (MSSV): <strong class="font-mono text-slate-900 font-bold">@(Model.The?.TaiKhoan?.Username ?? "LIB-SV")</strong></p>
+                <p>Số thẻ thư viện: <strong class="font-mono text-blue-900 font-bold">@(Model.The?.SoThe ?? "---")</strong></p>
+            </div>
+            <div class="space-y-1.5 text-right sm:text-left">
+                <p>Ngày mượn sách: <strong class="text-slate-900">@Model.NgayMuon.ToString("dd/MM/yyyy")</strong></p>
+                <p>Hạn cuối trả sách: <strong class="text-rose-700 font-black text-sm">@Model.HanTra.ToString("dd/MM/yyyy")</strong> <span class="text-[10px] text-slate-500">(15 ngày)</span></p>
+                <p>Số lượng sách mượn: <strong class="text-slate-900">@Model.ChiTiets.Count cuốn</strong> (Tối đa 3 cuốn)</p>
+            </div>
+        </div>
+
+        <!-- BẢNG DANH MỤC CÁC CUỐN SÁCH ĐƯỢC CẤP -->
+        <div class="space-y-2">
+            <h4 class="text-xs font-black text-slate-900 uppercase tracking-wider">
+                DANH MỤC TÀI LIỆU BÀN GIAO:
+            </h4>
+            <div class="overflow-x-auto rounded-xl border border-slate-200">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200 text-[11px]">
+                        <tr>
+                            <th class="py-2.5 px-3 w-10 text-center">STT</th>
+                            <th class="py-2.5 px-3">Mã Sách</th>
+                            <th class="py-2.5 px-3">Tên Tựa Sách</th>
+                            <th class="py-2.5 px-3 text-center">Số Kiểm Soát</th>
+                            <th class="py-2.5 px-3">Chuyên Ngành</th>
+                            <th class="py-2.5 px-3 text-center">Tình Trạng</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        @{ int stt = 1; }
+                        @foreach (var c in Model.ChiTiets)
+                        {
+                            <tr>
+                                <td class="py-2.5 px-3 text-center font-bold text-slate-500">@(stt++)</td>
+                                <td class="py-2.5 px-3 font-mono font-bold text-blue-900">
+                                    @(c.DauSach?.Sach?.MaSachCode ?? "CS-001")
+                                </td>
+                                <td class="py-2.5 px-3 font-bold text-slate-900">
+                                    @(c.DauSach?.Sach?.TenSach ?? "Giáo trình học phần")
+                                </td>
+                                <td class="py-2.5 px-3 text-center font-mono font-black text-navy-800">
+                                    [@(c.DauSach?.SoKiemSoat ?? "001")]
+                                </td>
+                                <td class="py-2.5 px-3 text-slate-600">
+                                    @(c.DauSach?.Sach?.TheLoai?.TenTheLoai ?? "Chung")
+                                </td>
+                                <td class="py-2.5 px-3 text-center font-semibold text-emerald-700">
+                                    Nguyên vẹn
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- CAM KẾT & QUY CHẾ LƯU THÔNG -->
+        <div class="p-3.5 bg-amber-50/70 border border-amber-200 rounded-xl text-[11px] text-amber-950 space-y-1 leading-relaxed">
+            <p class="font-bold uppercase tracking-wider text-amber-900">Cam kết độc giả & Trách nhiệm bồi thường:</p>
+            <p>1. Độc giả có trách nhiệm giữ gìn cẩn thận tài liệu, không xé trang, viết vẽ, làm ướt hay làm biến dạng sách.</p>
+            <p>2. Đúng hạn trước ngày <strong>@Model.HanTra.ToString("dd/MM/yyyy")</strong>, độc giả phải mang sách đến hoàn trả tại <strong>Quầy tiếp nhận trả sách</strong>.</p>
+            <p>3. <strong>Bồi thường hư hỏng & làm mất:</strong> Trường hợp làm hỏng sách nộp phí cố định <strong>50.000 VNĐ/cuốn</strong>; làm mất sách nộp <strong>100.000 VNĐ/cuốn</strong>. Thẻ thư viện sẽ lập tức bị khóa <em>[Không sử dụng]</em> cho đến khi nộp đủ bồi thường tại quầy.</p>
+        </div>
+
+        <!-- CHỮ KÝ XÁC NHẬN -->
+        <div class="grid grid-cols-2 gap-8 pt-4 text-xs text-center">
+            <div class="space-y-16">
+                <div>
+                    <p class="font-bold text-slate-900 uppercase">NGƯỜI MƯỢN SÁCH</p>
+                    <p class="text-[10px] text-slate-400 italic">(Ký và ghi rõ họ tên)</p>
+                </div>
+                <p class="font-bold text-slate-900">@(Model.The?.HoTen ?? "Sinh viên")</p>
+            </div>
+            <div class="space-y-16">
+                <div>
+                    <p class="font-bold text-slate-900 uppercase">THỦ THƯ PHỤ TRÁCH LƯU THÔNG</p>
+                    <p class="text-[10px] text-slate-400 italic">(Ký, đóng dấu xác nhận cấp sách)</p>
+                </div>
+                <p class="font-bold text-slate-900">Thủ thư Cơ sở Hóc Môn</p>
+            </div>
+        </div>
+
+        <!-- FOOTER PHIẾU -->
+        <div class="pt-4 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-400">
+            <span>Hệ thống Quản lý Thư viện Thông minh SmartLib - HUFLIT</span>
+            <span>Ngày in phiếu: @DateTime.Now.ToString("HH:mm - dd/MM/yyyy")</span>
+        </div>
+
+    </div>
+
+</body>
+</html>

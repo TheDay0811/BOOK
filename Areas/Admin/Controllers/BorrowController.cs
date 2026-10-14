@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -134,8 +134,11 @@ namespace BOOK.Areas.Admin.Controllers
         public async Task<IActionResult> ApproveBorrowRequest(int requestId)
         {
             var phieu = await _context.PhieuMuons
+                .Include(p => p.The)
+                    .ThenInclude(t => t.TaiKhoan)
                 .Include(p => p.ChiTiets)
                     .ThenInclude(c => c.DauSach)
+                        .ThenInclude(d => d.Sach)
                 .FirstOrDefaultAsync(p => p.MaPhieuMuon == requestId);
 
             if (phieu == null)
@@ -152,6 +155,21 @@ namespace BOOK.Areas.Admin.Controllers
                 }
             }
 
+            if (phieu.The?.TaiKhoan != null)
+            {
+                var bookTitles = string.Join(", ", phieu.ChiTiets.Select(c => c.DauSach?.Sach?.TenSach ?? "Tài liệu").Distinct());
+                _context.ThongBaos.Add(new ThongBao
+                {
+                    TargetUser = phieu.The.TaiKhoan.Username,
+                    Title = "Phiếu mượn sách đã được phê duyệt!",
+                    Message = $"Yêu cầu mượn sách cho phiếu #{phieu.MaPhieuMuon} ({bookTitles}) đã được Thủ thư phê duyệt. Bạn có thể đến quầy thư viện cơ sở Hóc Môn để nhận sách.",
+                    LinkUrl = "/Account/Profile#activeLoans",
+                    Type = "Success",
+                    DaDoc = false,
+                    CreatedAt = DateTime.Now
+                });
+            }
+
             await _context.SaveChangesAsync();
             return Json(new { success = true, message = $"Đã duyệt cấp sách cho phiếu mượn #{requestId} thành công!" });
         }
@@ -161,8 +179,11 @@ namespace BOOK.Areas.Admin.Controllers
         public async Task<IActionResult> RejectBorrowRequest(int requestId, string? reason)
         {
             var phieu = await _context.PhieuMuons
+                .Include(p => p.The)
+                    .ThenInclude(t => t.TaiKhoan)
                 .Include(p => p.ChiTiets)
                     .ThenInclude(c => c.DauSach)
+                        .ThenInclude(d => d.Sach)
                 .FirstOrDefaultAsync(p => p.MaPhieuMuon == requestId);
 
             if (phieu == null)
@@ -177,6 +198,21 @@ namespace BOOK.Areas.Admin.Controllers
                 {
                     c.DauSach.TinhTrang = "Còn";
                 }
+            }
+
+            if (phieu.The?.TaiKhoan != null)
+            {
+                var bookTitles = string.Join(", ", phieu.ChiTiets.Select(c => c.DauSach?.Sach?.TenSach ?? "Tài liệu").Distinct());
+                _context.ThongBaos.Add(new ThongBao
+                {
+                    TargetUser = phieu.The.TaiKhoan.Username,
+                    Title = "Yêu cầu mượn sách bị từ chối",
+                    Message = $"Yêu cầu mượn sách cho phiếu #{phieu.MaPhieuMuon} ({bookTitles}) đã bị từ chối. Lý do: {reason ?? "Tài liệu đang kiểm kê hoặc thẻ không đủ điều kiện"}.",
+                    LinkUrl = "/Account/Profile",
+                    Type = "Error",
+                    DaDoc = false,
+                    CreatedAt = DateTime.Now
+                });
             }
 
             await _context.SaveChangesAsync();
@@ -215,12 +251,12 @@ namespace BOOK.Areas.Admin.Controllers
                         StudentCode = the.TaiKhoan.Username,
                         ExpiryDate = the.NgayHetHan,
                         CardStatus = the.TinhTrangSuDung,
-                        HasUnreturnedBooks = activeCount > 0,
+                        HasUnreturnedBooks = activeCount >= 3,
                         ActiveBorrowedCount = activeCount,
                         BlockReason = the.TinhTrangSuDung != "Sử dụng được"
                             ? "Thẻ đang ở trạng thái Không sử dụng — phải bồi thường trước."
-                            : activeCount > 0
-                                ? "Thẻ còn sách chưa trả — không thể mượn tiếp."
+                            : activeCount >= 3
+                                ? "Độc giả đã giữ tối đa 3 cuốn sách — phải trả bớt sách trước khi mượn thêm."
                                 : ""
                     };
                 }
@@ -271,9 +307,9 @@ namespace BOOK.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Create), new { cardNumber });
             }
 
-            if (activeCount > 0)
+            if (activeCount + (selectedCopyIds?.Count ?? 0) > 3)
             {
-                TempData["Error"] = "Thẻ còn sách chưa trả, không thể mượn tiếp.";
+                TempData["Error"] = $"Thẻ này đang giữ {activeCount} cuốn sách. Hạn mức mượn tối đa là 3 cuốn (chỉ có thể chọn thêm tối đa {Math.Max(0, 3 - activeCount)} cuốn).";
                 return RedirectToAction(nameof(Create), new { cardNumber });
             }
 
@@ -373,12 +409,14 @@ namespace BOOK.Areas.Admin.Controllers
         // POST: /Admin/Borrow/Return
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Return(int phieuMuonId, List<int> copyIds, List<string> conditions, List<decimal> fees)
+        public async Task<IActionResult> Return(int phieuMuonId, List<int> copyIds, List<string> conditions, List<decimal> fees, List<string>? paidStatuses)
         {
             var phieu = await _context.PhieuMuons
                 .Include(p => p.The)
+                    .ThenInclude(t => t.TaiKhoan)
                 .Include(p => p.ChiTiets)
                     .ThenInclude(c => c.DauSach)
+                        .ThenInclude(d => d.Sach)
                 .FirstOrDefaultAsync(p => p.MaPhieuMuon == phieuMuonId);
 
             if (phieu == null)
@@ -387,7 +425,7 @@ namespace BOOK.Areas.Admin.Controllers
                 return RedirectToAction(nameof(Return));
             }
 
-            bool hasDamageOrLost = false;
+            bool hasUnpaidFine = false;
 
             for (int i = 0; i < copyIds.Count; i++)
             {
@@ -398,6 +436,21 @@ namespace BOOK.Areas.Admin.Controllers
                 chiTiet.TinhTrangTra = conditions[i];
                 chiTiet.TienBoiThuong = fees[i];
 
+                bool isPaidAtCounter = paidStatuses != null && (paidStatuses.Contains(i.ToString()) || paidStatuses.Contains(copyIds[i].ToString()));
+
+                if (chiTiet.TienBoiThuong > 0 || conditions[i] == "Hỏng" || conditions[i] == "Mất")
+                {
+                    chiTiet.DaBoiThuong = isPaidAtCounter;
+                    if (!isPaidAtCounter)
+                    {
+                        hasUnpaidFine = true;
+                    }
+                }
+                else
+                {
+                    chiTiet.DaBoiThuong = true;
+                }
+
                 if (conditions[i] == "Bình thường")
                 {
                     chiTiet.DauSach.TinhTrang = "Còn";
@@ -405,18 +458,26 @@ namespace BOOK.Areas.Admin.Controllers
                 else if (conditions[i] == "Hỏng")
                 {
                     chiTiet.DauSach.TinhTrang = "Hỏng";
-                    hasDamageOrLost = true;
                 }
                 else if (conditions[i] == "Mất")
                 {
                     chiTiet.DauSach.TinhTrang = "Mất";
-                    hasDamageOrLost = true;
                 }
             }
 
-            if (hasDamageOrLost)
+            if (hasUnpaidFine)
             {
                 phieu.The.TinhTrangSuDung = "Không sử dụng";
+            }
+            else
+            {
+                var otherUnpaid = await _context.ChiTietPhieuMuons
+                    .Where(c => c.PhieuMuon.MaThe == phieu.MaThe && c.MaPhieuMuon != phieu.MaPhieuMuon && !c.DaBoiThuong && c.TienBoiThuong > 0)
+                    .AnyAsync();
+                if (!otherUnpaid && phieu.The.NgayHetHan >= DateTime.Today)
+                {
+                    phieu.The.TinhTrangSuDung = "Sử dụng được";
+                }
             }
 
             if (phieu.ChiTiets.All(c => c.NgayTraThucTe != null))
@@ -424,10 +485,265 @@ namespace BOOK.Areas.Admin.Controllers
                 phieu.TrangThai = "Đã trả";
             }
 
+            // Gửi thông báo cho Độc giả
+            if (phieu.The?.TaiKhoan != null)
+            {
+                _context.ThongBaos.Add(new ThongBao
+                {
+                    TargetUser = phieu.The.TaiKhoan.Username,
+                    Title = "Đã hoàn tất thủ tục trả sách",
+                    Message = hasUnpaidFine
+                        ? $"Phiếu mượn #{phieu.MaPhieuMuon} đã ghi nhận trả với tình trạng có bồi thường chưa nộp. Thẻ của bạn đang tạm khóa cho đến khi nộp phí."
+                        : $"Phiếu mượn #{phieu.MaPhieuMuon} đã được trả hoàn tất vào kho thư viện cơ sở Hóc Môn. Cảm ơn bạn đã giữ gìn tài liệu!",
+                    LinkUrl = "/Account/Profile#history",
+                    Type = hasUnpaidFine ? "Warning" : "Success",
+                    DaDoc = false,
+                    CreatedAt = DateTime.Now
+                });
+            }
+
             await _context.SaveChangesAsync();
 
-            TempData["Success"] = $"Đã ghi nhận trả sách cho phiếu mượn #{phieu.MaPhieuMuon}.";
+            TempData["Success"] = $"Đã ghi nhận trả sách cho phiếu mượn #{phieu.MaPhieuMuon}." + (hasUnpaidFine ? " Thẻ độc giả bị tạm khóa do còn phí bồi thường." : " Đã thanh toán đầy đủ, thẻ hợp lệ.");
             return RedirectToAction(nameof(Index));
+        }
+
+        // POST: /Admin/Borrow/ConfirmCounterPayment
+        [HttpPost]
+        public async Task<IActionResult> ConfirmCounterPayment(string cardNumber)
+        {
+            if (string.IsNullOrWhiteSpace(cardNumber))
+            {
+                return Json(new { success = false, message = "Vui lòng cung cấp số thẻ thư viện." });
+            }
+
+            var the = await _context.TheThuViens
+                .Include(t => t.TaiKhoan)
+                .Include(t => t.PhieuMuons)
+                    .ThenInclude(p => p.ChiTiets)
+                .FirstOrDefaultAsync(t => t.SoThe == cardNumber.Trim());
+
+            if (the == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy thẻ thư viện." });
+            }
+
+            var unpaidDetails = the.PhieuMuons
+                .SelectMany(p => p.ChiTiets)
+                .Where(c => !c.DaBoiThuong && c.TienBoiThuong > 0)
+                .ToList();
+
+            decimal totalPaid = 0;
+            foreach (var d in unpaidDetails)
+            {
+                d.DaBoiThuong = true;
+                totalPaid += d.TienBoiThuong;
+            }
+
+            if (the.NgayHetHan >= DateTime.Today)
+            {
+                the.TinhTrangSuDung = "Sử dụng được";
+            }
+
+            if (the.TaiKhoan != null)
+            {
+                _context.ThongBaos.Add(new ThongBao
+                {
+                    TargetUser = the.TaiKhoan.Username,
+                    Title = "Xác nhận nộp phí bồi thường thành công",
+                    Message = $"Thủ thư đã xác nhận thu phí bồi thường số tiền {totalPaid:N0} VNĐ cho thẻ {the.SoThe}. Thẻ của bạn đã được kích hoạt lại [Sử dụng được].",
+                    LinkUrl = "/Account/Profile",
+                    Type = "Success",
+                    DaDoc = false,
+                    CreatedAt = DateTime.Now
+                });
+            }
+
+            await _context.SaveChangesAsync();
+            return Json(new { success = true, message = $"Đã xác nhận thu {totalPaid:N0} VNĐ và mở khóa thẻ {the.SoThe} thành công!" });
+        }
+
+        // GET: /Admin/Borrow/PrintTicket?ticketCode=1
+        [HttpGet]
+        public async Task<IActionResult> PrintTicket(int ticketCode)
+        {
+            var phieu = await _context.PhieuMuons
+                .Include(p => p.The)
+                    .ThenInclude(t => t.TaiKhoan)
+                .Include(p => p.ChiTiets)
+                    .ThenInclude(c => c.DauSach)
+                        .ThenInclude(d => d.Sach)
+                            .ThenInclude(s => s.TheLoai)
+                .FirstOrDefaultAsync(p => p.MaPhieuMuon == ticketCode);
+
+            if (phieu == null)
+            {
+                TempData["Error"] = $"Không tìm thấy phiếu mượn #{ticketCode}.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            return View(phieu);
+        }
+
+        // GET: /Admin/Borrow/Payment
+        [HttpGet]
+        public async Task<IActionResult> Payment(string? searchTerm)
+        {
+            var model = new PaymentDeskViewModel
+            {
+                SearchTerm = searchTerm ?? ""
+            };
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                model.HasSearched = true;
+                var term = searchTerm.Trim();
+
+                // Tra cứu theo Số thẻ, MSSV/Username, hoặc Mã phiếu
+                TheThuVien? the = null;
+
+                if (int.TryParse(term, out int ticketCode))
+                {
+                    var phieu = await _context.PhieuMuons
+                        .Include(p => p.The)
+                        .FirstOrDefaultAsync(p => p.MaPhieuMuon == ticketCode);
+                    if (phieu != null)
+                    {
+                        the = await _context.TheThuViens
+                            .Include(t => t.TaiKhoan)
+                            .Include(t => t.PhieuMuons)
+                                .ThenInclude(p => p.ChiTiets)
+                                    .ThenInclude(c => c.DauSach)
+                                        .ThenInclude(d => d.Sach)
+                            .FirstOrDefaultAsync(t => t.MaThe == phieu.MaThe);
+                    }
+                }
+
+                if (the == null)
+                {
+                    the = await _context.TheThuViens
+                        .Include(t => t.TaiKhoan)
+                        .Include(t => t.PhieuMuons)
+                            .ThenInclude(p => p.ChiTiets)
+                                .ThenInclude(c => c.DauSach)
+                                    .ThenInclude(d => d.Sach)
+                        .FirstOrDefaultAsync(t => t.SoThe == term || t.TaiKhoan.Username == term);
+                }
+
+                if (the != null)
+                {
+                    model.CardFound = true;
+                    model.CardNumber = the.SoThe;
+                    model.StudentName = the.HoTen;
+                    model.StudentCode = the.TaiKhoan.Username;
+                    model.CardStatus = the.TinhTrangSuDung;
+                    model.CardExpiryDate = the.NgayHetHan;
+
+                    var unpaidChiTiets = the.PhieuMuons
+                        .SelectMany(p => p.ChiTiets.Select(c => new { Detail = c, Loan = p }))
+                        .Where(x => !x.Detail.DaBoiThuong && (x.Detail.TienBoiThuong > 0 || x.Detail.TinhTrangTra == "Hỏng" || x.Detail.TinhTrangTra == "Mất"))
+                        .ToList();
+
+                    foreach (var item in unpaidChiTiets)
+                    {
+                        var fee = item.Detail.TienBoiThuong;
+                        if (fee <= 0)
+                        {
+                            fee = item.Detail.TinhTrangTra == "Hỏng" ? 50000 : 100000;
+                            item.Detail.TienBoiThuong = fee;
+                        }
+
+                        model.UnpaidFines.Add(new UnpaidFineItemViewModel
+                        {
+                            ChiTietId = item.Detail.MaChiTiet,
+                            PhieuMuonId = item.Loan.MaPhieuMuon,
+                            BookTitle = item.Detail.DauSach?.Sach?.TenSach ?? "Tài liệu thư viện",
+                            BookCode = item.Detail.DauSach?.Sach?.MaSachCode ?? "---",
+                            ControlNumber = item.Detail.DauSach?.SoKiemSoat ?? "001",
+                            IncidentType = item.Detail.TinhTrangTra ?? "Hỏng",
+                            IncidentDate = item.Detail.NgayTraThucTe ?? item.Loan.HanTra,
+                            FineAmount = fee,
+                            Description = item.Detail.TinhTrangTra == "Hỏng" 
+                                ? "Bồi thường hư hỏng / rách sách (Định mức 50.000 VNĐ)" 
+                                : "Bồi thường làm mất sách (Định mức 100.000 VNĐ)"
+                        });
+                    }
+                }
+            }
+
+            return View(model);
+        }
+
+        // POST: /Admin/Borrow/ProcessPayment
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ProcessPayment(string cardNumber, List<int> chiTietIds, string paymentMethod)
+        {
+            if (string.IsNullOrWhiteSpace(cardNumber) || chiTietIds == null || !chiTietIds.Any())
+            {
+                TempData["Error"] = "Vui lòng chọn ít nhất một khoản phạt/bồi thường để thanh toán.";
+                return RedirectToAction(nameof(Payment), new { searchTerm = cardNumber });
+            }
+
+            var the = await _context.TheThuViens
+                .Include(t => t.TaiKhoan)
+                .Include(t => t.PhieuMuons)
+                    .ThenInclude(p => p.ChiTiets)
+                .FirstOrDefaultAsync(t => t.SoThe == cardNumber.Trim());
+
+            if (the == null)
+            {
+                TempData["Error"] = "Không tìm thấy hồ sơ thẻ thư viện.";
+                return RedirectToAction(nameof(Payment));
+            }
+
+            var detailsToPay = the.PhieuMuons
+                .SelectMany(p => p.ChiTiets)
+                .Where(c => chiTietIds.Contains(c.MaChiTiet) && !c.DaBoiThuong)
+                .ToList();
+
+            decimal totalCollected = 0;
+            foreach (var d in detailsToPay)
+            {
+                d.DaBoiThuong = true;
+                if (d.TienBoiThuong <= 0)
+                {
+                    d.TienBoiThuong = d.TinhTrangTra == "Hỏng" ? 50000 : 100000;
+                }
+                totalCollected += d.TienBoiThuong;
+            }
+
+            // Kiểm tra xem thẻ còn khoản nợ nào khác không
+            var remainingUnpaid = the.PhieuMuons
+                .SelectMany(p => p.ChiTiets)
+                .Any(c => !c.DaBoiThuong && (c.TienBoiThuong > 0 || c.TinhTrangTra == "Hỏng" || c.TinhTrangTra == "Mất"));
+
+            if (!remainingUnpaid && the.NgayHetHan >= DateTime.Today)
+            {
+                the.TinhTrangSuDung = "Sử dụng được";
+            }
+
+            // Tạo thông báo cho sinh viên
+            if (the.TaiKhoan != null)
+            {
+                _context.ThongBaos.Add(new ThongBao
+                {
+                    TargetUser = the.TaiKhoan.Username,
+                    Title = "Biên lai thanh toán bồi thường tại quầy",
+                    Message = $"Bạn đã hoàn tất nộp số tiền {totalCollected:N0} VNĐ (Hình thức: {paymentMethod}) tại Quầy thư viện HUFLIT. Trạng thái Thẻ thư viện: [{the.TinhTrangSuDung}].",
+                    LinkUrl = "/Account/Profile",
+                    Type = "Success",
+                    DaDoc = false,
+                    CreatedAt = DateTime.Now
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = $"Đã thu thành công {totalCollected:N0} VNĐ từ độc giả {the.HoTen}. " + 
+                (!remainingUnpaid ? "Thẻ đã được kích hoạt lại [Sử dụng được]!" : "Thẻ vẫn còn khoản phạt khác chưa hoàn tất.");
+
+            return RedirectToAction(nameof(Payment), new { searchTerm = cardNumber });
         }
     }
 }

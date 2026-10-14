@@ -105,6 +105,8 @@ namespace BOOK.Models.ViewModels
         public List<BookCopyViewModel> Copies { get; set; } = new();
         public string UserCardStatus { get; set; } = "Sử dụng được";
         public bool HasUnreturnedBooks { get; set; } = false;
+        public bool HasOverdueBooks { get; set; } = false;
+        public bool AlreadyHoldingThisBook { get; set; } = false;
         public int CurrentBorrowedCount { get; set; } = 0;
         public bool IsUserAuthenticated { get; set; } = false;
     }

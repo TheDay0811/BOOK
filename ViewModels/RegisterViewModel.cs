@@ -11,17 +11,17 @@ namespace BOOK.ViewModels
         public string FullName { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Vui lòng nhập Mã số sinh viên (MSSV).")]
-        [RegularExpression(@"^[a-zA-Z0-9]{6,15}$", ErrorMessage = "MSSV phải từ 6 đến 15 ký tự chữ hoặc số (ví dụ: 22110098).")]
+        [RegularExpression(@"^[a-zA-Z0-9]{6,15}$", ErrorMessage = "MSSV phải từ 6 đến 15 ký tự chữ hoặc số (ví dụ: 24DH112970).")]
         [Display(Name = "Mã số sinh viên (MSSV)")]
         public string StudentCode { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Vui lòng nhập địa chỉ Email.")]
-        [EmailAddress(ErrorMessage = "Địa chỉ Email không đúng định dạng (ví dụ: sinhvien@university.edu.vn).")]
+        [EmailAddress(ErrorMessage = "Địa chỉ Email không đúng định dạng (ví dụ: sinhvien@huflit.edu.vn).")]
         [Display(Name = "Địa chỉ Email")]
         public string Email { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Vui lòng nhập Số điện thoại liên hệ.")]
-        [RegularExpression(@"^(0[3|5|7|8|9])[0-9]{8}$", ErrorMessage = "Số điện thoại không hợp lệ (gồm 10 chữ số, bắt đầu bằng 03, 05, 07, 08, 09).")]
+        [RegularExpression(@"^(\+84|0)[0-9\s\.\-]{8,13}$", ErrorMessage = "Số điện thoại không hợp lệ (ví dụ: 0912345678).")]
         [Display(Name = "Số điện thoại")]
         public string PhoneNumber { get; set; } = string.Empty;
 
