@@ -126,7 +126,7 @@
                             <th class="py-3 px-4">Độc Giả (MSSV)</th>
                             <th class="py-3 px-4">Tên Sách & ISBN</th>
                             <th class="py-3 px-4">Ngày Yêu Cầu</th>
-                            <th class="py-3 px-4">Hạn Đến Nhận</th>
+                            <th class="py-3 px-4">Hạn Trả Đề Xuất</th>
                             <th class="py-3 px-4">Trạng Thái</th>
                             <th class="py-3 px-4 text-right">Thao Tác</th>
                         </tr>
@@ -322,14 +322,12 @@
                                     <td class="py-3 px-4 text-xs text-slate-600 italic max-w-xs truncate">"@ren.Reason"</td>
                                     <td class="py-3 px-4 text-right">
                                         <div class="flex items-center justify-end gap-2">
-                                            <button onclick="approveRenewal(@ren.RequestId)" 
-                                                    class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors">
-                                                Đồng ý (+14 ngày)
-                                            </button>
-                                            <button onclick="rejectRenewal(@ren.RequestId)" 
-                                                    class="px-2.5 py-1.5 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 rounded-xl text-xs font-bold transition-colors">
-                                                Từ chối
-                                            </button>
+                                            <form asp-area="Admin" asp-controller="Borrow" asp-action="ApproveRenewal" asp-route-id="@ren.RequestId" method="post">
+                                                <button type="submit" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold">Đồng ý (+7 ngày)</button>
+                                            </form>
+                                            <form asp-area="Admin" asp-controller="Borrow" asp-action="RejectRenewal" asp-route-id="@ren.RequestId" method="post">
+                                                <button type="submit" class="px-2.5 py-1.5 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 rounded-xl text-xs font-bold">Từ chối</button>
+                                            </form>
                                         </div>
                                     </td>
                                 </tr>

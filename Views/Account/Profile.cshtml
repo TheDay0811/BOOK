@@ -538,6 +538,13 @@
                                             {
                                                 <span class="font-bold text-rose-600">@item.CompensationFee.ToString("N0") VNĐ</span>
                                                 <span class="block text-[10px] text-emerald-600 font-semibold">@item.PaymentStatus</span>
+                                                @if (item.PaymentStatus == "Chưa thanh toán")
+                                                {
+                                                    <form asp-controller="Account" asp-action="PayFine" method="post" class="mt-1">
+                                                        <input type="hidden" name="chiTietId" value="@item.Id" />
+                                                        <button type="submit" class="px-2 py-1 bg-emerald-600 text-white rounded-lg text-[10px] font-bold">Thanh toán</button>
+                                                    </form>
+                                                }
                                             }
                                             else
                                             {

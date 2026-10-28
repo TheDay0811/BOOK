@@ -155,6 +155,18 @@
                         <span class="sidebar-text">Kho Sách & Đầu Sách</span>
                     </a>
 
+                    <a asp-area="Admin" asp-controller="Book" asp-action="Inventory"
+                       class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-colors text-slate-400 hover:text-white hover:bg-navy-900">
+                        <i data-lucide="package-check" class="w-4 h-4 text-teal-400 flex-shrink-0"></i>
+                        <span class="sidebar-text">Thống Kê Tồn Kho</span>
+                    </a>
+
+                    <a asp-area="Admin" asp-controller="Book" asp-action="Authors"
+                       class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-colors text-slate-400 hover:text-white hover:bg-navy-900">
+                        <i data-lucide="user-pen" class="w-4 h-4 text-teal-400 flex-shrink-0"></i>
+                        <span class="sidebar-text">Quản Lý Tác Giả</span>
+                    </a>
+
                     <a asp-area="Admin" asp-controller="Category" asp-action="Index" 
                        class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-colors @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Category" ? "bg-navy-800 text-white" : "text-slate-400 hover:text-white hover:bg-navy-900")">
                         <i data-lucide="tags" class="w-4 h-4 text-indigo-400 flex-shrink-0"></i>
@@ -178,6 +190,12 @@
                        class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-colors @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Report" ? "bg-navy-800 text-white" : "text-slate-400 hover:text-white hover:bg-navy-900")">
                         <i data-lucide="bar-chart-3" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i>
                         <span class="sidebar-text">Báo Cáo & Phân Tích Dữ Liệu</span>
+                    </a>
+
+                    <a asp-area="Admin" asp-controller="Report" asp-action="BorrowStats"
+                       class="flex items-center gap-3 px-3 py-2 rounded-xl font-medium transition-colors text-slate-400 hover:text-white hover:bg-navy-900">
+                        <i data-lucide="flame" class="w-4 h-4 text-amber-400 flex-shrink-0"></i>
+                        <span class="sidebar-text">Thống Kê Lượt Mượn Trả</span>
                     </a>
                 </div>
 
@@ -288,7 +306,13 @@
 
                 </div>
             </header>
-
+            @foreach (var k in new[] { "Success", "Error", "Warning" })
+            {
+                if (TempData[k] is string msg)
+                {
+                    <div class="mb-4 px-4 py-3 rounded-xl text-xs font-bold @(k == "Success" ? "bg-emerald-50 text-emerald-800" : k == "Error" ? "bg-rose-50 text-rose-800" : "bg-amber-50 text-amber-800")">@msg</div>
+                }
+            }
             <!-- MAIN DYNAMIC CONTENT -->
             <main class="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-100">
                 @RenderBody()

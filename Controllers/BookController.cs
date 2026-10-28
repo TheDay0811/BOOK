@@ -8,7 +8,8 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using BOOK.Data;
 using BOOK.Models.ViewModels;
-
+using Microsoft.AspNetCore.Authorization;
+using BOOK.Models.Entities;
 namespace BOOK.Controllers
 {
     public class BookController : Controller
@@ -216,11 +217,24 @@ namespace BOOK.Controllers
                 }
             }
 
+            var reviews = await _context.DanhGias
+                .Where(r => r.MaSach == id)
+                .OrderByDescending(r => r.NgayTao)
+                .Select(r => new BookReviewViewModel
+                {
+                    UserName = r.TaiKhoan.TheThuVien != null ? r.TaiKhoan.TheThuVien.HoTen : r.TaiKhoan.Username,
+                    Rating = r.SoSao,
+                    Content = r.NoiDung,
+                    CreatedAt = r.NgayTao
+                }).ToListAsync();
+            book.ReviewCount = reviews.Count;
+            book.Rating = reviews.Count == 0 ? 0 : Math.Round(reviews.Average(r => r.Rating), 1);
+
             var viewModel = new BookDetailsViewModel
             {
                 Book = book,
                 Copies = copies,
-                Reviews = new List<BookReviewViewModel>(),
+                Reviews = reviews,
                 RelatedBooks = related,
                 UserCardStatus = userCardStatus,
                 HasUnreturnedBooks = hasUnreturnedBooks,
@@ -235,9 +249,22 @@ namespace BOOK.Controllers
 
         // POST: /Book/AddReview
         [HttpPost]
-        public IActionResult AddReview(int bookId, int rating, string content)
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddReview(int bookId, int rating, string content)
         {
-            TempData["Success"] = "Cảm ơn bạn đã gửi đánh giá! Nhận xét sẽ được kiểm duyệt và hiển thị.";
+            if (rating < 1 || rating > 5 || string.IsNullOrWhiteSpace(content) || content.Trim().Length < 10)
+            {
+                TempData["Error"] = "Đánh giá 1–5 sao và nội dung tối thiểu 10 ký tự.";
+                return RedirectToAction(nameof(Details), new { id = bookId });
+            }
+            var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var tk = await _context.TaiKhoans.FirstOrDefaultAsync(t => t.Username == username);
+            if (tk == null) return RedirectToAction("Login", "Account");
+
+            _context.DanhGias.Add(new DanhGia { MaSach = bookId, MaTK = tk.MaTK, SoSao = rating, NoiDung = content.Trim() });
+            await _context.SaveChangesAsync();
+            TempData["Success"] = "Cảm ơn bạn đã gửi đánh giá!";
             return RedirectToAction(nameof(Details), new { id = bookId });
         }
     }

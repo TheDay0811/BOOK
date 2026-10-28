@@ -1,15 +1,14 @@
+using BOOK.Data;
+using BOOK.Models.Entities;
+using BOOK.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using BOOK.Data;
-using BOOK.Models.Entities;
-using BOOK.Models.ViewModels;
-
 namespace BOOK.Areas.Admin.Controllers
 {
     [Area("Admin")]
@@ -17,7 +16,7 @@ namespace BOOK.Areas.Admin.Controllers
     public class BorrowController : Controller
     {
         private readonly ApplicationDbContext _context;
-
+        private const decimal LateFeePerDay = 2000m; // đ/ngày/cuốn
         public BorrowController(ApplicationDbContext context)
         {
             _context = context;
@@ -117,12 +116,28 @@ namespace BOOK.Areas.Admin.Controllers
             var todayReturns = await _context.ChiTietPhieuMuons
                 .CountAsync(c => c.NgayTraThucTe != null && c.NgayTraThucTe.Value.Date == today);
 
+
+            var renewals = await _context.YeuCauGiaHans
+                .Where(g => g.TrangThai == "Chờ duyệt")
+                .Select(g => new RenewalRequestViewModel
+                {
+                    RequestId = g.MaYeuCau,
+                    BorrowId = g.MaPhieuMuon,
+                    MemberName = g.PhieuMuon.The.HoTen,
+                    MemberCode = g.PhieuMuon.The.SoThe,
+                    BookTitle = g.PhieuMuon.ChiTiets.Select(c => c.DauSach.Sach.TenSach).FirstOrDefault() ?? "",
+                    CurrentDueDate = g.PhieuMuon.HanTra,
+                    RequestedNewDueDate = g.PhieuMuon.HanTra.AddDays(7),
+                    TimesRenewed = _context.YeuCauGiaHans.Count(x => x.MaPhieuMuon == g.MaPhieuMuon && x.TrangThai == "Đã duyệt"),
+                    Reason = g.LyDo
+                }).ToListAsync();
+
             var viewModel = new LibrarianDashboardViewModel
             {
                 TodayReturnsCount = todayReturns,
                 PendingRequests = pendingRequests,
                 ActiveBorrowsForReturn = activeBorrowItems,
-                RenewalRequests = new List<RenewalRequestViewModel>(),
+                RenewalRequests = renewals,
                 OverdueAlerts = overdue
             };
 
@@ -217,6 +232,31 @@ namespace BOOK.Areas.Admin.Controllers
 
             await _context.SaveChangesAsync();
             return Json(new { success = true, message = $"Đã từ chối phiếu mượn #{requestId} thành công." });
+        }
+
+        // POST: /Admin/Borrow/ApproveRenewal
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApproveRenewal(int id)
+        {
+            var g = await _context.YeuCauGiaHans.Include(x => x.PhieuMuon)
+                .FirstOrDefaultAsync(x => x.MaYeuCau == id && x.TrangThai == "Chờ duyệt");
+            if (g == null) { TempData["Error"] = "Không tìm thấy yêu cầu gia hạn."; return RedirectToAction(nameof(Index)); }
+
+            if (g.PhieuMuon.TrangThai != "Đang mượn") g.TrangThai = "Từ chối";
+            else { g.PhieuMuon.HanTra = g.PhieuMuon.HanTra.AddDays(7); g.TrangThai = "Đã duyệt"; }
+            await _context.SaveChangesAsync();
+            TempData["Success"] = g.TrangThai == "Đã duyệt" ? "Đã duyệt gia hạn thêm 07 ngày." : "Phiếu đã trả, yêu cầu gia hạn bị từ chối.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // POST: /Admin/Borrow/RejectRenewal
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> RejectRenewal(int id)
+        {
+            var g = await _context.YeuCauGiaHans.FindAsync(id);
+            if (g != null && g.TrangThai == "Chờ duyệt") { g.TrangThai = "Từ chối"; await _context.SaveChangesAsync(); }
+            TempData["Success"] = "Đã từ chối yêu cầu gia hạn.";
+            return RedirectToAction(nameof(Index));
         }
 
         // GET: /Admin/Borrow/Create
@@ -435,6 +475,9 @@ namespace BOOK.Areas.Admin.Controllers
                 chiTiet.NgayTraThucTe = DateTime.Today;
                 chiTiet.TinhTrangTra = conditions[i];
                 chiTiet.TienBoiThuong = fees[i];
+                if (DateTime.Today > phieu.HanTra)
+                    chiTiet.TienBoiThuong += (DateTime.Today - phieu.HanTra).Days * LateFeePerDay;
+
 
                 bool isPaidAtCounter = paidStatuses != null && (paidStatuses.Contains(i.ToString()) || paidStatuses.Contains(copyIds[i].ToString()));
 

@@ -1,14 +1,22 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
+using BOOK.Data;
+using BOOK.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using BOOK.Data;
-using BOOK.Models.ViewModels;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace BOOK.Areas.Admin.Controllers
 {
+    public class BorrowStatsViewModel
+    {
+        public int Year { get; set; }
+        public List<(int Month, int Borrowed, int Returned)> Months { get; set; } = new();
+        public List<(string Title, int Count)> TopBooks { get; set; } = new();
+        public int OverdueNow { get; set; }
+        public decimal UnpaidFines { get; set; }
+    }
     [Area("Admin")]
     [Authorize(Roles = "Admin,Librarian,ThuThu")]
     public class ReportController : Controller
@@ -178,6 +186,31 @@ namespace BOOK.Areas.Admin.Controllers
         public IActionResult Settings()
         {
             return View();
+        }
+        // GET: /Admin/Report/BorrowStats
+        public async Task<IActionResult> BorrowStats(int? year)
+        {
+            var y = year ?? DateTime.Today.Year;
+
+            var borrowed = await _context.ChiTietPhieuMuons.Where(c => c.PhieuMuon.NgayMuon.Year == y)
+                .GroupBy(c => c.PhieuMuon.NgayMuon.Month).Select(g => new { M = g.Key, N = g.Count() }).ToListAsync();
+            var returned = await _context.ChiTietPhieuMuons.Where(c => c.NgayTraThucTe != null && c.NgayTraThucTe.Value.Year == y)
+                .GroupBy(c => c.NgayTraThucTe!.Value.Month).Select(g => new { M = g.Key, N = g.Count() }).ToListAsync();
+            var top = await _context.ChiTietPhieuMuons.Where(c => c.PhieuMuon.NgayMuon.Year == y)
+                .GroupBy(c => c.DauSach.Sach.TenSach).Select(g => new { T = g.Key, N = g.Count() })
+                .OrderByDescending(x => x.N).Take(10).ToListAsync();
+
+            var model = new BorrowStatsViewModel
+            {
+                Year = y,
+                Months = Enumerable.Range(1, 12).Select(m => (m,
+                    borrowed.FirstOrDefault(x => x.M == m)?.N ?? 0,
+                    returned.FirstOrDefault(x => x.M == m)?.N ?? 0)).ToList(),
+                TopBooks = top.Select(x => (x.T, x.N)).ToList(),
+                OverdueNow = await _context.PhieuMuons.CountAsync(p => p.TrangThai == "Đang mượn" && p.HanTra < DateTime.Today),
+                UnpaidFines = await _context.ChiTietPhieuMuons.Where(c => !c.DaBoiThuong).SumAsync(c => (decimal?)c.TienBoiThuong) ?? 0
+            };
+            return View(model);
         }
     }
 }

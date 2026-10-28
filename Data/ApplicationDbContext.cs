@@ -17,6 +17,8 @@ namespace BOOK.Data
         public DbSet<PhieuMuon> PhieuMuons => Set<PhieuMuon>();
         public DbSet<ChiTietPhieuMuon> ChiTietPhieuMuons => Set<ChiTietPhieuMuon>();
         public DbSet<ThongBao> ThongBaos => Set<ThongBao>();
+        public DbSet<DanhGia> DanhGias => Set<DanhGia>();
+        public DbSet<YeuCauGiaHan> YeuCauGiaHans => Set<YeuCauGiaHan>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -75,6 +77,11 @@ namespace BOOK.Data
             modelBuilder.Entity<ChiTietPhieuMuon>()
                 .Property(c => c.TienBoiThuong)
                 .HasColumnType("decimal(18,2)");
+
+            // 9. Đánh giá, yêu cầu gia hạn
+            modelBuilder.Entity<DanhGia>().HasOne(d => d.Sach).WithMany().HasForeignKey(d => d.MaSach);
+            modelBuilder.Entity<DanhGia>().HasOne(d => d.TaiKhoan).WithMany().HasForeignKey(d => d.MaTK);
+            modelBuilder.Entity<YeuCauGiaHan>().HasOne(y => y.PhieuMuon).WithMany().HasForeignKey(y => y.MaPhieuMuon);
         }
     }
 }

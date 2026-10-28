@@ -1,0 +1,34 @@
+﻿@model BOOK.Models.ViewModels.BookDetailsViewModel
+<section class="max-w-5xl mx-auto px-4 py-8 space-y-4 text-sm">
+    <h3 class="text-lg font-extrabold text-slate-900">Đánh giá &amp; nhận xét (@Model.Reviews.Count)</h3>
+
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <form asp-controller="Book" asp-action="AddReview" method="post" class="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <input type="hidden" name="bookId" value="@Model.Book.Id" />
+            <select name="rating" class="p-2 border border-slate-200 rounded-xl">
+                @for (var i = 5; i >= 1; i--)
+                {
+                    <option value="@i">@i sao</option>
+                }
+            </select>
+            <textarea name="content" rows="3" minlength="10" required class="w-full p-2.5 border border-slate-200 rounded-xl" placeholder="Cảm nhận của bạn (tối thiểu 10 ký tự)"></textarea>
+            <button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold">Gửi đánh giá</button>
+        </form>
+    }
+    else
+    {
+        <p class="text-slate-500">Hãy <a asp-controller="Account" asp-action="Login" class="font-bold underline">đăng nhập</a> để đánh giá.</p>
+    }
+
+    @foreach (var r in Model.Reviews)
+    {
+        <div class="p-4 bg-white border border-slate-200 rounded-2xl">
+            <p class="font-bold text-slate-900">
+                @r.UserName <span class="text-amber-500">@(new string('★', r.Rating))</span>
+                <span class="text-xs text-slate-400 font-normal">@r.CreatedAt.ToString("dd/MM/yyyy")</span>
+            </p>
+            <p class="text-slate-700 mt-1">@r.Content</p>
+        </div>
+    }
+</section>

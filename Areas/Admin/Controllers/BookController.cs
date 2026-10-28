@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,9 +12,13 @@ using Microsoft.EntityFrameworkCore;
 using BOOK.Data;
 using BOOK.Models.Entities;
 using BOOK.Models.ViewModels;
-
+using System.ComponentModel.DataAnnotations;
 namespace BOOK.Areas.Admin.Controllers
 {
+    public class InventoryRow { public string MaSachCode { get; set; } = ""; public string TenSach { get; set; } = ""; public int Tong, Con, ChoMuon, Hong, Mat; }
+    public class AuthorRow { public string Name { get; set; } = ""; public int Books { get; set; } }
+
+
     [Area("Admin")]
     [Authorize(Roles = "Admin,Librarian,ThuThu")]
     public class BookController : Controller
@@ -361,6 +365,94 @@ namespace BOOK.Areas.Admin.Controllers
             await _context.SaveChangesAsync();
 
             return Json(new { success = true, message = $"Đã xóa tựa sách \"{sach.TenSach}\" và các bản sao liên quan khỏi kho." });
+        }
+
+        // ---- Story 15 + 20: bản sao / tình trạng ----
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddCopy(int bookId, string? notes)
+        {
+            var existing = await _context.DauSachs.Where(d => d.MaSach == bookId).Select(d => d.SoKiemSoat).ToListAsync();
+            var next = existing.Select(x => int.TryParse(x, out var n) ? n : 0).DefaultIfEmpty(0).Max() + 1;
+            _context.DauSachs.Add(new DauSach { MaSach = bookId, SoKiemSoat = next.ToString("D3"), TinhTrang = "Còn", GhiChu = notes ?? "" });
+            await _context.SaveChangesAsync();
+            TempData["Success"] = $"Đã thêm bản sao số kiểm soát {next:D3}.";
+            return RedirectToAction(nameof(Details), new { id = bookId });
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateCopy(int bookId, int copyId, string tinhTrang, string? ghiChu)
+        {
+            var copy = await _context.DauSachs.FindAsync(copyId);
+            if (copy == null || !new[] { "Còn", "Cho mượn", "Mất", "Hỏng" }.Contains(tinhTrang))
+            { TempData["Error"] = "Dữ liệu không hợp lệ."; return RedirectToAction(nameof(Details), new { id = bookId }); }
+
+            var dangMuon = await _context.ChiTietPhieuMuons.AnyAsync(c => c.MaDauSach == copyId && c.NgayTraThucTe == null);
+            if (dangMuon && tinhTrang != "Cho mượn")
+                TempData["Error"] = "Bản này đang được mượn, hãy ghi nhận trả sách ở quầy mượn trả.";
+            else if (!dangMuon && tinhTrang == "Cho mượn")
+                TempData["Error"] = "Trạng thái 'Cho mượn' chỉ được đặt khi lập phiếu mượn.";
+            else
+            {
+                copy.TinhTrang = tinhTrang;
+                copy.GhiChu = ghiChu ?? "";
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "Đã cập nhật tình trạng.";
+            }
+            return RedirectToAction(nameof(Details), new { id = bookId });
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> Liquidate(int bookId, int copyId)
+        {
+            var copy = await _context.DauSachs.FindAsync(copyId);
+            if (copy == null || (copy.TinhTrang != "Hỏng" && copy.TinhTrang != "Mất"))
+                TempData["Error"] = "Chỉ thanh lý bản sao Hỏng hoặc Mất.";
+            else
+            {
+                copy.GhiChu = $"{copy.GhiChu} [Đề xuất thanh lý {DateTime.Today:dd/MM/yyyy}]".Trim();
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "Đã đánh dấu đề xuất thanh lý.";
+            }
+            return RedirectToAction(nameof(Details), new { id = bookId });
+        }
+
+        public async Task<IActionResult> Inventory()
+        {
+            var rows = await _context.Sachs.OrderBy(s => s.MaSachCode).Select(s => new InventoryRow
+            {
+                MaSachCode = s.MaSachCode,
+                TenSach = s.TenSach,
+                Tong = s.DauSachs.Count,
+                Con = s.DauSachs.Count(d => d.TinhTrang == "Còn"),
+                ChoMuon = s.DauSachs.Count(d => d.TinhTrang == "Cho mượn"),
+                Hong = s.DauSachs.Count(d => d.TinhTrang == "Hỏng"),
+                Mat = s.DauSachs.Count(d => d.TinhTrang == "Mất")
+            }).ToListAsync();
+            return View(rows);
+        }
+
+        // ---- Story 21: tác giả (lưu dạng text trong Sach nên quản lý = xem + đổi tên) ----
+        public async Task<IActionResult> Authors()
+        {
+            var rows = await _context.Sachs.GroupBy(s => s.TacGia)
+                .Select(g => new AuthorRow { Name = g.Key, Books = g.Count() })
+                .OrderBy(a => a.Name).ToListAsync();
+            return View(rows);
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> RenameAuthor(string oldName, string newName)
+        {
+            newName = newName?.Trim() ?? "";
+            if (newName == "") TempData["Error"] = "Tên tác giả không được rỗng.";
+            else
+            {
+                var list = await _context.Sachs.Where(s => s.TacGia == oldName).ToListAsync();
+                foreach (var s in list) s.TacGia = newName;
+                await _context.SaveChangesAsync();
+                TempData["Success"] = $"Đã đổi tên tác giả cho {list.Count} sách.";
+            }
+            return RedirectToAction(nameof(Authors));
         }
     }
 }
