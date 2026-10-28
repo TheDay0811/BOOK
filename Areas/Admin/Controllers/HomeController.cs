@@ -1,11 +1,13 @@
+using BOOK.Models.ViewModels;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Collections.Generic;
-using Microsoft.AspNetCore.Mvc;
-using BOOK.Models.ViewModels;
 
 namespace BOOK.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Roles = "Admin,ThuThu")]
     public class HomeController : Controller
     {
         // GET: /Admin/Home/Index

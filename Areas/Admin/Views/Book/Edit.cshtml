@@ -1,0 +1,44 @@
+﻿@model BOOK.Areas.Admin.Controllers.BookFormViewModel
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = Model.MaSach == 0 ? "Thêm Sách Mới" : "Sửa Đầu Sách";
+}
+<div class="max-w-xl bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4 text-xs">
+    <h2 class="text-lg font-extrabold text-slate-900">@ViewData["Title"]</h2>
+    <form asp-area="Admin" asp-controller="Book" asp-action="Save" method="post" class="space-y-3">
+        <input type="hidden" asp-for="MaSach" />
+        <div asp-validation-summary="All" class="text-rose-600 font-semibold"></div>
+        <div>
+            <label class="font-bold uppercase">Mã sách</label>
+            <input asp-for="MaSachCode" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl" />
+        </div>
+        <div>
+            <label class="font-bold uppercase">Tên sách</label>
+            <input asp-for="TenSach" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl" />
+        </div>
+        <div>
+            <label class="font-bold uppercase">Tác giả</label>
+            <input asp-for="TacGia" list="authors" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl" />
+            <datalist id="authors">@foreach (var a in (List<string>)ViewBag.TacGias) {
+                <option value="@a" />
+            }
+        </datalist>
+    </div>
+    <div>
+        <label class="font-bold uppercase">Năm xuất bản</label>
+        <input asp-for="NamXuatBan" type="number" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl" />
+    </div>
+    <div>
+        <label class="font-bold uppercase">Thể loại</label>
+        <select asp-for="MaTheLoai" asp-items="(SelectList)ViewBag.TheLoais" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl"></select>
+    </div>
+    <div>
+        <label class="font-bold uppercase">Nhà xuất bản</label>
+        <select asp-for="MaNXB" asp-items="(SelectList)ViewBag.NhaXuatBans" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl"></select>
+    </div>
+    <div class="pt-3 border-t flex justify-end gap-2">
+        <a asp-area="Admin" asp-controller="Book" asp-action="Index" class="px-4 py-2 font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Hủy</a>
+        <button type="submit" class="px-5 py-2 bg-navy-800 text-white rounded-xl font-bold">Lưu</button>
+    </div>
+</form>
+</div>

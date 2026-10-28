@@ -1,9 +1,11 @@
+using BOOK.Data;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using BOOK.Data;
+using System.Security.Claims;
 
 namespace BOOK.Areas.Admin.Controllers
 {
@@ -19,6 +21,7 @@ namespace BOOK.Areas.Admin.Controllers
     }
 
     [Area("Admin")]
+    [Authorize(Roles = "Admin")]
     public class UserController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -50,6 +53,36 @@ namespace BOOK.Areas.Admin.Controllers
             }).ToList();
 
             return View(users);
+        }
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangeRole(int id, string role)
+        {
+            var tk = await _context.TaiKhoans.FindAsync(id);
+            if (tk == null || !new[] { "Admin", "ThuThu", "SinhVien" }.Contains(role))
+                TempData["Error"] = "Dữ liệu không hợp lệ.";
+            else if (tk.Username == User.FindFirst(ClaimTypes.NameIdentifier)?.Value)
+                TempData["Error"] = "Không thể đổi quyền của chính mình.";
+            else
+            {
+                tk.Role = role;
+                await _context.SaveChangesAsync();
+                TempData["Success"] = $"Đã đổi quyền của {tk.Username} (có hiệu lực sau khi họ đăng nhập lại).";
+            }
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleCard(int id, bool active)
+        {
+            var the = await _context.TheThuViens.FirstOrDefaultAsync(t => t.MaTK == id);
+            if (the == null) TempData["Error"] = "Tài khoản này không có thẻ thư viện.";
+            else
+            {
+                the.TinhTrangSuDung = active ? "Sử dụng được" : "Không sử dụng";
+                await _context.SaveChangesAsync();
+                TempData["Success"] = active ? "Đã mở khóa thẻ." : "Đã khóa thẻ.";
+            }
+            return RedirectToAction(nameof(Index));
         }
     }
 }

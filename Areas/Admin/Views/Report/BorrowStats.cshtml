@@ -1,0 +1,46 @@
+﻿@model BOOK.Areas.Admin.Controllers.BorrowStatsViewModel
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Báo Cáo Mượn Trả";
+    var max = Math.Max(1, Model.Months.Max(m => Math.Max(m.Borrowed, m.Returned)));
+}
+<div class="space-y-4 text-xs">
+    <form method="get" class="flex items-center gap-2">
+        <label class="font-bold">Năm</label>
+        <input type="number" name="year" value="@Model.Year" class="p-2 border border-slate-200 rounded-xl w-24" />
+        <button class="px-3 py-2 bg-navy-800 text-white rounded-xl font-bold">Xem</button>
+    </form>
+
+    <div class="grid grid-cols-2 gap-3">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200"><p class="text-slate-500">Phiếu đang quá hạn</p><p class="text-2xl font-extrabold text-rose-600">@Model.OverdueNow</p></div>
+        <div class="bg-white p-4 rounded-2xl border border-slate-200"><p class="text-slate-500">Tiền phạt/bồi thường chưa thu</p><p class="text-2xl font-extrabold">@Model.UnpaidFines.ToString("N0") đ</p></div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200 overflow-x-auto">
+        <table class="w-full text-left">
+            <thead class="bg-slate-50 text-slate-500 uppercase"><tr><th class="p-3">Tháng</th><th class="p-3">Mượn</th><th class="p-3">Trả</th><th class="p-3 w-1/2"></th></tr></thead>
+            <tbody class="divide-y divide-slate-100">
+                @foreach (var m in Model.Months)
+                {
+                    <tr>
+                        <td class="p-3 font-bold">@m.Month</td>
+                        <td class="p-3">@m.Borrowed</td>
+                        <td class="p-3">@m.Returned</td>
+                        <td class="p-3">
+                            <div class="h-2 bg-blue-500 rounded" style="width:@(m.Borrowed * 100 / max)%"></div>
+                            <div class="h-2 bg-emerald-500 rounded mt-1" style="width:@(m.Returned * 100 / max)%"></div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-slate-200 p-4">
+        <h3 class="font-extrabold mb-2">Top sách mượn nhiều</h3>
+        @foreach (var t in Model.TopBooks)
+        {
+            <p>@t.Title <span class="font-bold">(@t.Count lượt)</span></p>
+        }
+    </div>
+</div>

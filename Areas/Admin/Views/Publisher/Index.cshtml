@@ -1,0 +1,28 @@
+﻿@model List<BOOK.Models.Entities.NhaXuatBan>
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Quản Lý Nhà Xuất Bản";
+}
+<div class="space-y-4 text-xs">
+    <form asp-area="Admin" asp-controller="Publisher" asp-action="Save" method="post" class="flex gap-2 bg-white p-4 rounded-2xl border border-slate-200">
+        <input type="hidden" name="id" value="0" />
+        <input name="name" required placeholder="Tên nhà xuất bản mới" class="flex-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl" />
+        <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-xl font-bold">Thêm</button>
+    </form>
+    <div class="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100">
+        @foreach (var n in Model)
+        {
+            <div class="flex items-center gap-2 p-3">
+                <form asp-area="Admin" asp-controller="Publisher" asp-action="Save" method="post" class="flex flex-1 gap-2">
+                    <input type="hidden" name="id" value="@n.MaNXB" />
+                    <input name="name" value="@n.TenNXB" class="flex-1 p-2 bg-slate-50 border border-slate-200 rounded-xl" />
+                    <button type="submit" class="px-3 py-1.5 bg-navy-800 text-white rounded-xl font-bold">Lưu</button>
+                </form>
+                <span class="w-16 text-slate-500">@n.Sachs.Count sách</span>
+                <form asp-area="Admin" asp-controller="Publisher" asp-action="Delete" asp-route-id="@n.MaNXB" method="post" onsubmit="return confirm('Xóa nhà xuất bản này?')">
+                    <button type="submit" class="px-3 py-1.5 bg-rose-50 text-rose-700 rounded-xl font-bold">Xóa</button>
+                </form>
+            </div>
+        }
+    </div>
+</div>

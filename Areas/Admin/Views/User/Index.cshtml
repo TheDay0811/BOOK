@@ -92,25 +92,21 @@
                             </td>
                             <td class="py-3.5 px-4 text-right">
                                 <div class="flex items-center justify-end gap-1.5">
-                                    <button onclick="changeRole(@user.Id, '@user.FullName')" 
-                                            class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold" title="Đổi vai trò">
-                                        Đổi Role
-                                    </button>
-
-                                    @if (user.IsActive)
-                                    {
-                                        <button onclick="toggleUserStatus(@user.Id, false)" 
-                                                class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg font-bold" title="Khóa tài khoản">
-                                            Khóa
-                                        </button>
-                                    }
-                                    else
-                                    {
-                                        <button onclick="toggleUserStatus(@user.Id, true)" 
-                                                class="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg font-bold" title="Mở khóa tài khoản">
-                                            Mở Khóa
-                                        </button>
-                                    }
+                                    
+                                    <form asp-area="Admin" asp-controller="User" asp-action="ChangeRole" method="post" class="flex items-center gap-1">
+                                        <input type="hidden" name="id" value="@user.Id" />
+                                        <select name="role" class="px-2 py-1 border border-slate-200 rounded-lg text-xs font-bold">
+                                            <option value="SinhVien" selected="@(user.Role == "Độc giả")">Độc giả</option>
+                                            <option value="ThuThu" selected="@(user.Role == "Thủ thư")">Thủ thư</option>
+                                            <option value="Admin" selected="@(user.Role == "Admin")">Admin</option>
+                                        </select>
+                                        <button type="submit" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold">Lưu</button>
+                                    </form>
+                                    <form asp-area="Admin" asp-controller="User" asp-action="ToggleCard" method="post">
+                                        <input type="hidden" name="id" value="@user.Id" />
+                                        <input type="hidden" name="active" value="@((!user.IsActive).ToString().ToLower())" />
+                                        <button type="submit" class="px-2.5 py-1 rounded-lg font-bold @(user.IsActive ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-700")">@(user.IsActive ? "Khóa thẻ" : "Mở khóa")</button>
+                                    </form>
 
                                     <button onclick="resetPassword(@user.Id, '@user.Username')" 
                                             class="p-1 text-slate-400 hover:text-navy-800" title="Đặt lại mật khẩu">

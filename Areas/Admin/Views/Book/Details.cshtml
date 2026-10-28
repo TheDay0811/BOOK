@@ -138,14 +138,15 @@
                             </td>
                             <td class="py-3.5 px-4 text-right">
                                 <div class="flex items-center justify-end gap-1.5">
-                                    <button onclick="openUpdateStatusModal('@copy.ControlNumber', '@copy.Status', '@copy.Notes')" 
+                                    <button onclick="openUpdateStatusModal(@copy.Id, '@copy.ControlNumber', '@copy.Status', '@copy.Notes')"
                                             class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-navy-800 rounded-lg font-bold transition-colors">
                                         Đổi tình trạng
                                     </button>
-                                    <button onclick="if(confirm('Đề xuất thanh lý cuốn số kiểm soát @copy.ControlNumber?')) alert('Đã đưa vào danh sách đề xuất thanh lý hàng năm!');" 
-                                            class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg font-bold transition-colors">
-                                        Thanh lý
-                                    </button>
+                                    <form asp-area="Admin" asp-controller="Book" asp-action="Liquidate" method="post" onsubmit="return confirm('Đề xuất thanh lý cuốn @copy.ControlNumber?')">
+                                        <input type="hidden" name="bookId" value="@Model.BookId" />
+                                        <input type="hidden" name="copyId" value="@copy.Id" />
+                                        <button type="submit" class="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg font-bold">Thanh lý</button>
+                                    </form>
                                 </div>
                             </td>
                         </tr>
@@ -169,7 +170,8 @@
             </button>
         </div>
 
-        <form onsubmit="event.preventDefault(); alert('Đã thêm thành công cuốn sách mới với Số kiểm soát 005!'); closeAddCopyModal();" class="p-6 space-y-4 text-xs">
+        <form asp-area="Admin" asp-controller="Book" asp-action="AddCopy" method="post" class="p-6 space-y-4 text-xs">
+            <input type="hidden" name="bookId" value="@Model.BookId" />
             <div>
                 <label class="block font-bold text-slate-700 uppercase mb-1">Số kiểm soát tự sinh tiếp theo</label>
                 <input type="text" readonly value="005" class="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-xl font-mono font-black text-navy-800 text-sm" />
@@ -188,7 +190,7 @@
 
             <div>
                 <label class="block font-bold text-slate-700 uppercase mb-1">Ghi chú tình trạng</label>
-                <input type="text" value="Sách nhập mới 100%, nguyên vẹn" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl" />
+                <input type="text" name="notes" value="Sách nhập mới 100%, nguyên vẹn" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl" />
             </div>
 
             <div class="pt-3 border-t flex justify-end gap-2">
@@ -213,7 +215,9 @@
             </button>
         </div>
 
-        <form onsubmit="event.preventDefault(); alert('Đã cập nhật tình trạng thành công!'); closeUpdateStatusModal();" class="p-6 space-y-4 text-xs">
+        <form asp-area="Admin" asp-controller="Book" asp-action="UpdateCopy" method="post" class="p-6 space-y-4 text-xs">
+            <input type="hidden" name="bookId" value="@Model.BookId" />
+            <input type="hidden" name="copyId" id="modalCopyId" />
             <div>
                 <label class="block font-bold text-slate-700 uppercase mb-1">Số kiểm soát</label>
                 <input type="text" id="modalControlNumber" readonly class="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-xl font-mono font-bold" />
@@ -221,7 +225,7 @@
 
             <div>
                 <label class="block font-bold text-slate-700 uppercase mb-1">Tình trạng cuốn sách</label>
-                <select id="modalStatusSelect" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold">
+                <select id="modalStatusSelect" name="tinhTrang" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold">
                     <option value="Còn">Còn (Sẵn sàng trong kho)</option>
                     <option value="Cho mượn">Cho mượn (Đang có độc giả giữ)</option>
                     <option value="Hỏng">Hỏng (Chờ sửa chữa / thanh lý)</option>
@@ -231,7 +235,7 @@
 
             <div>
                 <label class="block font-bold text-slate-700 uppercase mb-1">Ghi chú tình trạng</label>
-                <textarea id="modalNotesText" rows="3" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl"></textarea>
+                <textarea id="modalNotesText" name="ghiChu" rows="3" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl"></textarea>
             </div>
 
             <div class="pt-3 border-t flex justify-end gap-2">
@@ -249,7 +253,8 @@
         function openAddCopyModal() { document.getElementById('addCopyModal')?.classList.remove('hidden'); lucide.createIcons(); }
         function closeAddCopyModal() { document.getElementById('addCopyModal')?.classList.add('hidden'); }
 
-        function openUpdateStatusModal(ctrlNum, status, notes) {
+        function openUpdateStatusModal(copyId, ctrlNum, status, notes) {
+            document.getElementById('modalCopyId').value = copyId;
             document.getElementById('modalControlNumber').value = ctrlNum;
             document.getElementById('modalStatusSelect').value = status;
             document.getElementById('modalNotesText').value = notes;

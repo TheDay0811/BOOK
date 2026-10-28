@@ -1,0 +1,34 @@
+﻿@model List<BOOK.Areas.Admin.Controllers.InventoryRow>
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Quản Lý Kho Sách";
+}
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
+    <table class="w-full text-xs text-left">
+        <thead class="bg-slate-50 text-slate-500 uppercase">
+            <tr><th class="p-3">Mã</th><th class="p-3">Tên sách</th><th class="p-3">Tổng</th><th class="p-3">Còn</th><th class="p-3">Cho mượn</th><th class="p-3">Hỏng</th><th class="p-3">Mất</th></tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+            @foreach (var r in Model)
+            {
+                <tr>
+                    <td class="p-3 font-mono font-bold">@r.MaSachCode</td>
+                    <td class="p-3 font-semibold">@r.TenSach</td>
+                    <td class="p-3">@r.Tong</td>
+                    <td class="p-3 text-emerald-700 font-bold">@r.Con</td>
+                    <td class="p-3 text-blue-700">@r.ChoMuon</td>
+                    <td class="p-3 text-amber-700">@r.Hong</td>
+                    <td class="p-3 text-rose-700">@r.Mat</td>
+                </tr>
+            }
+            <tr class="bg-slate-50 font-extrabold">
+                <td class="p-3" colspan="2">Tổng cộng</td>
+                <td class="p-3">@Model.Sum(r => r.Tong)</td>
+                <td class="p-3">@Model.Sum(r => r.Con)</td>
+                <td class="p-3">@Model.Sum(r => r.ChoMuon)</td>
+                <td class="p-3">@Model.Sum(r => r.Hong)</td>
+                <td class="p-3">@Model.Sum(r => r.Mat)</td>
+            </tr>
+        </tbody>
+    </table>
+</div>

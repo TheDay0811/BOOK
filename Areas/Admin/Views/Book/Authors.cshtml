@@ -1,0 +1,16 @@
+﻿@model List<BOOK.Areas.Admin.Controllers.AuthorRow>
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Quản Lý Tác Giả";
+}
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-2 text-xs">
+    @foreach (var a in Model)
+    {
+        <form asp-area="Admin" asp-controller="Book" asp-action="RenameAuthor" method="post" class="flex items-center gap-2">
+            <input type="hidden" name="oldName" value="@a.Name" />
+            <input name="newName" value="@a.Name" class="flex-1 p-2 bg-slate-50 border border-slate-200 rounded-xl" />
+            <span class="text-slate-500 w-16">@a.Books sách</span>
+            <button type="submit" class="px-3 py-1.5 bg-navy-800 text-white rounded-xl font-bold">Đổi tên</button>
+        </form>
+    }
+</div>

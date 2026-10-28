@@ -1,21 +1,22 @@
+using BOOK.Data;
+using BOOK.Models.Entities;
+using BOOK.Models.ViewModels;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using BOOK.Data;
-using BOOK.Models.Entities;
-using BOOK.Models.ViewModels;
-
 namespace BOOK.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Roles = "Admin,ThuThu")]
     public class BorrowController : Controller
     {
         private readonly ApplicationDbContext _context;
-
+        private const decimal LateFeePerDay = 2000m; // đ/ngày/cuốn
         public BorrowController(ApplicationDbContext context)
         {
             _context = context;
@@ -27,25 +28,58 @@ namespace BOOK.Areas.Admin.Controllers
             var today = DateTime.Today;
 
             var overdue = await _context.PhieuMuons
-                .Include(p => p.The)
-                .Where(p => p.TrangThai == "Đang mượn" && p.HanTra < today)
-                .Select(p => new OverdueAlertViewModel
-                {
-                    BorrowId = p.MaPhieuMuon,
-                    MemberName = p.The.HoTen,
-                    MemberCode = p.The.SoThe,
-                    DueDate = p.HanTra,
-                    DaysOverdue = EF.Functions.DateDiffDay(p.HanTra, today)
-                }).ToListAsync();
-
+            .Where(p => p.TrangThai == "Đang mượn" && p.HanTra < today)
+            .Select(p => new OverdueAlertViewModel
+            {
+            BorrowId = p.MaPhieuMuon,
+            MemberName = p.The.HoTen,
+            MemberCode = p.The.SoThe,
+            BookTitle = p.ChiTiets.Where(c => c.NgayTraThucTe == null)
+                     .Select(c => c.DauSach.Sach.TenSach).FirstOrDefault() ?? "",
+            DueDate = p.HanTra,
+            DaysOverdue = EF.Functions.DateDiffDay(p.HanTra, today),
+            AccumulatedFine = EF.Functions.DateDiffDay(p.HanTra, today)
+                          * p.ChiTiets.Count(c => c.NgayTraThucTe == null) * LateFeePerDay
+            }).ToListAsync();
             var todayReturns = await _context.ChiTietPhieuMuons
                 .CountAsync(c => c.NgayTraThucTe != null && c.NgayTraThucTe.Value.Date == today);
 
+
+            var pending = await _context.YeuCauMuons
+             .Where(y => y.TrangThai == "Chờ duyệt")
+             .OrderBy(y => y.NgayYeuCau)
+              .Select(y => new PendingBorrowRequestViewModel
+          {
+        Id = y.MaYeuCau,
+        RequestCode = "YC" + y.MaYeuCau,
+        MemberName = y.The.HoTen,
+        MemberCode = y.The.SoThe,
+        BookTitle = y.Sach.TenSach,
+        BookISBN = y.Sach.MaSachCode,
+        RequestDate = y.NgayYeuCau,
+        PickupDueDate = y.HanTraDeXuat,
+        Status = y.TrangThai
+            }).ToListAsync();
+
+            var renewals = await _context.YeuCauGiaHans
+                .Where(g => g.TrangThai == "Chờ duyệt")
+                .Select(g => new RenewalRequestViewModel
+                {
+                    RequestId = g.MaYeuCau,
+                    BorrowId = g.MaPhieuMuon,
+                    MemberName = g.PhieuMuon.The.HoTen,
+                    MemberCode = g.PhieuMuon.The.SoThe,
+                    BookTitle = g.PhieuMuon.ChiTiets.Select(c => c.DauSach.Sach.TenSach).FirstOrDefault() ?? "",
+                    CurrentDueDate = g.PhieuMuon.HanTra,
+                    RequestedNewDueDate = g.PhieuMuon.HanTra.AddDays(7),
+                    TimesRenewed = _context.YeuCauGiaHans.Count(x => x.MaPhieuMuon == g.MaPhieuMuon && x.TrangThai == "Đã duyệt"),
+                    Reason = g.LyDo
+                }).ToListAsync();
             var viewModel = new LibrarianDashboardViewModel
             {
                 TodayReturnsCount = todayReturns,
-                PendingRequests = new List<PendingBorrowRequestViewModel>(), // không có trong ERD case study
-                RenewalRequests = new List<RenewalRequestViewModel>(),      // không có trong ERD case study
+                PendingRequests = pending,
+                RenewalRequests = renewals,
                 OverdueAlerts = overdue
             };
 
@@ -266,6 +300,9 @@ namespace BOOK.Areas.Admin.Controllers
                 chiTiet.NgayTraThucTe = DateTime.Today;
                 chiTiet.TinhTrangTra = conditions[i];
                 chiTiet.TienBoiThuong = fees[i];
+                if (DateTime.Today > phieu.HanTra)
+                    chiTiet.TienBoiThuong += (DateTime.Today - phieu.HanTra).Days * LateFeePerDay;
+
 
                 if (conditions[i] == "Bình thường")
                 {
@@ -296,6 +333,71 @@ namespace BOOK.Areas.Admin.Controllers
             await _context.SaveChangesAsync();
 
             TempData["Success"] = $"Đã ghi nhận trả sách cho phiếu mượn #{phieu.MaPhieuMuon}.";
+            return RedirectToAction(nameof(Index));
+        }
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApproveRequest(int id)
+        {
+            var yc = await _context.YeuCauMuons
+                .Include(y => y.The).ThenInclude(t => t.PhieuMuons)
+                .FirstOrDefaultAsync(y => y.MaYeuCau == id && y.TrangThai == "Chờ duyệt");
+            if (yc == null) { TempData["Error"] = "Không tìm thấy yêu cầu."; return RedirectToAction(nameof(Index)); }
+
+            if (yc.The.TinhTrangSuDung != "Sử dụng được" || yc.The.PhieuMuons.Any(p => p.TrangThai == "Đang mượn"))
+            { TempData["Error"] = "Thẻ không đủ điều kiện mượn (bị khóa hoặc đang mượn sách)."; return RedirectToAction(nameof(Index)); }
+
+            var copy = await _context.DauSachs
+                .Where(d => d.MaSach == yc.MaSach && d.TinhTrang == "Còn")
+                .OrderBy(d => d.SoKiemSoat).FirstOrDefaultAsync();
+            if (copy == null) { TempData["Error"] = "Sách đã hết bản sao."; return RedirectToAction(nameof(Index)); }
+
+            var due = yc.HanTraDeXuat.Date;
+            if (due <= DateTime.Today || due > DateTime.Today.AddDays(15)) due = DateTime.Today.AddDays(15);
+
+            copy.TinhTrang = "Cho mượn";
+            _context.PhieuMuons.Add(new PhieuMuon
+            {
+                MaThe = yc.MaThe,
+                NgayMuon = DateTime.Today,
+                HanTra = due,
+                TrangThai = "Đang mượn",
+                ChiTiets = new List<ChiTietPhieuMuon> { new ChiTietPhieuMuon { MaDauSach = copy.MaDauSach } }
+            });
+            yc.TrangThai = "Đã duyệt";
+            await _context.SaveChangesAsync();
+            TempData["Success"] = $"Đã duyệt yêu cầu YC{id}, gán bản số {copy.SoKiemSoat}.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> RejectRequest(int id)
+        {
+            var yc = await _context.YeuCauMuons.FindAsync(id);
+            if (yc != null && yc.TrangThai == "Chờ duyệt") { yc.TrangThai = "Từ chối"; await _context.SaveChangesAsync(); }
+            TempData["Success"] = $"Đã từ chối yêu cầu YC{id}.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> ApproveRenewal(int id)
+        {
+            var g = await _context.YeuCauGiaHans.Include(x => x.PhieuMuon)
+                .FirstOrDefaultAsync(x => x.MaYeuCau == id && x.TrangThai == "Chờ duyệt");
+            if (g == null) { TempData["Error"] = "Không tìm thấy yêu cầu."; return RedirectToAction(nameof(Index)); }
+
+            if (g.PhieuMuon.TrangThai != "Đang mượn") g.TrangThai = "Từ chối";
+            else { g.PhieuMuon.HanTra = g.PhieuMuon.HanTra.AddDays(7); g.TrangThai = "Đã duyệt"; }
+            await _context.SaveChangesAsync();
+            TempData["Success"] = g.TrangThai == "Đã duyệt" ? "Đã duyệt gia hạn +7 ngày." : "Phiếu đã trả, yêu cầu bị từ chối.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> RejectRenewal(int id)
+        {
+            var g = await _context.YeuCauGiaHans.FindAsync(id);
+            if (g != null && g.TrangThai == "Chờ duyệt") { g.TrangThai = "Từ chối"; await _context.SaveChangesAsync(); }
+            TempData["Success"] = "Đã từ chối yêu cầu gia hạn.";
             return RedirectToAction(nameof(Index));
         }
     }

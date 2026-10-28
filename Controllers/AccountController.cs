@@ -1,16 +1,17 @@
+using BOOK.Data;
+using BOOK.Models.Entities;
+using BOOK.Models.ViewModels;
+using BOOK.ViewModels;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using BOOK.Data;
-using BOOK.Models.Entities;
-using BOOK.Models.ViewModels;
-using BOOK.ViewModels;
 
 namespace BOOK.Controllers
 {
@@ -182,6 +183,7 @@ namespace BOOK.Controllers
 
         // GET: /Account/Profile
         [HttpGet]
+        [Authorize]
         public async Task<IActionResult> Profile()
         {
             var studentCode = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -258,6 +260,7 @@ namespace BOOK.Controllers
         // POST: /Account/UpdateProfile
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize]
         public async Task<IActionResult> UpdateProfile(UpdateProfileInputModel input)
         {
             if (!ModelState.IsValid)
@@ -280,35 +283,88 @@ namespace BOOK.Controllers
             return RedirectToAction(nameof(Profile));
         }
 
-        // POST: /Account/ExtendBorrow
+        // POST: /Account/ExtendBorrow  → tạo yêu cầu chờ thủ thư duyệt (tối đa 2 lần)
         [HttpPost]
+        [Authorize]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ExtendBorrow(int borrowId, string? reason)
         {
-            var phieu = await _context.PhieuMuons.FindAsync(borrowId);
-            if (phieu != null && phieu.TrangThai == "Đang mượn")
-            {
-                phieu.HanTra = phieu.HanTra.AddDays(7);
-                await _context.SaveChangesAsync();
-                TempData["Success"] = $"Yêu cầu gia hạn thêm 07 ngày cho phiếu mượn #{borrowId} đã được hệ thống phê duyệt tự động thành công!";
-            }
+            var studentCode = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var phieu = await _context.PhieuMuons.FirstOrDefaultAsync(p =>
+                p.MaPhieuMuon == borrowId && p.The.TaiKhoan.Username == studentCode && p.TrangThai == "Đang mượn");
+
+            if (phieu == null)
+                TempData["Error"] = $"Không tìm thấy phiếu mượn #{borrowId} đang hoạt động.";
+            else if (await _context.YeuCauGiaHans.AnyAsync(g => g.MaPhieuMuon == borrowId && g.TrangThai == "Chờ duyệt"))
+                TempData["Warning"] = "Phiếu này đã có yêu cầu gia hạn đang chờ duyệt.";
+            else if (await _context.YeuCauGiaHans.CountAsync(g => g.MaPhieuMuon == borrowId && g.TrangThai == "Đã duyệt") >= 2)
+                TempData["Error"] = "Mỗi phiếu chỉ được gia hạn tối đa 2 lần.";
             else
             {
+                _context.YeuCauGiaHans.Add(new YeuCauGiaHan { MaPhieuMuon = borrowId, LyDo = reason ?? "" });
+                await _context.SaveChangesAsync();
+                TempData["Success"] = $"Đã gửi yêu cầu gia hạn phiếu #{borrowId}, chờ thủ thư duyệt.";
+            }
+            return RedirectToAction(nameof(Profile));
+        }
+
+        // POST: /Account/ReportDamageOrLost → ghi chú vào các bản sao đang mượn để thủ thư thấy
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ReportDamageOrLost(int borrowId, string issueType, string description)
+        {
+            var studentCode = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var phieu = await _context.PhieuMuons
+                .Include(p => p.ChiTiets).ThenInclude(c => c.DauSach)
+                .FirstOrDefaultAsync(p => p.MaPhieuMuon == borrowId && p.The.TaiKhoan.Username == studentCode && p.TrangThai == "Đang mượn");
+
+            if (phieu == null)
+            {
                 TempData["Error"] = $"Không tìm thấy phiếu mượn #{borrowId} đang hoạt động.";
+                return RedirectToAction(nameof(Profile));
             }
 
+            foreach (var c in phieu.ChiTiets.Where(c => c.NgayTraThucTe == null))
+                c.DauSach.GhiChu = $"{c.DauSach.GhiChu} [Độc giả báo {issueType} {DateTime.Today:dd/MM/yyyy}: {description}]".Trim();
+
+            await _context.SaveChangesAsync();
+            TempData["Warning"] = $"Đã ghi nhận báo '{issueType}' cho phiếu #{borrowId}. Thủ thư sẽ kiểm tra và hướng dẫn bồi thường.";
             return RedirectToAction(nameof(Profile));
         }
 
-        // POST: /Account/ReportDamageOrLost
+        // POST: /Account/PayFine → thanh toán 1 khoản phạt/bồi thường
         [HttpPost]
+        [Authorize]
         [ValidateAntiForgeryToken]
-        public IActionResult ReportDamageOrLost(int borrowId, string issueType, string description)
+        public async Task<IActionResult> PayFine(int chiTietId)
         {
-            TempData["Warning"] = $"Đã ghi nhận yêu cầu báo '{issueType}' cho phiếu mượn #{borrowId}. Thủ thư sẽ sớm kiểm tra mức độ tổn thất và thông báo hướng dẫn bồi thường tài liệu.";
+            var studentCode = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var ct = await _context.ChiTietPhieuMuons
+                .Include(c => c.PhieuMuon).ThenInclude(p => p.The)
+                .FirstOrDefaultAsync(c => c.MaChiTiet == chiTietId && c.PhieuMuon.The.TaiKhoan.Username == studentCode);
+
+            if (ct == null || ct.TienBoiThuong <= 0 || ct.DaBoiThuong)
+            {
+                TempData["Error"] = "Khoản phạt không hợp lệ hoặc đã thanh toán.";
+                return RedirectToAction(nameof(Profile));
+            }
+
+            ct.DaBoiThuong = true;
+            var the = ct.PhieuMuon.The;
+
+            // Hết nợ mất/hỏng thì thẻ có hiệu lực lại
+            var conNo = await _context.ChiTietPhieuMuons.AnyAsync(c =>
+                c.PhieuMuon.MaThe == the.MaThe && c.MaChiTiet != chiTietId && !c.DaBoiThuong &&
+                c.TienBoiThuong > 0 && (c.TinhTrangTra == "Hỏng" || c.TinhTrangTra == "Mất"));
+            if (!conNo && the.TinhTrangSuDung == "Không sử dụng")
+                the.TinhTrangSuDung = "Sử dụng được";
+
+            await _context.SaveChangesAsync();
+            TempData["Success"] = $"Đã thanh toán {ct.TienBoiThuong:N0} VNĐ.";
             return RedirectToAction(nameof(Profile));
         }
-
+        public IActionResult AccessDenied() => Content("Bạn không có quyền truy cập trang này.");
         // POST: /Account/Logout
         [HttpPost]
         [ValidateAntiForgeryToken]
