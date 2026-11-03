@@ -1,6 +1,6 @@
 # BÁO CÁO KỸ THUẬT: KIẾN TRÚC HỆ THỐNG & CHIẾN LƯỢC TÍCH HỢP NOSQL MONGODB
 **Đề tài:** Hệ thống Quản lý Thư viện Số (Library Management System)  
-**Công nghệ:** ASP.NET Core 8 MVC, SQL Server (RDBMS), MongoDB (NoSQL Document Store), Google Gemini AI  
+**Công nghệ:** ASP.NET Core 8 MVC, SQL Server (RDBMS), MongoDB (NoSQL Document Store), Ollama Local LLM (Qwen 2.5 7B / Gemma 3), Google Gemini AI  
 **Mô hình áp dụng:** Polyglot Persistence (Kiến trúc Đa cơ sở dữ liệu)
 
 ---
@@ -18,7 +18,7 @@ Hệ thống Quản lý Thư viện có hai nhóm nghiệp vụ mang bản chấ
 
 2. **Nhóm nghiệp vụ phi cấu trúc & dữ liệu tăng trưởng nhanh (Unstructured & High-Velocity):**
    - **Nhật ký kiểm toán an toàn hệ thống (System Audit Logs):** Ghi nhận liên tục mọi hành động đăng nhập, khóa/mở thẻ bạn đọc, thu tiền phạt, xuất báo cáo.
-   - **Lịch sử hội thoại Trợ lý ảo AI (Chatbot Logs):** Các câu hỏi - đáp của sinh viên với Trợ lý ảo Gemini có độ dài tự do, phi cấu trúc, không có lược đồ cố định (Schema-less).
+   - **Lịch sử hội thoại Trợ lý ảo AI (Chatbot Logs):** Các câu hỏi - đáp của sinh viên với Trợ lý ảo AI (Ollama Local LLM / Google Gemini) có độ dài tự do, phi cấu trúc, không có lược đồ cố định (Schema-less).
 
 ---
 
@@ -28,16 +28,16 @@ Trong quá trình thực nghiệm kỹ thuật, việc cố gắng chuyển đ�
 
 | Tiêu chí | Cố ép 100% sang MongoDB (Pure Document) | Kiến trúc Hybrid: SQL Server + MongoDB (Được chọn) |
 | :--- | :--- | :--- |
-| **Hỗ trợ truy vấn quan hệ (`.Include()`)** | ❌ **Thất bại:** MongoDB EF Core ném lỗi `System.InvalidOperationException: Including navigation is not supported as the navigation is not embedded in same resource`. Không hỗ trợ JOIN đa bảng giữa các Collection riêng biệt. |  **Tối ưu:** SQL Server xử lý các câu truy vấn JOIN, GROUP BY, SUM, COUNT trong các màn hình Báo cáo (`ReportController`) với tốc độ mili-giây. |
-| **Quản lý khóa chính (Primary Key)** | ❌ MongoDB không hỗ trợ cột số nguyên tự tăng `IDENTITY(1,1)` ở cấp database; dễ bị lỗi trùng lặp `_id` khi thêm bản ghi đồng thời. |  SQL Server tự động sinh mã ID số học cho sách, phiếu mượn; MongoDB dùng chuẩn `ObjectId` cho Log. |
-| **Toàn vẹn khóa ngoại (Foreign Keys)** | ❌ NoSQL không có cơ chế `ON DELETE RESTRICT`. Nếu xóa một cuốn sách đang được mượn, dữ liệu phiếu mượn sẽ bị mồ côi (Orphaned Data). |  SQL Server tự động kiểm tra và chặn thao tác xóa nếu sách đang nằm trong phiếu mượn hợp lệ. |
-| **Lưu trữ Log & Dữ liệu AI** | ❌ Bảng SQL quan hệ lưu log sẽ nhanh chóng bị phình to (Table Bloat), làm chậm các câu truy vấn nghiệp vụ chính. |  **Tuyệt hảo:** MongoDB lưu trữ Document JSON linh hoạt, dễ dàng mở rộng (Scale Horizontal) và ghi tốc độ cực cao. |
+| **Hỗ trợ truy vấn quan hệ (`.Include()`)** | ❌ **Thất bại:** MongoDB EF Core ném lỗi `System.InvalidOperationException: Including navigation is not supported as the navigation is not embedded in same resource`. Không hỗ trợ JOIN đa bảng giữa các Collection riêng biệt. | ✅ **Tối ưu:** SQL Server xử lý các câu truy vấn JOIN, GROUP BY, SUM, COUNT trong các màn hình Báo cáo (`ReportController`) với tốc độ mili-giây. |
+| **Quản lý khóa chính (Primary Key)** | ❌ MongoDB không hỗ trợ cột số nguyên tự tăng `IDENTITY(1,1)` ở cấp database; dễ bị lỗi trùng lặp `_id` khi thêm bản ghi đồng thời. | ✅ SQL Server tự động sinh mã ID số học cho sách, phiếu mượn; MongoDB dùng chuẩn `ObjectId` cho Log. |
+| **Toàn vẹn khóa ngoại (Foreign Keys)** | ❌ NoSQL không có cơ chế `ON DELETE RESTRICT`. Nếu xóa một cuốn sách đang được mượn, dữ liệu phiếu mượn sẽ bị mồ côi (Orphaned Data). | ✅ SQL Server tự động kiểm tra và chặn thao tác xóa nếu sách đang nằm trong phiếu mượn hợp lệ. |
+| **Lưu trữ Log & Dữ liệu AI** | ❌ Bảng SQL quan hệ lưu log sẽ nhanh chóng bị phình to (Table Bloat), làm chậm các câu truy vấn nghiệp vụ chính. | ✅ **Tuyệt hảo:** MongoDB lưu trữ Document JSON linh hoạt, dễ dàng mở rộng (Scale Horizontal) và ghi tốc độ cực cao. |
 
->  **Kết luận Kiến trúc:** Áp dụng mô hình **Polyglot Persistence** (Mỗi công nghệ cơ sở dữ liệu làm đúng thế mạnh tự nhiên nhất của nó) là chuẩn mực kỹ thuật cao cấp nhất cho dự án này.
+> 💡 **Kết luận Kiến trúc:** Áp dụng mô hình **Polyglot Persistence** (Mỗi công nghệ cơ sở dữ liệu làm đúng thế mạnh tự nhiên nhất của nó) là chuẩn mực kỹ thuật cao cấp nhất cho dự án này.
 
 ---
 
-## 3. SƠ ĐỒ KIẾN TRÚC POLYGLOT PERSISTENCE
+## 3. SƠ ĐỒ KIẾN TRÚC POLYGLOT PERSISTENCE & AI TELEMETRY
 
 ```
                    +---------------------------------------------+
@@ -53,27 +53,27 @@ Trong quá trình thực nghiệm kỹ thuật, việc cố gắng chuyển đ�
 |                                                                                 |
 |   +--------------------------+                 +----------------------------+   |
 |   |  Controllers Nghiệp Vụ   |                 |   Controllers Mở Rộng      |   |
-|   |  - BookController        |                 |   - ChatController         |   |
-|   |  - BorrowController      |                 |   - AccountController      |   |
-|   |  - ReportController      |                 |   (Hỗ trợ AI & Audit Log)  |   |
+|   |  - BookController        |                 |   - ChatController (AI)    |   |
+|   |  - BorrowController      |                 |   - HomeController         |   |
+|   |  - ReportController      |                 |   - AccountController      |   |
 |   +--------------------------+                 +----------------------------+   |
-|                |                                              |                 |
-|     (Entity Framework Core)                       (Official MongoDB.Driver)     |
-|                v                                              v                 |
-|   +--------------------------+                 +----------------------------+   |
-|   |   ApplicationDbContext   |                 |  ILibraryMongoLogService   |   |
-+---|--------------------------|-----------------|----------------------------|---+
-                 |                                              |
-                 v                                              v
-   +---------------------------+                 +----------------------------+
-   |   SQL SERVER (RDBMS)      |                 |      MONGODB (NoSQL)       |
-   |   Database: LibraryDB     |                 |    Database: LibraryDB     |
-   |                           |                 |                            |
-   |  - Sachs, DauSachs        |                 |  - system_audit_logs       |
-   |  - TheLoais, NhaXuatBans  |                 |    (Nhật ký bảo mật)       |
-   |  - TaiKhoans, TheThuViens |                 |  - chat_history_logs       |
-   |  - PhieuMuons, ChiTiets   |                 |    (Lịch sử trò chuyện AI) |
-   |  - ThongBaos, DanhGias    |                 +----------------------------+
+|                |                                       |            |           |
+|     (Entity Framework Core)                            |     (MongoDB.Driver)   |
+|                v                                       v            v           |
+|   +--------------------------+          +-------------------+ +---------------+ |
+|   |   ApplicationDbContext   |          | ILibraryChatService| |ILibraryMongoLog| |
++---|--------------------------|----------|-------------------|-|---------------|-+
+                 |                        |  (Ollama/Gemini)  |         |
+                 v                        +-------------------+         v
+   +---------------------------+                 |       +----------------------------+
+   |   SQL SERVER (RDBMS)      |                 v       |      MONGODB (NoSQL)       |
+   |   Database: LibraryDB     |     +-----------------+ |    Database: LibraryDB     |
+   |                           |     | Ollama Local LLM| |                            |
+   |  - Sachs, DauSachs        |     | (qwen2.5-7b /   | |  - system_audit_logs       |
+   |  - TheLoais, NhaXuatBans  |     |  gemma3-4b)     | |    (Nhật ký bảo mật)       |
+   |  - TaiKhoans, TheThuViens |     +-----------------+ |  - chat_history_logs       |
+   |  - PhieuMuons, ChiTiets   |                         |    (Lịch sử trò chuyện AI) |
+   |  - ThongBaos, DanhGias    |                         +----------------------------+
    +---------------------------+
 ```
 
@@ -95,16 +95,16 @@ Mỗi sự kiện nghiệp vụ quan trọng trong thư viện đều được t
 }
 ```
 
-### 4.2. Collection: `chat_history_logs` (Lịch sử hội thoại Trợ lý ảo Gemini)
+### 4.2. Collection: `chat_history_logs` (Lịch sử hội thoại Trợ lý ảo AI)
 Lưu trữ toàn bộ các câu hỏi đáp của sinh viên với Thủ thư AI để phân tích nhu cầu tìm kiếm sách:
 ```json
 {
   "_id": { "$oid": "6726f1c4a12b3c4d5e6f7a8c" },
-  "Username": "24DH112970",
-  "UserPrompt": "Thư viện có sách Database System Concepts không bạn?",
-  "BotResponse": "Chào bạn! Thư viện hiện có cuốn Database System Concepts (Ấn bản thứ 7) tại Kho lưu thông Hóc Môn, tình trạng: Còn sách.",
-  "ModelUsed": "gemini-1.5-flash",
-  "Timestamp": { "$date": "2026-11-03T01:47:54.000Z" }
+  "Username": "Khách độc giả",
+  "UserPrompt": "Tôi muốn mượn 5 cuốn sách một lúc có được không?",
+  "BotResponse": "Xin chào! Theo nội quy mượn sách tại Thư viện HUFLIT cơ sở Hóc Môn, bạn có thể mượn tối đa 3 cuốn sách trong 15 ngày. Do đó, bạn không thể mượn 5 cuốn sách cùng một lúc theo quy định hiện hành.",
+  "ModelUsed": "qwen2.5:7b-instruct",
+  "Timestamp": { "$date": "2026-11-03T02:16:54.000Z" }
 }
 ```
 
@@ -119,27 +119,32 @@ Lưu trữ toàn bộ các câu hỏi đáp của sinh viên với Thủ thư AI
   2. Nếu chưa, ứng dụng sẽ **tự động khởi động một máy chủ MongoDB độc lập** trong thư mục `.mongodb_data`.
   3. Lớp `MongoSeeder.cs` tự động đẩy các tài liệu mẫu vào MongoDB để sẵn sàng demo.
   4. Người dùng không cần cài đặt thêm bất kỳ phần mềm nào bằng tay.
+- Tích hợp 3 tầng AI linh hoạt:
+  1. **Tầng 1 (Local LLM):** Kết nối trực tiếp vào Ollama (`qwen2.5:7b-instruct` hoặc `gemma3:4b`) chạy 100% nội bộ, miễn phí, không tốn API key.
+  2. **Tầng 2 (Cloud LLM):** Kết nối vào Google Gemini API khi cấu hình API key.
+  3. **Tầng 3 (Fallback Rule):** Bộ tri thức nội quy thư viện HUFLIT tự sinh câu trả lời khi máy không có cả Ollama lẫn internet.
 
 ---
 
 ## 6. KỊCH BẢN DEMO BẢO VỆ TRƯỚC GIẢNG VIÊN (DEMO SCRIPT)
 
-Khi giảng viên yêu cầu nghiệm thu tính năng MongoDB:
+Khi giảng viên yêu cầu nghiệm thu tính năng MongoDB & AI:
 
 1. **Bước 1: Khởi động ứng dụng**
    - Mở Terminal và gõ: `dotnet run`
-   - Quan sát Terminal: Xuất hiện log khởi tạo của cả SQL Server (Apply Migrations) và MongoDB Engine (`createCollection: system_audit_logs`).
    - Web mở tại địa chỉ: `http://localhost:5043`
+   - Mở trang giám sát trực quan: `http://localhost:5043/Home/MongoStatus`
 
-2. **Bước 2: Tương tác sinh dữ liệu mới**
-   - Đăng nhập với tài khoản: `admin` / `Admin@123456` hoặc `thuthu` / `Librarian@123456`.
-   - Vào mục Chatbot AI góc màn hình, gõ câu hỏi: *"Tìm sách lập trình C# cho mình"*. Hệ thống sẽ phản hồi và **tự động bắn một Document mới vào MongoDB**.
+2. **Bước 2: Tương tác sinh dữ liệu mới với AI**
+   - Bấm vào biểu tượng **"Trợ lý Thủ thư ảo HUFLIT"** ở góc dưới cùng bên phải màn hình.
+   - Nhập một câu hỏi bất kỳ, ví dụ: *"Tôi muốn mượn 5 cuốn sách có được không?"* hoặc *"Quy định phạt quá hạn sách thế nào?"*.
+   - Trợ lý AI (Qwen 2.5 chạy qua Ollama) sẽ tư duy và phản hồi chi tiết, lịch sự.
 
 3. **Bước 3: Mở MongoDB Compass cho Giảng viên xem**
-   - Mở ứng dụng **MongoDB Compass**.
-   - Bấm **Connect** (Kết nối mặc định `mongodb://127.0.0.1:27017` hoặc cổng do Runner cấp).
-   - Chọn database **`LibraryDB`**.
-   - Mở collection **`chat_history_logs`** và **`system_audit_logs`**: Cho giảng viên thấy trực tiếp câu hỏi vừa chat xuất hiện ngay lập tức dưới dạng Document JSON!
+   - Copy chuỗi kết nối hiển thị trên màn hình `MongoStatus` (dạng `mongodb://127.0.0.1:<port>/`).
+   - Mở ứng dụng **MongoDB Compass**, dán chuỗi kết nối và bấm **Connect**.
+   - Chọn database **`LibraryDB`**, mở collection **`chat_history_logs`**:
+   - Cho giảng viên thấy trực tiếp câu hỏi vừa chat xuất hiện ngay lập tức dưới dạng Document JSON với trường `"ModelUsed": "qwen2.5:7b-instruct"`.
 
 ---
 
@@ -156,3 +161,10 @@ Khi giảng viên yêu cầu nghiệm thu tính năng MongoDB:
 > *1. **Schema-less:** Hội thoại AI có thể thay đổi cấu trúc linh hoạt (số lượng token, model sử dụng, ngữ cảnh) mà không cần chỉnh sửa schema bảng.*  
 > *2. **Tốc độ ghi (Write Throughput):** MongoDB sử dụng cơ chế ghi trong bộ nhớ rồi đồng bộ ngầm, giúp ứng dụng ghi log liên tục với tốc độ cao mà không làm chậm trải nghiệm duyệt web của người dùng.*  
 > *3. **Dễ dàng mở rộng:** Dữ liệu log tăng theo thời gian có thể dễ dàng tách Sharding hoặc thiết lập thời gian tự hủy (TTL Index) trên MongoDB rất thuận tiện."*
+
+#### ❓ Câu hỏi 3: "Trợ lý ảo AI hoạt động theo cơ chế nào? Có phải AI thật không?"
+> **Trả lời:**  
+> *"Dạ thưa Thầy/Cô, đây là AI thật 100%. Hệ thống được xây dựng theo kiến trúc đa tầng (Multi-tier LLM Adapter):*  
+> *1. Khi chạy trên môi trường cục bộ, web kết nối trực tiếp với máy chủ Ollama chạy model Qwen 2.5 7B Instruct (hoặc Google Gemma 3), hoàn toàn bảo mật và không phụ thuộc internet.*  
+> *2. Khi cấu hình API Key, hệ thống có thể linh hoạt chuyển sang Google Gemini 1.5 Flash trên Cloud.*  
+> *3. Mọi truy vấn và câu trả lời đều được định tuyến và lưu vết tự động vào MongoDB dưới dạng JSON Document để phục vụ phân tích trải nghiệm độc giả."*
