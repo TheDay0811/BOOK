@@ -25,16 +25,16 @@ namespace BOOK.Controllers
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Message))
             {
-                return Json(new { reply = "Bạn vui lòng nhập nội dung câu hỏi nhé!" });
+                return Json(new { reply = "Bạn vui lòng nhập nội dung câu hỏi nhé!", model = "none" });
             }
 
-            var reply = await _chatService.GetLibrarianResponseAsync(request.Message);
+            var result = await _chatService.GetLibrarianResponseAsync(request.Message);
 
-            // Tự động lưu hội thoại vào MongoDB NoSQL
+            // Tự động lưu hội thoại vào MongoDB NoSQL với đúng tên model thực tế
             var username = User.Identity?.IsAuthenticated == true ? User.Identity.Name! : "Khách độc giả";
-            await _mongoLogService.LogChatAsync(username, request.Message, reply);
+            await _mongoLogService.LogChatAsync(username, request.Message, result.Reply, result.ModelUsed);
 
-            return Json(new { reply });
+            return Json(new { reply = result.Reply, model = result.ModelUsed });
         }
     }
 }

@@ -375,7 +375,7 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    appendBotMessage(data.reply || "Dạ, em đã ghi nhận câu hỏi. Bạn vui lòng thử lại nhé!");
+                    appendBotMessage(data.reply || "Dạ, em đã ghi nhận câu hỏi. Bạn vui lòng thử lại nhé!", data.model);
                 } else {
                     appendBotFallback(userText);
                 }
@@ -385,7 +385,7 @@
             }
         }
 
-        function appendBotMessage(text) {
+        function appendBotMessage(text, model) {
             const messages = document.getElementById('chatMessages');
             if (!messages) return;
 
@@ -395,7 +395,7 @@
                 <div class="w-7 h-7 rounded-full bg-navy-800 text-amber-300 flex items-center justify-center text-xs font-bold flex-shrink-0">TT</div>
                 <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm p-3 shadow-sm max-w-[85%] text-slate-800 leading-relaxed text-xs">
                     <p class="whitespace-pre-line">${text}</p>
-                    <span class="text-[10px] text-slate-400 mt-1 block">Vừa xong • Trợ lý HUFLIT</span>
+                    <span class="text-[10px] text-slate-400 mt-1 block">Vừa xong • Trợ lý HUFLIT ${model ? `(${escapeHtml(model)})` : ""}</span>
                 </div>
             `;
             messages.appendChild(botBubble);

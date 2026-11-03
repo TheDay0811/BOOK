@@ -17,17 +17,87 @@ namespace BOOK.Services
         public GeminiService(HttpClient httpClient, IConfiguration configuration, ILogger<GeminiService> logger)
         {
             _httpClient = httpClient;
+            _httpClient.Timeout = TimeSpan.FromSeconds(30);
             _configuration = configuration;
             _logger = logger;
         }
 
-        public async Task<string> GetLibrarianResponseAsync(string userMessage)
+        public async Task<ChatResult> GetLibrarianResponseAsync(string userMessage)
         {
             if (string.IsNullOrWhiteSpace(userMessage))
             {
-                return "Chào bạn! Tôi là Thủ thư ảo HUFLIT cơ sở Hóc Môn. Bạn cần hỗ trợ tra cứu sách hay quy định mượn trả gì ạ?";
+                return new ChatResult
+                {
+                    Reply = "Chào bạn! Tôi là Thủ thư ảo HUFLIT cơ sở Hóc Môn. Bạn cần hỗ trợ tra cứu sách hay quy định mượn trả gì ạ?",
+                    ModelUsed = "system"
+                };
             }
 
+            var systemPrompt = "Bạn là Trợ lý Thư viện ảo của Trường Đại học Ngoại ngữ - Tin học TP.HCM (HUFLIT) cơ sở Hóc Môn (Địa chỉ: Số 80/2 Bà Triệu, Xã Tân Xuân, Huyện Hóc Môn, TP. Hồ Chí Minh. Hotline: (028) 38 632 052, Email: thuvien@huflit.edu.vn). Hãy hỗ trợ độc giả giải đáp các thắc mắc về nội quy mượn trả (mượn tối đa 3 cuốn trong 15 ngày, phí phạt trễ hạn 2.000 VNĐ/ngày/cuốn, thẻ bị khóa nếu làm hỏng/mất sách và phải bồi thường để mở lại), tìm kiếm sách và thủ tục thư viện bằng tiếng Việt lịch sự, thân thiện, súc tích.";
+
+            var provider = _configuration["AiSettings:Provider"] ?? "Ollama";
+
+            // =========================================================================
+            // 1. ƯU TIÊN GỌI OLLAMA LOCAL (Miễn phí 100%, chạy trên máy, model Qwen2.5 / Gemma)
+            // =========================================================================
+            if (provider.Equals("Ollama", StringComparison.OrdinalIgnoreCase) || provider.Equals("Auto", StringComparison.OrdinalIgnoreCase))
+            {
+                var ollamaEndpoint = _configuration["AiSettings:OllamaEndpoint"] ?? "http://localhost:11434";
+                var ollamaModel = _configuration["AiSettings:OllamaModel"] ?? "qwen2.5:7b-instruct";
+
+                try
+                {
+                    var chatPayload = new
+                    {
+                        model = ollamaModel,
+                        messages = new[]
+                        {
+                            new { role = "system", content = systemPrompt },
+                            new { role = "user", content = userMessage }
+                        },
+                        stream = false,
+                        options = new
+                        {
+                            temperature = 0.7
+                        }
+                    };
+
+                    var jsonString = JsonSerializer.Serialize(chatPayload);
+                    var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
+
+                    var response = await _httpClient.PostAsync($"{ollamaEndpoint.TrimEnd('/')}/api/chat", content);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var responseBody = await response.Content.ReadAsStringAsync();
+                        using var doc = JsonDocument.Parse(responseBody);
+                        if (doc.RootElement.TryGetProperty("message", out var messageElement) &&
+                            messageElement.TryGetProperty("content", out var contentElement))
+                        {
+                            var text = contentElement.GetString();
+                            if (!string.IsNullOrWhiteSpace(text))
+                            {
+                                return new ChatResult
+                                {
+                                    Reply = text.Trim(),
+                                    ModelUsed = ollamaModel
+                                };
+                            }
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Ollama returned status code {StatusCode}", response.StatusCode);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning("Không thể kết nối tới Ollama ({Message}). Thử chuyển sang Gemini hoặc Fallback.", ex.Message);
+                }
+            }
+
+            // =========================================================================
+            // 2. GOOGLE GEMINI CLOUD API (Nếu có cấu hình ApiKey)
+            // =========================================================================
             var apiKey = _configuration["GeminiSettings:ApiKey"] ?? _configuration["GeminiApiKey"];
             var model = _configuration["GeminiSettings:Model"] ?? "gemini-1.5-flash";
 
@@ -36,8 +106,6 @@ namespace BOOK.Services
                 try
                 {
                     var endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
-
-                    var systemPrompt = "Bạn là Trợ lý Thư viện ảo của Trường Đại học Ngoại ngữ - Tin học TP.HCM (HUFLIT) cơ sở Hóc Môn (Địa chỉ: Số 80/2 Bà Triệu, Xã Tân Xuân, Huyện Hóc Môn, TP. Hồ Chí Minh. Hotline: (028) 38 632 052, Email: thuvien@huflit.edu.vn). Hãy hỗ trợ độc giả giải đáp các thắc mắc về nội quy mượn trả (mượn tối đa 3 cuốn trong 15 ngày, thẻ bị khóa nếu làm hỏng/mất sách và phải bồi thường để mở lại), tìm kiếm sách và vị trí quầy thư viện bằng tiếng Việt lịch sự, thân thiện, súc tích.";
 
                     var requestPayload = new
                     {
@@ -79,25 +147,29 @@ namespace BOOK.Services
 
                             if (!string.IsNullOrWhiteSpace(text))
                             {
-                                return text.Trim();
+                                return new ChatResult
+                                {
+                                    Reply = text.Trim(),
+                                    ModelUsed = model
+                                };
                             }
                         }
-                    }
-                    else
-                    {
-                        _logger.LogWarning("Gemini API returned status code {StatusCode}", response.StatusCode);
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Lỗi khi gọi Gemini API, chuyển sang trả lời theo tri thức nội quy HUFLIT.");
+                    _logger.LogError(ex, "Lỗi khi gọi Gemini API, chuyển sang chế độ dự phòng nội quy.");
                 }
             }
 
             // =========================================================================
-            // CHẾ ĐỘ DỰ PHÒNG THÔNG MINH THEO CHUẨN NỘI QUY THƯ VIỆN HUFLIT HÓC MÔN
+            // 3. CHẾ ĐỘ DỰ PHÒNG THÔNG MINH THEO CHUẨN NỘI QUY THƯ VIỆN HUFLIT HÓC MÔN
             // =========================================================================
-            return GenerateSmartHuflitResponse(userMessage);
+            return new ChatResult
+            {
+                Reply = GenerateSmartHuflitResponse(userMessage),
+                ModelUsed = "huflit-rule-bot"
+            };
         }
 
         private static string GenerateSmartHuflitResponse(string userMessage)
