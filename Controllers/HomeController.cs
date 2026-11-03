@@ -9,6 +9,8 @@ using Microsoft.Extensions.Logging;
 using BOOK.Data;
 using BOOK.Models;
 using BOOK.Models.ViewModels;
+using BOOK.Services;
+using MongoDB.Driver;
 
 namespace BOOK.Controllers
 {
@@ -16,11 +18,19 @@ namespace BOOK.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly ApplicationDbContext _context;
+        private readonly ILibraryMongoLogService? _mongoLog;
+        private readonly IMongoDatabase? _mongoDb;
 
-        public HomeController(ILogger<HomeController> logger, ApplicationDbContext context)
+        public HomeController(
+            ILogger<HomeController> logger, 
+            ApplicationDbContext context,
+            ILibraryMongoLogService? mongoLog = null,
+            IMongoDatabase? mongoDb = null)
         {
             _logger = logger;
             _context = context;
+            _mongoLog = mongoLog;
+            _mongoDb = mongoDb;
         }
 
         // GET: /Home/Index
@@ -161,6 +171,20 @@ namespace BOOK.Controllers
         // GET: /Home/Map (Sơ đồ thư viện)
         public IActionResult Map()
         {
+            return View();
+        }
+
+        // GET: /Home/MongoStatus (Trang kiểm tra trạng thái MongoDB thời gian thực)
+        public async Task<IActionResult> MongoStatus()
+        {
+            var auditLogs = _mongoLog != null ? await _mongoLog.GetRecentLogsAsync(20) : new();
+            var chatLogs = _mongoLog != null ? await _mongoLog.GetRecentChatLogsAsync(20) : new();
+
+            ViewBag.AuditLogs = auditLogs;
+            ViewBag.ChatLogs = chatLogs;
+            ViewBag.DatabaseName = _mongoDb?.DatabaseNamespace.DatabaseName ?? "LibraryDB";
+            ViewBag.ConnectionString = MongoRunnerService.ActiveConnectionString;
+
             return View();
         }
 

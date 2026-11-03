@@ -1,0 +1,160 @@
+@{
+    ViewData["Title"] = "Trạng thái Cơ sở dữ liệu MongoDB NoSQL";
+    var auditLogs = ViewBag.AuditLogs as List<BOOK.Models.MongoEntities.SystemAuditLog> ?? new();
+    var chatLogs = ViewBag.ChatLogs as List<BOOK.Models.MongoEntities.ChatHistoryLog> ?? new();
+    string dbName = ViewBag.DatabaseName ?? "LibraryDB";
+    string connStr = ViewBag.ConnectionString ?? "mongodb://127.0.0.1:27017";
+}
+
+<div class="container py-5">
+    <!-- Header Banner -->
+    <div class="p-4 mb-4 bg-white rounded-3 shadow-sm border-start border-4 border-success">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-success px-3 py-2 fs-6">
+                        <i class="bi bi-check-circle-fill me-1"></i> MongoDB Active & Running
+                    </span>
+                    <span class="badge bg-secondary px-3 py-2 fs-6">NoSQL Document Store</span>
+                </div>
+                <h2 class="fw-bold text-dark mb-1">Trạng thái Cơ sở Dữ liệu MongoDB</h2>
+                <p class="text-muted mb-0">Hệ thống áp dụng mô hình <strong>Polyglot Persistence</strong>: Lưu trữ Nhật ký kiểm toán và Lịch sử Chatbot AI trên MongoDB.</p>
+            </div>
+            <div>
+                <a href="/" class="btn btn-outline-primary"><i class="bi bi-house me-1"></i> Về Trang chủ</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- MongoDB Connection Info Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm bg-light">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase fw-semibold mb-2">Cơ sở dữ liệu</h6>
+                    <h3 class="fw-bold text-primary mb-0"><i class="bi bi-database me-2"></i>@dbName</h3>
+                    <small class="text-muted">MongoDB Engine: v8.0.x (x86_64)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm bg-light">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase fw-semibold mb-2">Số lượng Collections</h6>
+                    <h3 class="fw-bold text-success mb-0"><i class="bi bi-collection me-2"></i>2 Collections</h3>
+                    <small class="text-muted">system_audit_logs, chat_history_logs</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm bg-light">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase fw-semibold mb-2">Chuỗi kết nối (MongoDB Compass)</h6>
+                    <code class="d-block p-2 bg-white rounded border text-break mb-1 fs-7">@connStr</code>
+                    <small class="text-muted">Dán chuỗi trên vào MongoDB Compass để mở GUI</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Panels for Logs -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom pt-3">
+            <ul class="nav nav-tabs card-header-tabs" id="mongoTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-bold text-primary" id="audit-tab" data-bs-toggle="tab" data-bs-target="#audit" type="button" role="tab">
+                        <i class="bi bi-shield-check me-1"></i> Nhật ký Kiểm toán (system_audit_logs) (@auditLogs.Count)
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold text-success" id="chat-tab" data-bs-toggle="tab" data-bs-target="#chat" type="button" role="tab">
+                        <i class="bi bi-robot me-1"></i> Lịch sử Chatbot AI (chat_history_logs) (@chatLogs.Count)
+                    </button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body p-0">
+            <div class="tab-content" id="mongoTabsContent">
+                <!-- Tab 1: System Audit Logs -->
+                <div class="tab-pane fade show active p-3" id="audit" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>MongoDB _id (ObjectId)</th>
+                                    <th>Hành động (Action)</th>
+                                    <th>Tài khoản</th>
+                                    <th>Vai trò</th>
+                                    <th>Chi tiết sự kiện</th>
+                                    <th>Thời gian (UTC)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (auditLogs.Any())
+                                {
+                                    @foreach (var log in auditLogs)
+                                    {
+                                        <tr>
+                                            <td><code class="text-muted">@log.Id</code></td>
+                                            <td><span class="badge bg-primary">@log.Action</span></td>
+                                            <td class="fw-semibold">@log.Username</td>
+                                            <td><span class="badge bg-secondary">@log.UserRole</span></td>
+                                            <td>@log.Details</td>
+                                            <td class="text-muted small">@log.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted">Chưa có bản ghi nào.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Chat History Logs -->
+                <div class="tab-pane fade p-3" id="chat" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>MongoDB _id</th>
+                                    <th>Người hỏi</th>
+                                    <th>Câu hỏi của Bạn đọc</th>
+                                    <th>Phản hồi của Thủ thư AI</th>
+                                    <th>Model AI</th>
+                                    <th>Thời gian</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (chatLogs.Any())
+                                {
+                                    @foreach (var c in chatLogs)
+                                    {
+                                        <tr>
+                                            <td><code class="text-muted">@c.Id</code></td>
+                                            <td class="fw-semibold text-primary">@c.Username</td>
+                                            <td class="text-dark">@c.UserPrompt</td>
+                                            <td class="text-muted small" style="max-width: 400px;">@c.BotResponse</td>
+                                            <td><span class="badge bg-info text-dark">@c.ModelUsed</span></td>
+                                            <td class="text-muted small">@c.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="6" class="text-center py-4 text-muted">Chưa có hội thoại AI nào.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -8,6 +8,7 @@ namespace BOOK.Services
     public static class MongoRunnerService
     {
         private static MongoDbRunner? _runner;
+        public static string ActiveConnectionString { get; private set; } = "mongodb://127.0.0.1:27017";
 
         public static string EnsureRunning(string? connectionString, string contentRootPath)
         {
@@ -16,13 +17,15 @@ namespace BOOK.Services
                 !connectionString.Contains("localhost:27017"))
             {
                 // External MongoDB (e.g. MongoDB Atlas)
+                ActiveConnectionString = connectionString;
                 return connectionString;
             }
 
             // Check if MongoDB is already listening on port 27017
             if (IsPortOpen("127.0.0.1", 27017))
             {
-                return "mongodb://127.0.0.1:27017";
+                ActiveConnectionString = "mongodb://127.0.0.1:27017";
+                return ActiveConnectionString;
             }
 
             try
@@ -36,12 +39,14 @@ namespace BOOK.Services
                 _runner = MongoDbRunner.Start(
                     dataDirectory: dataDir
                 );
+                ActiveConnectionString = _runner.ConnectionString;
                 return _runner.ConnectionString;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[MongoRunner] Could not start embedded Mongo2Go: {ex.Message}. Falling back to default URI.");
-                return "mongodb://127.0.0.1:27017";
+                ActiveConnectionString = "mongodb://127.0.0.1:27017";
+                return ActiveConnectionString;
             }
         }
 
