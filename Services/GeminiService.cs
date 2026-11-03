@@ -104,44 +104,70 @@ namespace BOOK.Services
         {
             var msg = userMessage.ToLower().Trim();
 
-            if (msg.Contains("mượn") && (msg.Contains("mấy") || msg.Contains("bao nhiêu") || msg.Contains("tối đa")))
+            // 1. Phạt trễ hạn & Tiền phạt
+            if (msg.Contains("phạt") || msg.Contains("trễ") || msg.Contains("quá hạn") || msg.Contains("tiền phạt") || msg.Contains("phí phạt"))
             {
-                return "Theo Quy chế Thư viện HUFLIT cơ sở Hóc Môn: Mỗi sinh viên được mượn tối đa 3 cuốn sách trong một lượt mượn. Thời hạn mượn tối đa là 15 ngày kể từ ngày duyệt phiếu. Bạn phải trả hết sách đang mượn mới được mượn tiếp nhé!";
+                return "Theo Quy chế Thư viện HUFLIT: Phí phạt trễ hạn được tính tự động là 2.000 VNĐ / ngày cho mỗi cuốn sách trễ. Nếu có sách quá hạn chưa thanh toán, Thẻ thư viện của bạn sẽ bị khóa chức năng mượn mới. Bạn vui lòng mang sách và đóng phạt tại quầy Thủ thư để mở lại thẻ nhé!";
             }
 
-            if (msg.Contains("hạn") || msg.Contains("bao lâu") || msg.Contains("ngày") || msg.Contains("15 ngày"))
-            {
-                return "Thời hạn mượn sách chuẩn tại Thư viện HUFLIT là tối đa 15 ngày. Nếu cần thêm thời gian nghiên cứu, bạn có thể vào trang 'Hồ Sơ & Mượn Trả' để gia hạn thêm 07 ngày (áp dụng khi sách chưa có độc giả khác đặt trước).";
-            }
-
+            // 2. Mất sách / Hỏng sách / Bồi thường
             if (msg.Contains("mất") || msg.Contains("hỏng") || msg.Contains("rách") || msg.Contains("bồi thường"))
             {
-                return "Nếu làm mất hoặc hỏng sách, Thẻ thư viện của bạn sẽ tự động chuyển sang trạng thái 'Không sử dụng' (bị khóa tạm thời). Bạn vui lòng mang sách đến quầy Thủ thư tại Cơ sở Hóc Môn (Số 80/2 Bà Triệu, Tân Xuân) để ghi nhận bồi thường. Sau khi hoàn tất bồi thường, thẻ sẽ được khôi phục 'Sử dụng được' ngay lập tức!";
+                return "Quy định xử lý làm mất hoặc hỏng sách: Độc giả phải bồi thường theo đơn giá thực tế của sách hoặc mua sách mới đúng tựa và ấn bản để thay thế. Thẻ thư viện sẽ tạm thời bị khóa cho đến khi bạn hoàn tất thủ tục bồi thường tại Quầy Thủ thư Cơ sở Hóc Môn (Số 80/2 Bà Triệu, Tân Xuân).";
             }
 
+            // 3. Gia hạn sách
+            if (msg.Contains("gia hạn"))
+            {
+                return "Để gia hạn sách đang mượn: Bạn đăng nhập tài khoản sinh viên, vào trang 'Hồ Sơ & Mượn Trả', tìm phiếu mượn tương ứng và bấm nút 'Yêu cầu gia hạn'. Mỗi phiếu mượn được gia hạn thêm tối đa 07 ngày (áp dụng khi sách chưa có độc giả khác đặt mượn trước và phiếu chưa bị quá hạn).";
+            }
+
+            // 4. Đặt mượn sách online / trực tuyến
+            if (msg.Contains("đặt mượn") || msg.Contains("mượn online") || msg.Contains("trực tuyến") || msg.Contains("đặt sách"))
+            {
+                return "Để đặt mượn sách trực tuyến: Bạn vào 'Danh mục sách', tìm cuốn sách cần đọc và bấm nút 'Đặt mượn sách'. Hệ thống sẽ tự động giữ sách cho bạn trong vòng 24 giờ để bạn đến Thư viện nhận sách vật lý tại quầy lưu thông.";
+            }
+
+            // 5. Số lượng sách & Thời hạn mượn thông thường
+            if (msg.Contains("mấy cuốn") || msg.Contains("bao nhiêu cuốn") || msg.Contains("mấy cuốn sách") || (msg.Contains("mượn") && msg.Contains("tối đa")))
+            {
+                return "Theo Quy chế Thư viện HUFLIT cơ sở Hóc Môn: Mỗi sinh viên được mượn tối đa 3 cuốn sách trong một lượt mượn. Thời hạn mượn tiêu chuẩn là 15 ngày kể từ ngày nhận sách. Bạn cần hoàn trả hết sách của đợt mượn trước mới được tạo đợt mượn tiếp theo.";
+            }
+
+            // 6. Thời hạn mượn chung
+            if (msg.Contains("thời hạn") || msg.Contains("bao lâu") || msg.Contains("15 ngày"))
+            {
+                return "Thời hạn mượn sách tiêu chuẩn tại Thư viện HUFLIT là 15 ngày. Bạn có thể theo dõi ngày hết hạn trên phiếu mượn hoặc tại trang 'Hồ Sơ & Mượn Trả' của mình.";
+            }
+
+            // 7. Quên mật khẩu / Đổi mật khẩu
             if (msg.Contains("quên mật khẩu") || msg.Contains("đổi mật khẩu") || msg.Contains("mật khẩu"))
             {
                 return "Để đặt lại mật khẩu tài khoản thư viện HUFLIT, bạn vui lòng mang Thẻ sinh viên đến trực tiếp Quầy Thủ thư tại Thư viện cơ sở Hóc Môn hoặc gửi email từ hòm thư sinh viên về thuvien@huflit.edu.vn để được hỗ trợ cấp lại nhé.";
             }
 
+            // 8. Địa chỉ / Cơ sở / Vị trí
             if (msg.Contains("địa chỉ") || msg.Contains("ở đâu") || msg.Contains("cơ sở") || msg.Contains("vị trí"))
             {
                 return "Thư viện HUFLIT cơ sở Hóc Môn tọa lạc tại: Số 80/2 Bà Triệu, Xã Tân Xuân, Huyện Hóc Môn, TP. Hồ Chí Minh. Thời gian phục vụ: Thứ 2 đến Thứ 7, từ 07:30 đến 21:00 hàng ngày.";
             }
 
+            // 9. Giờ mở cửa / Đóng cửa
             if (msg.Contains("giờ") || msg.Contains("mở cửa") || msg.Contains("đóng cửa"))
             {
                 return "Giờ hoạt động Thư viện HUFLIT cơ sở Hóc Môn: Mở cửa từ Thứ 2 đến Thứ 7 (07:30 - 21:00). Chủ nhật và các ngày lễ nghỉ theo quy định của Nhà trường.";
             }
 
+            // 10. Đăng ký thẻ / Làm thẻ
             if (msg.Contains("thẻ") || msg.Contains("đăng ký") || msg.Contains("làm thẻ"))
             {
                 return "Để đăng ký thẻ thư viện, bạn chỉ cần bấm vào nút 'Đăng ký thẻ mới' ở góc trên cùng bên phải màn hình, điền MSSV, họ tên và mật khẩu. Hệ thống sẽ tự động cấp Thẻ thư viện LIB-{MSSV} có thời hạn 1 năm để bạn sử dụng ngay!";
             }
 
+            // 11. Chào hỏi
             if (msg.Contains("chào") || msg.Contains("hi") || msg.Contains("hello"))
             {
-                return "Xin chào bạn! Tôi là Trợ lý Thư viện ảo của Trường Đại học Ngoại ngữ - Tin học TP.HCM (HUFLIT) cơ sở Hóc Môn. Tôi có thể hỗ trợ bạn tra cứu sách, hướng dẫn quy định mượn trả và thủ tục thư viện. Bạn cần giúp gì ạ?";
+                return "Xin chào bạn! Tôi là Trợ lý Thư viện ảo của Trường Đại học Ngoại ngữ - Tin học TP.HCM (HUFLIT) cơ sở Hóc Môn. Tôi có thể hỗ trợ bạn tra cứu sách, giải đáp quy định mượn trả, phí phạt và thủ tục thư viện. Bạn cần giúp gì ạ?";
             }
 
             return "Chào bạn! Thư viện HUFLIT cơ sở Hóc Môn hiện có sẵn trên 50.000 đầu sách thuộc các khối ngành CNTT, Ngoại ngữ, Kinh tế, Du lịch. Quy định chung: Mỗi lần mượn tối đa 3 cuốn/15 ngày, trả xong mới mượn tiếp. Bạn cần hỗ trợ thêm thông tin cụ thể nào ạ?";
