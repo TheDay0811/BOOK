@@ -12,10 +12,12 @@ namespace BOOK.Controllers
     public class ChatController : Controller
     {
         private readonly ILibraryChatService _chatService;
+        private readonly ILibraryMongoLogService _mongoLogService;
 
-        public ChatController(ILibraryChatService chatService)
+        public ChatController(ILibraryChatService chatService, ILibraryMongoLogService mongoLogService)
         {
             _chatService = chatService;
+            _mongoLogService = mongoLogService;
         }
 
         [HttpPost]
@@ -27,6 +29,11 @@ namespace BOOK.Controllers
             }
 
             var reply = await _chatService.GetLibrarianResponseAsync(request.Message);
+
+            // Tự động lưu hội thoại vào MongoDB NoSQL
+            var username = User.Identity?.IsAuthenticated == true ? User.Identity.Name! : "Khách độc giả";
+            await _mongoLogService.LogChatAsync(username, request.Message, reply);
+
             return Json(new { reply });
         }
     }

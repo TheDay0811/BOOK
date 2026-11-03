@@ -2,10 +2,25 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using BOOK.Data;
 using BOOK.Services;
+using MongoDB.Driver;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// 1. CƠ SỞ DỮ LIỆU QUAN HỆ (SQL SERVER / RDBMS): Lưu thông sách, thẻ, phiếu mượn, phạt (ACID)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// 2. CƠ SỞ DỮ LIỆU NOSQL (MONGODB): Tự động khởi chạy & kết nối lưu trữ System Audit Logs, AI Chat
+var rawMongoConn = builder.Configuration.GetConnectionString("MongoConnection") ?? "mongodb://127.0.0.1:27017";
+var activeMongoConn = MongoRunnerService.EnsureRunning(rawMongoConn, builder.Environment.ContentRootPath);
+var mongoDbName = builder.Configuration.GetValue<string>("MongoDatabaseName") ?? "LibraryDB";
+
+var mongoClient = new MongoClient(activeMongoConn);
+var mongoDatabase = mongoClient.GetDatabase(mongoDbName);
+builder.Services.AddSingleton<IMongoClient>(mongoClient);
+builder.Services.AddSingleton<IMongoDatabase>(mongoDatabase);
+builder.Services.AddSingleton<ILibraryMongoLogService, LibraryMongoLogService>();
+
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpClient<ILibraryChatService, GeminiService>();
@@ -22,17 +37,23 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
     });
 
 var app = builder.Build();
+
 using (var scope = app.Services.CreateScope())
 {
+    // A. Khởi tạo & nạp dữ liệu cho SQL Server
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    db.Database.Migrate();   // tự tạo DB + áp migration nếu chưa có
-    DbSeeder.Seed(db);       // tự chèn data mẫu nếu bảng còn trống
+    db.Database.Migrate();
+    DbSeeder.Seed(db);
+
+    // B. Khởi tạo & nạp dữ liệu mẫu cho MongoDB (Sẵn sàng demo cho Giảng viên trên MongoDB Compass)
+    var mongoLogService = scope.ServiceProvider.GetRequiredService<ILibraryMongoLogService>();
+    await MongoSeeder.SeedInitialLogsAsync(mongoLogService);
 }
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 

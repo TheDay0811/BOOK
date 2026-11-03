@@ -1,5 +1,6 @@
-﻿.vs/
+.vs/
 bin/
 obj/
 *.user
 appsettings.Development.json
+.mongodb_data*
