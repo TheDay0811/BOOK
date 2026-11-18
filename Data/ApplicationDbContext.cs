@@ -19,6 +19,7 @@ namespace BOOK.Data
         public DbSet<ThongBao> ThongBaos => Set<ThongBao>();
         public DbSet<DanhGia> DanhGias => Set<DanhGia>();
         public DbSet<YeuCauGiaHan> YeuCauGiaHans => Set<YeuCauGiaHan>();
+        public DbSet<YeuThich> YeuThichs => Set<YeuThich>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -82,6 +83,23 @@ namespace BOOK.Data
             modelBuilder.Entity<DanhGia>().HasOne(d => d.Sach).WithMany().HasForeignKey(d => d.MaSach);
             modelBuilder.Entity<DanhGia>().HasOne(d => d.TaiKhoan).WithMany().HasForeignKey(d => d.MaTK);
             modelBuilder.Entity<YeuCauGiaHan>().HasOne(y => y.PhieuMuon).WithMany().HasForeignKey(y => y.MaPhieuMuon);
+
+            // 10. Danh sách sách yêu thích (Wishlist)
+            modelBuilder.Entity<YeuThich>()
+                .HasOne(y => y.TaiKhoan)
+                .WithMany()
+                .HasForeignKey(y => y.MaTK)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<YeuThich>()
+                .HasOne(y => y.Sach)
+                .WithMany()
+                .HasForeignKey(y => y.MaSach)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<YeuThich>()
+                .HasIndex(y => new { y.MaTK, y.MaSach })
+                .IsUnique();
         }
     }
 }

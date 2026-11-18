@@ -1,0 +1,153 @@
+@model BOOK.Models.ViewModels.WishlistIndexViewModel
+@{
+    ViewData["Title"] = "Sách Yêu Thích";
+}
+
+<div class="min-h-screen bg-slate-50 py-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+        
+        <!-- HEADER SECTION -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200">
+            <div>
+                <nav class="flex items-center gap-2 text-xs text-slate-500 mb-2">
+                    <a asp-controller="Home" asp-action="Index" class="hover:text-blue-600 transition-colors">Trang chủ</a>
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+                    <span class="text-slate-800 font-medium">Sách yêu thích</span>
+                </nav>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center border border-rose-100 shadow-sm">
+                        <i data-lucide="heart" class="w-5 h-5 fill-rose-500 text-rose-500"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-black text-slate-900 tracking-tight">Sách Yêu Thích Của Bạn</h1>
+                        <p class="text-xs text-slate-500 mt-0.5">Lưu lại các tựa sách yêu thích để dễ dàng theo dõi và đăng ký mượn khi cần.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <span class="px-4 py-2 bg-white rounded-xl border border-slate-200 text-xs font-bold text-slate-700 shadow-sm flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                    Tổng cộng: <strong class="text-rose-600 text-sm">@Model.Items.Count</strong> cuốn
+                </span>
+                <a asp-controller="Book" asp-action="Index" 
+                   class="px-4 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-1.5">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Khám phá thêm sách
+                </a>
+            </div>
+        </div>
+
+        <!-- CONTENT SECTION -->
+        @if (Model.Items.Count == 0)
+        {
+            <!-- EMPTY STATE -->
+            <div class="bg-white rounded-3xl border border-slate-200/80 p-12 text-center max-w-lg mx-auto shadow-sm space-y-5 my-12">
+                <div class="w-20 h-20 rounded-full bg-rose-50 text-rose-400 mx-auto flex items-center justify-center border border-rose-100">
+                    <i data-lucide="heart-off" class="w-10 h-10 stroke-[1.5]"></i>
+                </div>
+                <div class="space-y-1.5">
+                    <h3 class="text-lg font-extrabold text-slate-900">Danh sách yêu thích đang trống</h3>
+                    <p class="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+                        Bạn chưa lưu cuốn sách nào. Hãy duyệt qua kho tài liệu và bấm nút biểu tượng trái tim để lưu lại nhé!
+                    </p>
+                </div>
+                <div class="pt-2">
+                    <a asp-controller="Book" asp-action="Index" 
+                       class="inline-flex items-center gap-2 px-6 py-3 bg-navy-800 hover:bg-navy-900 text-white text-xs font-bold rounded-2xl shadow-md hover:shadow-lg transition-all">
+                        <i data-lucide="book-open" class="w-4 h-4"></i> Khám phá danh mục sách
+                    </a>
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- WISHLIST GRID -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                @foreach (var item in Model.Items)
+                {
+                    <div class="group bg-white rounded-3xl border border-slate-200/90 hover:border-slate-300 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden relative">
+                        
+                        <!-- REMOVE BUTTON (TOP RIGHT) -->
+                        <form asp-controller="Wishlist" asp-action="Remove" method="post" class="absolute top-3 right-3 z-10">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="bookId" value="@item.BookId" />
+                            <button type="submit" 
+                                    title="Xóa khỏi yêu thích"
+                                    class="w-9 h-9 rounded-full bg-white/90 backdrop-blur-md hover:bg-rose-50 text-slate-400 hover:text-rose-500 shadow-md border border-slate-200 flex items-center justify-center transition-all group-hover:opacity-100">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </form>
+
+                        <!-- BOOK COVER & BADGES -->
+                        <div class="relative aspect-[3/4] bg-slate-100 overflow-hidden">
+                            <a asp-controller="Book" asp-action="Details" asp-route-id="@item.BookId" class="block w-full h-full">
+                                <img src="@item.CoverImageUrl" 
+                                     alt="@item.Title" 
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                                     onerror="this.onerror=null;this.src='/images/default-book.png';" />
+                            </a>
+                            
+                            <!-- CATEGORY PILL -->
+                            <span class="absolute bottom-3 left-3 px-2.5 py-1 rounded-lg bg-navy-900/80 backdrop-blur-md text-white text-[10px] font-bold tracking-wide">
+                                @item.CategoryName
+                            </span>
+                        </div>
+
+                        <!-- BOOK INFO -->
+                        <div class="p-5 flex-1 flex flex-col justify-between space-y-4">
+                            <div class="space-y-1.5">
+                                <a asp-controller="Book" asp-action="Details" asp-route-id="@item.BookId" 
+                                   class="block font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-2 text-sm leading-snug">
+                                    @item.Title
+                                </a>
+                                <p class="text-xs text-slate-500 flex items-center gap-1.5">
+                                    <i data-lucide="user" class="w-3.5 h-3.5 text-slate-400 flex-shrink-0"></i>
+                                    <span class="truncate">@item.Author</span>
+                                </p>
+                            </div>
+
+                            <!-- AVAILABILITY & ADDED DATE -->
+                            <div class="pt-3 border-t border-slate-100 space-y-2">
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="text-slate-500">Tình trạng:</span>
+                                    @if (item.IsAvailable)
+                                    {
+                                        <span class="inline-flex items-center gap-1 text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-md text-[11px]">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Còn sách (@item.AvailableCopies)
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="inline-flex items-center gap-1 text-rose-600 font-bold bg-rose-50 px-2 py-0.5 rounded-md text-[11px]">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Hết sách
+                                        </span>
+                                    }
+                                </div>
+                                <div class="text-[10px] text-slate-400 flex items-center gap-1">
+                                    <i data-lucide="calendar" class="w-3 h-3"></i> Đã lưu: @item.AddedDate.ToString("dd/MM/yyyy")
+                                </div>
+                            </div>
+
+                            <!-- ACTIONS -->
+                            <div class="pt-2 flex items-center gap-2">
+                                <a asp-controller="Book" asp-action="Details" asp-route-id="@item.BookId" 
+                                   class="flex-1 py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl text-center transition-colors">
+                                    Xem chi tiết
+                                </a>
+                                @if (item.IsAvailable)
+                                {
+                                    <a asp-controller="Book" asp-action="Details" asp-route-id="@item.BookId" asp-fragment="borrow" 
+                                       class="py-2.5 px-3 bg-navy-800 hover:bg-navy-900 text-white text-xs font-bold rounded-xl text-center transition-all flex items-center gap-1 shadow-sm">
+                                        <i data-lucide="bookmark-plus" class="w-3.5 h-3.5"></i> Mượn
+                                    </a>
+                                }
+                            </div>
+                        </div>
+
+                    </div>
+                }
+            </div>
+        }
+
+    </div>
+</div>

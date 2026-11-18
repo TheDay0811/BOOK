@@ -551,6 +551,51 @@
                 setTimeout(() => toast.remove(), 300);
             }, 4000);
         }
+
+        window.toggleWishlist = async function(bookId, btn) {
+            try {
+                const res = await fetch(`/Wishlist/Toggle?bookId=${bookId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (data.requireLogin) {
+                    window.showAppModal({
+                        title: 'Yêu Cầu Đăng Nhập',
+                        message: data.message,
+                        type: 'info'
+                    });
+                    return;
+                }
+
+                if (data.success) {
+                    const icon = btn.querySelector('[data-lucide="heart"]') || btn.querySelector('svg');
+                    const textSpan = btn.querySelector('.wishlist-text');
+                    if (data.isFavorited) {
+                        btn.classList.add('text-rose-500');
+                        btn.classList.remove('text-slate-400');
+                        if (icon) {
+                            icon.classList.add('fill-rose-500', 'text-rose-500');
+                            icon.classList.remove('text-slate-400');
+                        }
+                        if (textSpan) textSpan.textContent = 'Đã yêu thích';
+                        window.showAppToast('success', 'Yêu Thích', data.message);
+                    } else {
+                        btn.classList.remove('text-rose-500');
+                        btn.classList.add('text-slate-400');
+                        if (icon) {
+                            icon.classList.remove('fill-rose-500', 'text-rose-500');
+                            icon.classList.add('text-slate-400');
+                        }
+                        if (textSpan) textSpan.textContent = 'Yêu thích';
+                        window.showAppToast('info', 'Yêu Thích', data.message);
+                    }
+                    if (window.lucide) lucide.createIcons();
+                }
+            } catch (err) {
+                console.error('Error toggling wishlist:', err);
+            }
+        };
     </script>
 
     @await RenderSectionAsync("Scripts", required: false)
