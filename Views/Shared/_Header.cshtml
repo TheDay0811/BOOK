@@ -71,11 +71,6 @@
                        class="px-3.5 py-2 rounded-xl hover:bg-slate-100 hover:text-navy-800 transition-colors">
                         Quy định mượn trả
                     </a>
-                    <a asp-controller="Wishlist" asp-action="Index" 
-                       class="px-3.5 py-2 rounded-xl hover:bg-slate-100 hover:text-navy-800 transition-colors flex items-center gap-1.5 @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Wishlist" ? "text-rose-600 font-bold bg-rose-50" : "")">
-                        <i data-lucide="heart" class="w-4 h-4 text-rose-500"></i>
-                        Yêu thích
-                    </a>
                     @if (isAuthenticated)
                     {
                         <a asp-controller="Account" asp-action="Profile" 
@@ -223,12 +218,6 @@
                                    class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 hover:text-navy-800 transition-colors">
                                     <i data-lucide="history" class="w-4 h-4 text-slate-500"></i>
                                     <span>Lịch sử mượn - trả</span>
-                                </a>
-
-                                <a asp-controller="Wishlist" asp-action="Index"
-                                   class="flex items-center gap-2.5 px-3 py-2 rounded-xl hover:bg-slate-100 hover:text-navy-800 transition-colors">
-                                    <i data-lucide="heart" class="w-4 h-4 text-rose-500"></i>
-                                    <span>Sách yêu thích</span>
                                 </a>
 
                                 <a href="javascript:void(0)" onclick="window.showAppModal({ title: 'Đổi Mật Khẩu Độc Giả', message: 'Tài khoản độc giả được đồng bộ trực tiếp với Cổng thông tin Sinh viên HUFLIT.\nĐể đổi mật khẩu hoặc lấy lại mã PIN, vui lòng liên hệ trực tiếp Quầy Thủ thư Cơ sở Hóc Môn hoặc Phòng Đào tạo.', type: 'info' })"
