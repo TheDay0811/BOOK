@@ -261,6 +261,14 @@
                         </button>
                     }
 
+                    <button type="button" 
+                            onclick="toggleWishlist(@Model.Book.Id, this)"
+                            id="btnDetailWishlist"
+                            class="px-5 py-3.5 rounded-2xl font-bold text-xs border border-slate-200 hover:border-rose-300 hover:bg-rose-50 text-slate-700 hover:text-rose-600 transition-all flex items-center gap-2 shadow-sm">
+                        <i data-lucide="heart" class="w-4 h-4 text-slate-400"></i>
+                        <span class="wishlist-text">Yêu thích</span>
+                    </button>
+
                     <a asp-controller="Book" asp-action="Index" 
                        class="px-5 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-semibold text-xs transition-colors flex items-center gap-1.5">
                         <i data-lucide="arrow-left" class="w-4 h-4"></i> Quay lại danh mục
@@ -458,5 +466,24 @@
                 if (display) display.value = parts[2] + '/' + parts[1] + '/' + parts[0];
             }
         }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const res = await fetch('/Wishlist/CheckStatus?bookId=@Model.Book.Id');
+                const data = await res.json();
+                if (data.isFavorited) {
+                    const btn = document.getElementById('btnDetailWishlist');
+                    if (btn) {
+                        btn.classList.add('text-rose-500', 'border-rose-300', 'bg-rose-50');
+                        btn.classList.remove('text-slate-700');
+                        const icon = btn.querySelector('[data-lucide="heart"]') || btn.querySelector('svg');
+                        if (icon) icon.classList.add('fill-rose-500', 'text-rose-500');
+                        const span = btn.querySelector('.wishlist-text');
+                        if (span) span.textContent = 'Đã yêu thích';
+                        if (window.lucide) lucide.createIcons();
+                    }
+                }
+            } catch (e) {}
+        });
     </script>
 }

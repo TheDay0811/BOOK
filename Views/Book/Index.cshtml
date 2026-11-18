@@ -148,6 +148,14 @@
                                      class="h-full max-w-full object-contain rounded-lg shadow group-hover:scale-105 transition-transform duration-300"
                                      onerror="this.onerror=null; this.src='/uploads/books/default-book.svg';" />
 
+                                <!-- Wishlist Button -->
+                                <button type="button" 
+                                        onclick="toggleWishlist(@book.Id, this)"
+                                        class="absolute top-3 left-3 w-8 h-8 rounded-full bg-white/90 hover:bg-white text-slate-400 hover:text-rose-500 shadow-md border border-slate-200/80 flex items-center justify-center transition-all z-10"
+                                        title="Lưu vào danh sách yêu thích">
+                                    <i data-lucide="heart" class="w-4 h-4"></i>
+                                </button>
+
                                 <!-- Availability Badge -->
                                 <div class="absolute top-3 right-3">
                                     @if (book.IsAvailable)
