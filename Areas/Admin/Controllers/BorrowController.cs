@@ -1,6 +1,7 @@
 using BOOK.Data;
 using BOOK.Models.Entities;
 using BOOK.Models.ViewModels;
+using BOOK.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -16,10 +17,12 @@ namespace BOOK.Areas.Admin.Controllers
     public class BorrowController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly FineQrService _fineQrService;
         private const decimal LateFeePerDay = 2000m; // đ/ngày/cuốn
-        public BorrowController(ApplicationDbContext context)
+        public BorrowController(ApplicationDbContext context, FineQrService fineQrService)
         {
             _context = context;
+            _fineQrService = fineQrService;
         }
 
         // GET: /Admin/Borrow/Index
@@ -422,6 +425,9 @@ namespace BOOK.Areas.Admin.Controllers
                 return View(new ReturnBookDeskViewModel());
             }
 
+            var overdueDays = Math.Max(0, (DateTime.Today - phieu.HanTra.Date).Days);
+            var lateFee = overdueDays * LateFeePerDay;
+
             var model = new ReturnBookDeskViewModel
             {
                 TicketCode = phieu.MaPhieuMuon.ToString(),
@@ -439,9 +445,16 @@ namespace BOOK.Areas.Admin.Controllers
                         BookTitle = c.DauSach.Sach.TenSach,
                         ControlNumber = c.DauSach.SoKiemSoat,
                         BorrowDate = phieu.NgayMuon,
-                        DueDate = phieu.HanTra
+                        DueDate = phieu.HanTra,
+                        OverdueDays = overdueDays,
+                        LateFee = lateFee
                     }).ToList()
             };
+
+            if (!model.BorrowedCopies.Any())
+            {
+                TempData["Warning"] = $"Phiếu mượn #{phieu.MaPhieuMuon} đã hoàn tất trả toàn bộ sách trước đó.";
+            }
 
             return View(model);
         }
@@ -472,16 +485,21 @@ namespace BOOK.Areas.Admin.Controllers
                 var chiTiet = phieu.ChiTiets.FirstOrDefault(c => c.MaDauSach == copyIds[i] && c.NgayTraThucTe == null);
                 if (chiTiet == null) continue;
 
+                var condition = i < conditions.Count ? conditions[i] : "Bình thường";
+                var baseFee = i < fees.Count ? fees[i] : 0m;
+                if (condition == "Hỏng" && baseFee < 50000m) baseFee = 50000m;
+                if (condition == "Mất" && baseFee < 100000m) baseFee = 100000m;
+                if (condition == "Bình thường") baseFee = 0m;
+
                 chiTiet.NgayTraThucTe = DateTime.Today;
-                chiTiet.TinhTrangTra = conditions[i];
-                chiTiet.TienBoiThuong = fees[i];
-                if (DateTime.Today > phieu.HanTra)
-                    chiTiet.TienBoiThuong += (DateTime.Today - phieu.HanTra).Days * LateFeePerDay;
+                chiTiet.TinhTrangTra = condition;
+                chiTiet.TienBoiThuong = baseFee;
+                if (DateTime.Today > phieu.HanTra.Date)
+                    chiTiet.TienBoiThuong += (DateTime.Today - phieu.HanTra.Date).Days * LateFeePerDay;
 
+                bool isPaidAtCounter = paidStatuses != null && paidStatuses.Contains(i.ToString());
 
-                bool isPaidAtCounter = paidStatuses != null && (paidStatuses.Contains(i.ToString()) || paidStatuses.Contains(copyIds[i].ToString()));
-
-                if (chiTiet.TienBoiThuong > 0 || conditions[i] == "Hỏng" || conditions[i] == "Mất")
+                if (chiTiet.TienBoiThuong > 0 || condition == "Hỏng" || condition == "Mất")
                 {
                     chiTiet.DaBoiThuong = isPaidAtCounter;
                     if (!isPaidAtCounter)
@@ -494,15 +512,15 @@ namespace BOOK.Areas.Admin.Controllers
                     chiTiet.DaBoiThuong = true;
                 }
 
-                if (conditions[i] == "Bình thường")
+                if (condition == "Bình thường")
                 {
                     chiTiet.DauSach.TinhTrang = "Còn";
                 }
-                else if (conditions[i] == "Hỏng")
+                else if (condition == "Hỏng")
                 {
                     chiTiet.DauSach.TinhTrang = "Hỏng";
                 }
-                else if (conditions[i] == "Mất")
+                else if (condition == "Mất")
                 {
                     chiTiet.DauSach.TinhTrang = "Mất";
                 }
@@ -696,6 +714,22 @@ namespace BOOK.Areas.Admin.Controllers
                             item.Detail.TienBoiThuong = fee;
                         }
 
+                        var incidentType = item.Detail.TinhTrangTra;
+                        string description;
+                        if (incidentType == "Hỏng")
+                        {
+                            description = "Bồi thường hư hỏng / rách sách (Định mức 50.000 VNĐ)";
+                        }
+                        else if (incidentType == "Mất")
+                        {
+                            description = "Bồi thường làm mất sách (Định mức 100.000 VNĐ)";
+                        }
+                        else
+                        {
+                            incidentType = "Quá hạn";
+                            description = "Phạt trả sách quá hạn (Định mức 2.000 VNĐ/ngày)";
+                        }
+
                         model.UnpaidFines.Add(new UnpaidFineItemViewModel
                         {
                             ChiTietId = item.Detail.MaChiTiet,
@@ -703,13 +737,25 @@ namespace BOOK.Areas.Admin.Controllers
                             BookTitle = item.Detail.DauSach?.Sach?.TenSach ?? "Tài liệu thư viện",
                             BookCode = item.Detail.DauSach?.Sach?.MaSachCode ?? "---",
                             ControlNumber = item.Detail.DauSach?.SoKiemSoat ?? "001",
-                            IncidentType = item.Detail.TinhTrangTra ?? "Hỏng",
+                            IncidentType = incidentType,
                             IncidentDate = item.Detail.NgayTraThucTe ?? item.Loan.HanTra,
                             FineAmount = fee,
-                            Description = item.Detail.TinhTrangTra == "Hỏng" 
-                                ? "Bồi thường hư hỏng / rách sách (Định mức 50.000 VNĐ)" 
-                                : "Bồi thường làm mất sách (Định mức 100.000 VNĐ)"
+                            Description = description
                         });
+                    }
+
+                    if (model.TotalAmount > 0)
+                    {
+                        var ticketRefs = string.Join(" ", model.UnpaidFines.Select(f => $"PM{f.PhieuMuonId}").Distinct());
+                        var qrInfo = _fineQrService.BuildFineQrInfo(model.TotalAmount, model.StudentCode, model.CardNumber, ticketRefs);
+                        model.QrImageUrl = qrInfo.QrImageUrl;
+                        model.TransferMemo = qrInfo.TransferContent;
+                        model.TierName = qrInfo.Tier.TierName;
+                        model.TierBadgeClass = qrInfo.Tier.BadgeClass;
+                        model.TierDescription = qrInfo.Tier.Description;
+                        model.BankName = qrInfo.BankName;
+                        model.AccountNumber = qrInfo.AccountNumber;
+                        model.AccountName = qrInfo.AccountName;
                     }
                 }
             }

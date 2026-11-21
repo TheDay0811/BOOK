@@ -12,8 +12,14 @@
     <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
         <div class="max-w-3xl space-y-6">
             <!-- Academic Pill Badge -->
-            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-semibold text-amber-300">
-                <i data-lucide="sparkles" class="w-4 h-4"></i> Cổng Thư Viện Học Thuật & Nghiên Cứu Số
+            <div class="flex flex-wrap items-center gap-2.5">
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-semibold text-amber-300">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i> Cổng Thư Viện Học Thuật & Nghiên Cứu Số
+                </div>
+                <div data-rust-wasm-badge class="hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/15 backdrop-blur-md border border-emerald-400/30 text-[11px] font-bold text-emerald-300">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span data-rust-wasm-status>Rust Wasm Ready</span>
+                </div>
             </div>
 
             <!-- Main Heading -->
@@ -152,6 +158,11 @@
                                 </span>
                             </div>
                             <span class="text-[11px] font-bold text-blue-600 uppercase">@book.CategoryName</span>
+                            <div class="flex items-center gap-1 text-xs mt-1">
+                                <i data-lucide="star" class="w-3.5 h-3.5 @(book.ReviewCount > 0 ? "fill-amber-400 text-amber-400" : "text-slate-300")"></i>
+                                <span class="font-bold text-slate-800">@book.Rating.ToString("0.0")</span>
+                                <span class="text-slate-400">(@book.ReviewCount)</span>
+                            </div>
                             <h4 class="font-bold text-sm text-slate-900 mt-1 line-clamp-2">
                                 <a asp-controller="Book" asp-action="Details" asp-route-id="@book.Id" class="hover:text-navy-800 transition-colors">
                                     @book.Title
@@ -159,12 +170,18 @@
                             </h4>
                             <p class="text-xs text-slate-500 mt-1 truncate">@book.Author</p>
                         </div>
-                        <div class="pt-3 mt-3 border-t border-slate-200 flex items-center justify-between">
-                            <span class="text-[11px] text-slate-500 font-mono">@book.ShelfLocation</span>
-                            <a asp-controller="Book" asp-action="Details" asp-route-id="@book.Id" 
-                               class="px-3.5 py-1.5 bg-navy-800 hover:bg-navy-900 text-white rounded-lg text-xs font-bold transition-colors">
-                                Chi tiết
-                            </a>
+                        <div class="pt-3 mt-3 border-t border-slate-200 flex items-center justify-between gap-2">
+                            <span class="text-[11px] text-slate-500 font-mono truncate">@book.ShelfLocation</span>
+                            <div class="flex items-center gap-1.5 flex-shrink-0">
+                                <a asp-controller="Book" asp-action="Details" asp-route-id="@book.Id" asp-route-preview="1"
+                                   class="px-2.5 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-950 rounded-lg text-[11px] font-bold transition-colors">
+                                    Đọc thử
+                                </a>
+                                <a asp-controller="Book" asp-action="Details" asp-route-id="@book.Id" 
+                                   class="px-3 py-1.5 bg-navy-800 hover:bg-navy-900 text-white rounded-lg text-xs font-bold transition-colors">
+                                    Chi tiết
+                                </a>
+                            </div>
                         </div>
                     </div>
                 }

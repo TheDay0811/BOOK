@@ -102,6 +102,7 @@ namespace BOOK.Areas.Admin.Controllers
                 .Include(s => s.TheLoai)
                 .Include(s => s.NhaXuatBan)
                 .Include(s => s.DauSachs)
+                .Include(s => s.TrangDocThus)
                 .FirstOrDefaultAsync(s => s.MaSach == id);
 
             if (sach == null)
@@ -118,6 +119,9 @@ namespace BOOK.Areas.Admin.Controllers
                 CategoryName = sach.TheLoai.TenTheLoai,
                 PublisherName = sach.NhaXuatBan.TenNXB,
                 PublishYear = sach.NamXuatBan,
+                CoverImageUrl = !string.IsNullOrEmpty(sach.HinhAnh) ? sach.HinhAnh : "/uploads/books/default-book.svg",
+                Description = sach.MoTa ?? "",
+                PageCount = sach.SoTrang > 0 ? sach.SoTrang : 320,
                 Copies = sach.DauSachs.Select(d => new BookCopyViewModel
                 {
                     Id = d.MaDauSach,
@@ -126,7 +130,17 @@ namespace BOOK.Areas.Admin.Controllers
                     ControlNumber = d.SoKiemSoat,
                     Status = d.TinhTrang,
                     Notes = d.GhiChu
-                }).ToList()
+                }).OrderBy(c => c.ControlNumber).ToList(),
+                PreviewPages = sach.TrangDocThus
+                    .OrderBy(t => t.SoTrang)
+                    .ThenBy(t => t.MaTrangDocThu)
+                    .Select(t => new BookPreviewPageViewModel
+                    {
+                        Id = t.MaTrangDocThu,
+                        PageNumber = t.SoTrang,
+                        Title = t.TieuDe,
+                        Content = t.NoiDung
+                    }).ToList()
             };
 
             return View(model);
@@ -163,7 +177,9 @@ namespace BOOK.Areas.Admin.Controllers
                 NamXuatBan = model.PublishYear,
                 MaTheLoai = model.CategoryId,
                 MaNXB = model.PublisherId,
-                HinhAnh = imagePath
+                HinhAnh = imagePath,
+                MoTa = string.IsNullOrWhiteSpace(model.Description) ? null : model.Description.Trim(),
+                SoTrang = model.PageCount >= 10 ? model.PageCount : 320
             };
 
             int copiesCount = Math.Clamp(model.InitialCopiesCount, 1, 50);
@@ -209,7 +225,9 @@ namespace BOOK.Areas.Admin.Controllers
                 publisherId = sach.MaNXB,
                 publishYear = sach.NamXuatBan,
                 shelfLocation = $"Kệ {sach.MaSachCode} - Tầng 2",
-                coverImageUrl = sach.HinhAnh ?? ""
+                coverImageUrl = sach.HinhAnh ?? "",
+                description = sach.MoTa ?? "",
+                pageCount = sach.SoTrang > 0 ? sach.SoTrang : 320
             });
         }
 
@@ -233,6 +251,11 @@ namespace BOOK.Areas.Admin.Controllers
             sach.MaTheLoai = model.CategoryId;
             sach.MaNXB = model.PublisherId;
             sach.NamXuatBan = model.PublishYear;
+            sach.MoTa = string.IsNullOrWhiteSpace(model.Description) ? null : model.Description.Trim();
+            if (model.PageCount >= 10 && model.PageCount <= 5000)
+            {
+                sach.SoTrang = model.PageCount;
+            }
 
             var newImage = await SaveBookImageAsync(model.ImageFile, model.CoverImageUrl);
             if (!string.IsNullOrEmpty(newImage))
@@ -453,6 +476,75 @@ namespace BOOK.Areas.Admin.Controllers
                 TempData["Success"] = $"Đã đổi tên tác giả cho {list.Count} sách.";
             }
             return RedirectToAction(nameof(Authors));
+        }
+
+        // ---- Quản lý trang đọc thử sách ----
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddPreviewPage(int bookId, int pageNumber, string title, string content)
+        {
+            var sachExists = await _context.Sachs.AnyAsync(s => s.MaSach == bookId);
+            if (!sachExists)
+            {
+                TempData["Error"] = "Không tìm thấy tựa sách.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (pageNumber < 1 || string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(content))
+            {
+                TempData["Error"] = "Vui lòng nhập đầy đủ số trang (> 0), tiêu đề và nội dung trang đọc thử.";
+                return RedirectToAction(nameof(Details), new { id = bookId });
+            }
+
+            _context.TrangDocThus.Add(new TrangDocThu
+            {
+                MaSach = bookId,
+                SoTrang = pageNumber,
+                TieuDe = title.Trim(),
+                NoiDung = content.Trim()
+            });
+            await _context.SaveChangesAsync();
+            TempData["Success"] = $"Đã thêm trang đọc thử số {pageNumber} thành công.";
+            return RedirectToAction(nameof(Details), new { id = bookId });
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdatePreviewPage(int bookId, int pageId, int pageNumber, string title, string content)
+        {
+            var page = await _context.TrangDocThus.FirstOrDefaultAsync(t => t.MaTrangDocThu == pageId && t.MaSach == bookId);
+            if (page == null)
+            {
+                TempData["Error"] = "Không tìm thấy trang đọc thử cần cập nhật.";
+                return RedirectToAction(nameof(Details), new { id = bookId });
+            }
+
+            if (pageNumber < 1 || string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(content))
+            {
+                TempData["Error"] = "Số trang, tiêu đề và nội dung không được để trống.";
+                return RedirectToAction(nameof(Details), new { id = bookId });
+            }
+
+            page.SoTrang = pageNumber;
+            page.TieuDe = title.Trim();
+            page.NoiDung = content.Trim();
+            await _context.SaveChangesAsync();
+            TempData["Success"] = $"Đã cập nhật trang đọc thử số {pageNumber}.";
+            return RedirectToAction(nameof(Details), new { id = bookId });
+        }
+
+        [HttpPost, ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeletePreviewPage(int bookId, int pageId)
+        {
+            var page = await _context.TrangDocThus.FirstOrDefaultAsync(t => t.MaTrangDocThu == pageId && t.MaSach == bookId);
+            if (page == null)
+            {
+                TempData["Error"] = "Không tìm thấy trang đọc thử cần xóa.";
+                return RedirectToAction(nameof(Details), new { id = bookId });
+            }
+
+            _context.TrangDocThus.Remove(page);
+            await _context.SaveChangesAsync();
+            TempData["Success"] = $"Đã xóa trang đọc thử số {page.SoTrang}.";
+            return RedirectToAction(nameof(Details), new { id = bookId });
         }
     }
 }

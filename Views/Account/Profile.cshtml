@@ -211,10 +211,37 @@
                 <div class="pt-1 space-y-2">
                     @if (Model.HasUnpaidFines)
                     {
+                        <button type="button"
+                                data-amount="@((long)Math.Round(Model.TotalUnpaidFines))"
+                                data-ref="TONG-NO"
+                                data-subject="Tổng các khoản bồi thường chưa thanh toán"
+                                data-chitiet="0"
+                                onclick="openFineQrFromBtn(this)"
+                                class="w-full py-2.5 px-4 rounded-xl bg-navy-900 hover:bg-navy-950 text-amber-300 text-xs font-extrabold transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer">
+                            <i data-lucide="qr-code" class="w-4 h-4"></i> Quét Mã QR Nộp Phạt (@Model.TotalUnpaidFines.ToString("N0") VNĐ)
+                        </button>
                         <button type="button" onclick="openModal('confirmPaymentModal')" 
-                                class="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 animate-pulse cursor-pointer">
+                                class="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer">
                             <i data-lucide="receipt" class="w-4 h-4"></i> Xác Nhận Đã Thanh Toán Bồi Thường
                         </button>
+                    }
+                    @if (Model.TotalAccruingOverdueFines > 0)
+                    {
+                        <div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-[11px] text-rose-900 space-y-2">
+                            <div class="flex items-center justify-between font-bold">
+                                <span>Phí trễ hạn tạm tính (sách đang mượn):</span>
+                                <span class="text-rose-700 font-mono">@Model.TotalAccruingOverdueFines.ToString("N0") VNĐ</span>
+                            </div>
+                            <button type="button"
+                                    data-amount="@((long)Math.Round(Model.TotalAccruingOverdueFines))"
+                                    data-ref="QUA-HAN"
+                                    data-subject="Phạt quá hạn tạm tính (2.000đ/ngày/cuốn)"
+                                    data-chitiet="0"
+                                    onclick="openFineQrFromBtn(this)"
+                                    class="w-full py-1.5 px-3 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 cursor-pointer">
+                                <i data-lucide="qr-code" class="w-3.5 h-3.5"></i> Xem Mã QR Phạt Tạm Tính
+                            </button>
+                        </div>
                     }
                     <button type="button" onclick="openModal('updateProfileModal')" 
                             class="w-full py-2.5 px-4 rounded-xl border border-navy-800 text-navy-800 hover:bg-navy-50 text-xs font-bold transition-colors flex items-center justify-center gap-2">
@@ -392,7 +419,14 @@
                                                      onerror="this.onerror=null; this.src='/uploads/books/default-book.svg';" />
                                                 <div class="min-w-0 max-w-[200px]">
                                                     <h5 class="font-bold text-slate-900 leading-snug truncate" title="@item.BookTitle">
-                                                        @item.BookTitle
+                                                        @if (item.BookId > 0)
+                                                        {
+                                                            <a asp-controller="Book" asp-action="Details" asp-route-id="@item.BookId" class="hover:text-navy-800 hover:underline">@item.BookTitle</a>
+                                                        }
+                                                        else
+                                                        {
+                                                            @item.BookTitle
+                                                        }
                                                     </h5>
                                                     <p class="text-[11px] text-slate-500 truncate">@item.Author</p>
                                                     <span class="inline-block mt-0.5 px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[10px] font-semibold">
@@ -512,7 +546,16 @@
                                 {
                                     <tr class="hover:bg-slate-50/50 transition-colors">
                                         <td class="py-3 px-3 font-semibold text-slate-900">
-                                            <div class="font-bold">@item.BookTitle</div>
+                                            <div class="font-bold">
+                                                @if (item.BookId > 0)
+                                                {
+                                                    <a asp-controller="Book" asp-action="Details" asp-route-id="@item.BookId" class="hover:text-navy-800 hover:underline">@item.BookTitle</a>
+                                                }
+                                                else
+                                                {
+                                                    @item.BookTitle
+                                                }
+                                            </div>
                                             <span class="text-[10px] text-slate-500 font-mono">@item.BookCode - Bản @item.ControlNumber</span>
                                         </td>
                                         <td class="py-3 px-3 text-slate-600">
@@ -537,13 +580,25 @@
                                             @if (item.CompensationFee > 0)
                                             {
                                                 <span class="font-bold text-rose-600">@item.CompensationFee.ToString("N0") VNĐ</span>
-                                                <span class="block text-[10px] text-emerald-600 font-semibold">@item.PaymentStatus</span>
+                                                <span class="block text-[10px] @(item.PaymentStatus == "Đã thanh toán" ? "text-emerald-600" : "text-rose-600") font-semibold">@item.PaymentStatus</span>
                                                 @if (item.PaymentStatus == "Chưa thanh toán")
                                                 {
-                                                    <form asp-controller="Account" asp-action="PayFine" method="post" class="mt-1">
-                                                        <input type="hidden" name="chiTietId" value="@item.Id" />
-                                                        <button type="submit" class="px-2 py-1 bg-emerald-600 text-white rounded-lg text-[10px] font-bold">Thanh toán</button>
-                                                    </form>
+                                                    <div class="flex flex-wrap items-center gap-1.5 mt-1.5">
+                                                        <button type="button"
+                                                                data-amount="@((long)Math.Round(item.CompensationFee))"
+                                                                data-ref="CT-@item.Id"
+                                                                data-subject="@item.BookTitle"
+                                                                data-chitiet="@item.Id"
+                                                                onclick="openFineQrFromBtn(this)"
+                                                                class="px-2 py-1 bg-navy-800 hover:bg-navy-900 text-amber-300 rounded-lg text-[10px] font-bold inline-flex items-center gap-1 cursor-pointer">
+                                                            <i data-lucide="qr-code" class="w-3 h-3"></i> Mã QR
+                                                        </button>
+                                                        <form asp-controller="Account" asp-action="PayFine" method="post">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="chiTietId" value="@item.Id" />
+                                                            <button type="submit" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold">Thanh toán</button>
+                                                        </form>
+                                                    </div>
                                                 }
                                             }
                                             else
@@ -552,7 +607,19 @@
                                             }
                                         </td>
                                         <td class="py-3 px-3 text-slate-500 text-[11px]">
-                                            @item.Notes
+                                            <div class="space-y-1">
+                                                @if (!string.IsNullOrWhiteSpace(item.Notes))
+                                                {
+                                                    <p>@item.Notes</p>
+                                                }
+                                                @if (item.BookId > 0)
+                                                {
+                                                    <a asp-controller="Book" asp-action="Details" asp-route-id="@item.BookId" asp-fragment="reviews"
+                                                       class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-bold text-[10px] transition-colors">
+                                                        ★ Đánh giá sách
+                                                    </a>
+                                                }
+                                            </div>
                                         </td>
                                     </tr>
                                 }
@@ -811,8 +878,20 @@
                     <span class="text-base font-extrabold text-rose-600">@Model.TotalUnpaidFines.ToString("N0") VNĐ</span>
                 </div>
                 <p class="text-[11px] leading-relaxed text-amber-800">
-                    Vui lòng nộp trực tiếp tiền mặt tại Quầy Thủ thư Tầng 1 (Cơ sở Hóc Môn: Số 80/2 Bà Triệu, Xã Tân Xuân, Hóc Môn) hoặc chuyển khoản đến tài khoản Thư viện HUFLIT với cú pháp: <strong>@Model.StudentCode - @Model.CardNumber - Bồi Thường</strong>.
+                    Quét mã VietQR dưới đây để chuyển khoản đúng số tiền <strong>@Model.TotalUnpaidFines.ToString("N0") VNĐ</strong> hoặc nộp tiền mặt tại Quầy Thủ thư Tầng 1 (Cơ sở Hóc Môn).
                 </p>
+                @if (Model.TotalUnpaidFines > 0)
+                {
+                    <div class="bg-white rounded-2xl p-3 border border-amber-200 flex items-center gap-3">
+                        <img src="/Qr/Fine?amount=@((long)Math.Round(Model.TotalUnpaidFines))&studentCode=@Uri.EscapeDataString(Model.StudentCode)&cardNumber=@Uri.EscapeDataString(Model.CardNumber)&reference=TONGNO"
+                             alt="QR Thanh Toán Tổng Phạt" class="w-24 h-24 rounded-lg border border-slate-100 flex-shrink-0" />
+                        <div class="text-[11px] space-y-1 text-slate-700 min-w-0">
+                            <p>Ngân hàng: <strong>Vietcombank</strong></p>
+                            <p>Số TK: <strong class="font-mono text-navy-900">102888666999</strong></p>
+                            <p class="truncate">Nội dung: <strong class="font-mono text-emerald-700">NOPPHAT @Model.StudentCode TONGNO</strong></p>
+                        </div>
+                    </div>
+                }
             </div>
 
             <div>
@@ -828,6 +907,69 @@
                 </button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- ================= MODAL 6: QUÉT MÃ QR THANH TOÁN THEO MỨC TIỀN PHẠT ================= -->
+<div id="fineQrModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/65 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200">
+        <div class="bg-navy-950 text-white p-5 flex items-center justify-between">
+            <h3 class="text-sm sm:text-base font-extrabold flex items-center gap-2">
+                <i data-lucide="qr-code" class="w-5 h-5 text-amber-400"></i> Mã QR Thanh Toán Phí Phạt
+            </h3>
+            <button type="button" onclick="closeModal('fineQrModal')" class="p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-white/10">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <div class="p-6 space-y-4 text-xs">
+            <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-1.5">
+                <p id="studentQrSubject" class="font-bold text-slate-900 truncate"></p>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-500">Số tiền phạt:</span>
+                    <span id="studentQrAmount" class="text-lg font-black font-mono text-rose-600">0 VNĐ</span>
+                </div>
+                <div>
+                    <span id="studentQrTierBadge" class="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border"></span>
+                </div>
+                <p id="studentQrTierDesc" class="text-[11px] text-slate-500 leading-snug"></p>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-inner w-52 h-52 mx-auto flex items-center justify-center">
+                <img id="studentQrImg" src="" alt="VietQR Nộp Tiền Phạt" class="w-full h-full object-contain" />
+            </div>
+
+            <div class="bg-slate-50 rounded-2xl p-3.5 border border-slate-200 space-y-1.5">
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Ngân hàng:</span>
+                    <strong id="studentQrBank" class="text-slate-900">Vietcombank</strong>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Số tài khoản:</span>
+                    <strong id="studentQrAcc" class="font-mono text-navy-900">102888666999</strong>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Chủ tài khoản:</span>
+                    <strong id="studentQrAccName" class="text-slate-900">THU VIEN DAI HOC HUFLIT</strong>
+                </div>
+                <div class="flex justify-between items-center pt-1 border-t border-slate-200">
+                    <span class="text-slate-500">Nội dung CK:</span>
+                    <strong id="studentQrMemo" class="font-mono text-emerald-700 text-right"></strong>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button type="button" onclick="closeModal('fineQrModal')" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">Đóng</button>
+                <form id="studentQrPayForm" asp-controller="Account" asp-action="PayFine" method="post" class="hidden">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="chiTietId" id="studentQrChiTietId" value="" />
+                    <input type="hidden" name="paymentMethod" value="Chuyển khoản QR ngân hàng" />
+                    <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow">
+                        Tôi Đã Quét QR &amp; Thanh Toán
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1038,6 +1180,57 @@
             }
 
             document.getElementById('avatarUploadForm').submit();
+        }
+
+        function openFineQrFromBtn(btn) {
+            const amount = parseFloat(btn.getAttribute('data-amount') || '0');
+            const ref = btn.getAttribute('data-ref') || '';
+            const subject = btn.getAttribute('data-subject') || '';
+            const chiTietId = parseInt(btn.getAttribute('data-chitiet') || '0', 10) || 0;
+            openFineQrModal(amount, ref, subject, chiTietId);
+        }
+
+        async function openFineQrModal(amount, reference, subjectTitle, chiTietId) {
+            if (!amount || amount <= 0) return;
+            const studentCode = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StudentCode));
+            const cardNumber = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CardNumber));
+
+            try {
+                const res = await fetch(`/Qr/FineInfo?amount=${encodeURIComponent(amount)}&studentCode=${encodeURIComponent(studentCode)}&cardNumber=${encodeURIComponent(cardNumber)}&reference=${encodeURIComponent(reference)}`);
+                const data = await res.json();
+                if (!res.ok || !data.success) return;
+
+                document.getElementById('studentQrSubject').textContent = subjectTitle || 'Thanh toán phí phạt thư viện';
+                document.getElementById('studentQrAmount').textContent = data.formattedAmount;
+                document.getElementById('studentQrImg').src = data.qrImageUrl + '&_t=' + Date.now();
+                document.getElementById('studentQrBank').textContent = data.bankName;
+                document.getElementById('studentQrAcc').textContent = data.accountNumber;
+                document.getElementById('studentQrAccName').textContent = data.accountName;
+                document.getElementById('studentQrMemo').textContent = data.transferContent;
+                document.getElementById('studentQrTierDesc').textContent = data.tierDescription;
+
+                const badge = document.getElementById('studentQrTierBadge');
+                badge.textContent = data.tierName;
+                badge.className = 'inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ' + data.tierBadgeClass;
+
+                const payForm = document.getElementById('studentQrPayForm');
+                const chiTietInput = document.getElementById('studentQrChiTietId');
+                if (payForm && chiTietInput) {
+                    if (chiTietId && chiTietId > 0) {
+                        chiTietInput.value = chiTietId;
+                        payForm.classList.remove('hidden');
+                    } else {
+                        chiTietInput.value = '';
+                        payForm.classList.add('hidden');
+                    }
+                }
+
+                openModal('fineQrModal');
+            } catch (e) {
+                if (typeof window.showAppToast === 'function') {
+                    window.showAppToast('error', 'Lỗi QR', 'Không thể tạo mã QR lúc này.');
+                }
+            }
         }
 
         document.addEventListener('DOMContentLoaded', function () {

@@ -531,7 +531,7 @@
             });
         };
 
-        window.showAppToast = function(type, title, message) {
+        window.showAppToast = function(type, title, message = '') {
             const container = document.getElementById('adminToastContainer');
             if (!container) return;
 
@@ -542,13 +542,19 @@
             let iconName = isSuccess ? 'check-circle-2' : (isWarn ? 'alert-triangle' : 'alert-circle');
             let iconColor = isSuccess ? 'text-emerald-600' : (isWarn ? 'text-amber-600' : 'text-rose-600');
 
+            const safeText = (v) => {
+                const d = document.createElement('div');
+                d.innerText = v || '';
+                return d.innerHTML;
+            };
+
             const toast = document.createElement('div');
             toast.className = `pointer-events-auto flex items-center gap-3 p-4 text-xs sm:text-sm ${colorClass} border rounded-xl shadow-lg transition-all transform duration-300`;
             toast.innerHTML = `
                 <i data-lucide="${iconName}" class="w-5 h-5 ${iconColor} flex-shrink-0"></i>
                 <div>
-                    <p class="font-semibold">${title}</p>
-                    <p class="text-xs mt-0.5">${message}</p>
+                    <p class="font-semibold">${safeText(title)}</p>
+                    ${message ? `<p class="text-xs mt-0.5">${safeText(message)}</p>` : ''}
                 </div>
             `;
             container.appendChild(toast);

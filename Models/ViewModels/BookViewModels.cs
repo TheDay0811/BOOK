@@ -25,6 +25,7 @@ namespace BOOK.Models.ViewModels
         public bool IsAvailable => AvailableCopies > 0;
         public string Description { get; set; } = string.Empty;
         public int PageCount { get; set; }
+        public int PreviewPageCount { get; set; }
         public string Language { get; set; } = "Tiếng Việt";
     }
 
@@ -34,6 +35,7 @@ namespace BOOK.Models.ViewModels
         public List<int> SelectedCategoryIds { get; set; } = new();
         public List<int> SelectedAuthorIds { get; set; } = new();
         public string? AvailabilityFilter { get; set; } = "all"; // all, available, out_of_stock
+        public int? MinRating { get; set; }
         public string? SortBy { get; set; } = "newest"; // newest, popular, title_asc, rating_desc
         public int CurrentPage { get; set; } = 1;
         public int TotalPages { get; set; } = 1;
@@ -51,12 +53,23 @@ namespace BOOK.Models.ViewModels
 
     public class BookReviewViewModel
     {
+        public int Id { get; set; }
         public string UserName { get; set; } = string.Empty;
         public string UserAvatarUrl { get; set; } = string.Empty;
         public int Rating { get; set; }
         public DateTime CreatedAt { get; set; }
         public string Content { get; set; } = string.Empty;
         public string UserRole { get; set; } = "Độc giả";
+        public bool IsOwner { get; set; }
+        public bool IsVerifiedBorrower { get; set; }
+    }
+
+    public class BookPreviewPageViewModel
+    {
+        public int Id { get; set; }
+        public int PageNumber { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Content { get; set; } = string.Empty;
     }
 
     public class CreateReviewInputModel
@@ -67,8 +80,7 @@ namespace BOOK.Models.ViewModels
         [Range(1, 5, ErrorMessage = "Đánh giá từ 1 đến 5 sao.")]
         public int Rating { get; set; } = 5;
 
-        [Required(ErrorMessage = "Vui lòng nhập nội dung cảm nhận của bạn.")]
-        [StringLength(1000, MinimumLength = 10, ErrorMessage = "Nội dung nhận xét từ 10 đến 1000 ký tự.")]
+        [StringLength(1000, ErrorMessage = "Nội dung nhận xét tối đa 1000 ký tự.")]
         public string Content { get; set; } = string.Empty;
     }
 
@@ -99,6 +111,13 @@ namespace BOOK.Models.ViewModels
     {
         public BookItemViewModel Book { get; set; } = new();
         public List<BookReviewViewModel> Reviews { get; set; } = new();
+        public List<BookPreviewPageViewModel> PreviewPages { get; set; } = new();
+        public bool HasCustomPreviewPages { get; set; }
+        public Dictionary<int, int> RatingDistribution { get; set; } = new() { { 5, 0 }, { 4, 0 }, { 3, 0 }, { 2, 0 }, { 1, 0 } };
+        public int? CurrentUserRating { get; set; }
+        public string? CurrentUserReviewContent { get; set; }
+        public int? CurrentUserReviewId { get; set; }
+        public bool CanModerateReviews { get; set; }
         public List<BookItemViewModel> RelatedBooks { get; set; } = new();
         public CreateReviewInputModel NewReview { get; set; } = new();
         public BorrowRequestInputModel BorrowForm { get; set; } = new();
@@ -149,6 +168,13 @@ namespace BOOK.Models.ViewModels
 
         [Display(Name = "File ảnh bìa")]
         public IFormFile? ImageFile { get; set; }
+
+        [Display(Name = "Giới thiệu / Mô tả sách")]
+        public string? Description { get; set; }
+
+        [Range(10, 5000, ErrorMessage = "Số trang phải từ 10 đến 5000.")]
+        [Display(Name = "Tổng số trang")]
+        public int PageCount { get; set; } = 320;
     }
 
     public class EditBookInputModel
@@ -175,6 +201,10 @@ namespace BOOK.Models.ViewModels
 
         public string? ShelfLocation { get; set; }
         public string? CoverImageUrl { get; set; }
+        public string? Description { get; set; }
+
+        [Range(10, 5000, ErrorMessage = "Số trang phải từ 10 đến 5000.")]
+        public int PageCount { get; set; } = 320;
 
         public IFormFile? ImageFile { get; set; }
     }

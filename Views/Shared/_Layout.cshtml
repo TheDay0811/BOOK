@@ -523,7 +523,7 @@
             showNotification(type, title, message);
         };
 
-        function showNotification(type, title, message) {
+        function showNotification(type, title, message = '') {
             const container = document.getElementById('toastContainer');
             if (!container) return;
 
@@ -539,8 +539,8 @@
             toast.innerHTML = `
                 <i data-lucide="${iconName}" class="w-5 h-5 ${iconColor} flex-shrink-0"></i>
                 <div>
-                    <p class="font-semibold">${title}</p>
-                    <p class="text-xs mt-0.5">${message}</p>
+                    <p class="font-semibold">${escapeHtml(title || '')}</p>
+                    ${message ? `<p class="text-xs mt-0.5">${escapeHtml(message)}</p>` : ''}
                 </div>
             `;
             container.appendChild(toast);
@@ -553,6 +553,7 @@
         }
     </script>
 
+    <script src="/js/smartlib-wasm.js" defer></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

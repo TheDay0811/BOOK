@@ -1,4 +1,6 @@
 @using System.Security.Claims
+@using Microsoft.EntityFrameworkCore
+@inject BOOK.Data.ApplicationDbContext HeaderDbContext
 
 @{
     var isAuthenticated = User.Identity?.IsAuthenticated ?? false;
@@ -7,10 +9,41 @@
     var userEmail = User.FindFirst(ClaimTypes.Email)?.Value ?? (studentCode.Contains("@") ? studentCode : $"{studentCode.ToLower()}@student.huflit.edu.vn");
     var cardStatus = User.FindFirst("CardStatus")?.Value ?? "Sử dụng được";
     var cardNumber = User.FindFirst("CardNumber")?.Value ?? $"LIB-{studentCode}";
-    var isCardActive = cardStatus == "Sử dụng được";
     var activeCount = User.FindFirst("ActiveLoansCount")?.Value ?? "0";
     var userAvatar = User.FindFirst("AvatarUrl")?.Value ?? "/uploads/avatars/default-avatar.svg";
     var isAdminOrLibrarian = User.IsInRole("Admin") || User.IsInRole("Librarian") || User.IsInRole("ThuThu");
+
+    if (isAuthenticated && !string.IsNullOrEmpty(studentCode))
+    {
+        var liveCard = await HeaderDbContext.TheThuViens
+            .AsNoTracking()
+            .Where(t => t.TaiKhoan.Username == studentCode)
+            .Select(t => new
+            {
+                t.SoThe,
+                t.TinhTrangSuDung,
+                t.NgayHetHan,
+                t.TaiKhoan.AvatarUrl,
+                ActiveCount = t.PhieuMuons
+                    .Where(p => p.TrangThai == "Đang mượn" || p.TrangThai == "Chờ duyệt")
+                    .SelectMany(p => p.ChiTiets)
+                    .Count(c => c.NgayTraThucTe == null)
+            })
+            .FirstOrDefaultAsync();
+
+        if (liveCard != null)
+        {
+            cardNumber = liveCard.SoThe;
+            cardStatus = DateTime.Today > liveCard.NgayHetHan ? "Không sử dụng" : liveCard.TinhTrangSuDung;
+            activeCount = liveCard.ActiveCount.ToString();
+            if (!string.IsNullOrEmpty(liveCard.AvatarUrl))
+            {
+                userAvatar = liveCard.AvatarUrl;
+            }
+        }
+    }
+
+    var isCardActive = cardStatus == "Sử dụng được";
 }
 
 <!-- TOP ANNOUNCEMENT BAR -->
@@ -378,8 +411,14 @@
 
     // Tải và đánh dấu thông báo độc giả thật từ CSDL
     async function loadPublicNotifications() {
+        const list = document.getElementById('publicNotifList');
+        if (!list) return;
         try {
-            const res = await fetch('/Notification/GetNotifications');
+            const res = await fetch('/Notification/GetNotifications', {
+                headers: { 'Accept': 'application/json' }
+            });
+            const ct = res.headers.get('content-type') || '';
+            if (!res.ok || !ct.includes('application/json')) return;
             const data = await res.json();
             if (data.success) {
                 const dot = document.getElementById('publicNotifDot');
@@ -390,23 +429,20 @@
                         dot.classList.add('hidden');
                     }
                 }
-                const list = document.getElementById('publicNotifList');
-                if (list) {
-                    if (!data.notifications || data.notifications.length === 0) {
-                        list.innerHTML = '<p class="text-slate-400 text-center py-4 text-xs">Hiện không có thông báo nào.</p>';
-                    } else {
-                        list.innerHTML = data.notifications.map(n => `
-                            <a href="${n.linkUrl}" onclick="handlePublicNotifClick(${n.id}, event, '${n.linkUrl}')" 
-                               class="block p-2.5 rounded-xl hover:bg-slate-50 transition-colors ${!n.isRead ? 'bg-blue-50/50' : ''}">
-                                <div class="flex items-start justify-between gap-1">
-                                    <p class="font-bold text-xs ${n.type === 'Warning' ? 'text-amber-800' : (n.type === 'Error' ? 'text-rose-700' : 'text-navy-800')}">${n.title}</p>
-                                    ${!n.isRead ? '<span class="w-1.5 h-1.5 rounded-full bg-blue-600 flex-shrink-0 mt-1"></span>' : ''}
-                                </div>
-                                <p class="text-[11px] text-slate-600 mt-0.5 leading-snug">${n.message}</p>
-                                <span class="text-[9px] text-slate-400 mt-1 block font-mono">${n.timeAgo}</span>
-                            </a>
-                        `).join('');
-                    }
+                if (!data.notifications || data.notifications.length === 0) {
+                    list.innerHTML = '<p class="text-slate-400 text-center py-4 text-xs">Hiện không có thông báo nào.</p>';
+                } else {
+                    list.innerHTML = data.notifications.map(n => `
+                        <a href="${n.linkUrl}" onclick="handlePublicNotifClick(${n.id}, event, '${n.linkUrl}')" 
+                           class="block p-2.5 rounded-xl hover:bg-slate-50 transition-colors ${!n.isRead ? 'bg-blue-50/50' : ''}">
+                            <div class="flex items-start justify-between gap-1">
+                                <p class="font-bold text-xs ${n.type === 'Warning' ? 'text-amber-800' : (n.type === 'Error' ? 'text-rose-700' : 'text-navy-800')}">${n.title}</p>
+                                ${!n.isRead ? '<span class="w-1.5 h-1.5 rounded-full bg-blue-600 flex-shrink-0 mt-1"></span>' : ''}
+                            </div>
+                            <p class="text-[11px] text-slate-600 mt-0.5 leading-snug">${n.message}</p>
+                            <span class="text-[9px] text-slate-400 mt-1 block font-mono">${n.timeAgo}</span>
+                        </a>
+                    `).join('');
                 }
             }
         } catch (e) {

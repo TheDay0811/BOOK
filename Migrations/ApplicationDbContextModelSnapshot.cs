@@ -187,7 +187,13 @@ namespace BOOK.Migrations
                     b.Property<int>("MaTheLoai")
                         .HasColumnType("int");
 
+                    b.Property<string>("MoTa")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("NamXuatBan")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SoTrang")
                         .HasColumnType("int");
 
                     b.Property<string>("TacGia")
@@ -337,6 +343,36 @@ namespace BOOK.Migrations
                     b.ToTable("ThongBaos");
                 });
 
+            modelBuilder.Entity("BOOK.Models.Entities.TrangDocThu", b =>
+                {
+                    b.Property<int>("MaTrangDocThu")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MaTrangDocThu"));
+
+                    b.Property<int>("MaSach")
+                        .HasColumnType("int");
+
+                    b.Property<string>("NoiDung")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SoTrang")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TieuDe")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("MaTrangDocThu");
+
+                    b.HasIndex("MaSach", "SoTrang");
+
+                    b.ToTable("TrangDocThus");
+                });
+
             modelBuilder.Entity("BOOK.Models.Entities.YeuCauGiaHan", b =>
                 {
                     b.Property<int>("MaYeuCau")
@@ -456,6 +492,17 @@ namespace BOOK.Migrations
                     b.Navigation("TaiKhoan");
                 });
 
+            modelBuilder.Entity("BOOK.Models.Entities.TrangDocThu", b =>
+                {
+                    b.HasOne("BOOK.Models.Entities.Sach", "Sach")
+                        .WithMany("TrangDocThus")
+                        .HasForeignKey("MaSach")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Sach");
+                });
+
             modelBuilder.Entity("BOOK.Models.Entities.YeuCauGiaHan", b =>
                 {
                     b.HasOne("BOOK.Models.Entities.PhieuMuon", "PhieuMuon")
@@ -485,6 +532,8 @@ namespace BOOK.Migrations
             modelBuilder.Entity("BOOK.Models.Entities.Sach", b =>
                 {
                     b.Navigation("DauSachs");
+
+                    b.Navigation("TrangDocThus");
                 });
 
             modelBuilder.Entity("BOOK.Models.Entities.TaiKhoan", b =>

@@ -42,8 +42,12 @@
                         <span class="text-xs text-slate-500 font-mono">ISBN: @Model.BookCode</span>
                     </div>
                     <h3 class="text-lg font-black text-slate-900 leading-tight">@Model.Title</h3>
-                    <p class="text-xs text-slate-600">Tác giả: <strong>@Model.Author</strong> • NXB: @Model.PublisherName (@Model.PublishYear)</p>
+                    <p class="text-xs text-slate-600">Tác giả: <strong>@Model.Author</strong> • NXB: @Model.PublisherName (@Model.PublishYear) • <strong>@Model.PageCount trang</strong></p>
                     <p class="text-xs text-blue-600 font-medium">Chuyên ngành: @Model.CategoryName</p>
+                    @if (!string.IsNullOrWhiteSpace(Model.Description))
+                    {
+                        <p class="text-xs text-slate-500 leading-relaxed pt-1">@Model.Description</p>
+                    }
                 </div>
             </div>
 
@@ -158,6 +162,72 @@
         </div>
     </div>
 
+    <!-- ================= QUẢN LÝ NỘI DUNG ĐỌC THỬ (TRANG MẪU) ================= -->
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div>
+                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="book-open" class="w-5 h-5 text-amber-500"></i>
+                    Quản Lý Nội Dung Đọc Thử (@Model.PreviewPages.Count trang mẫu)
+                </h3>
+                <p class="text-xs text-slate-400">Các trang trích đoạn hiển thị cho sinh viên khi bấm "Đọc thử" trên cổng tra cứu.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <a asp-area="" asp-controller="Book" asp-action="Details" asp-route-id="@Model.BookId" asp-route-preview="1" target="_blank"
+                   class="px-3.5 py-2 bg-amber-100 hover:bg-amber-200 text-amber-950 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5">
+                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i> Xem thử ngoài cổng
+                </a>
+                <button type="button" onclick="openAddPreviewModal()"
+                        class="px-4 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow transition-colors flex items-center gap-1.5">
+                    <i data-lucide="plus-circle" class="w-4 h-4 text-amber-400"></i> Thêm Trang Đọc Thử
+                </button>
+            </div>
+        </div>
+
+        @if (Model.PreviewPages != null && Model.PreviewPages.Any())
+        {
+            <div class="space-y-3">
+                @foreach (var p in Model.PreviewPages)
+                {
+                    <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                        <div class="space-y-1 flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded-lg text-[11px] font-mono font-black bg-navy-100 text-navy-900">Trang @p.PageNumber</span>
+                                <h4 class="font-bold text-sm text-slate-900 truncate">@p.Title</h4>
+                            </div>
+                            <p class="text-xs text-slate-600 line-clamp-2 whitespace-pre-line">@p.Content</p>
+                        </div>
+                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                            <button type="button"
+                                    data-page-id="@p.Id"
+                                    data-page-number="@p.PageNumber"
+                                    data-page-title="@p.Title"
+                                    data-page-content="@p.Content"
+                                    onclick="openEditPreviewModalFromBtn(this)"
+                                    class="px-3 py-1.5 bg-white hover:bg-blue-50 text-blue-700 border border-slate-200 rounded-xl text-xs font-bold transition-colors">
+                                Sửa
+                            </button>
+                            <form asp-area="Admin" asp-controller="Book" asp-action="DeletePreviewPage" method="post" onsubmit="return confirm('Xóa trang đọc thử số @p.PageNumber?')">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="bookId" value="@Model.BookId" />
+                                <input type="hidden" name="pageId" value="@p.Id" />
+                                <button type="submit" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold transition-colors">
+                                    Xóa
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-xs text-slate-500">
+                Chưa có trang đọc thử tùy chỉnh. Hệ thống đang hiển thị 3 trang tóm tắt tự động; hãy bấm <strong>"Thêm Trang Đọc Thử"</strong> để nhập nội dung trích đoạn thật.
+            </div>
+        }
+    </div>
+
 </div>
 
 <!-- ================= MODAL THÊM BẢN SAO (SINH SỐ KIỂM SOÁT TIẾP THEO) ================= -->
@@ -173,10 +243,17 @@
         </div>
 
         <form asp-area="Admin" asp-controller="Book" asp-action="AddCopy" method="post" class="p-6 space-y-4 text-xs">
+            @Html.AntiForgeryToken()
             <input type="hidden" name="bookId" value="@Model.BookId" />
+            @{
+                var nextCtrlNum = Model.Copies
+                    .Select(c => int.TryParse(c.ControlNumber, out var n) ? n : 0)
+                    .DefaultIfEmpty(0)
+                    .Max() + 1;
+            }
             <div>
                 <label class="block font-bold text-slate-700 uppercase mb-1">Số kiểm soát tự sinh tiếp theo</label>
-                <input type="text" readonly value="005" class="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-xl font-mono font-black text-navy-800 text-sm" />
+                <input type="text" readonly value="@nextCtrlNum.ToString("D3")" class="w-full p-2.5 bg-slate-100 border border-slate-200 rounded-xl font-mono font-black text-navy-800 text-sm" />
                 <span class="text-[10px] text-slate-400">Tự động tăng tuần tự theo tựa sách này.</span>
             </div>
 
@@ -250,6 +327,50 @@
     </div>
 </div>
 
+<!-- ================= MODAL THÊM / SỬA TRANG ĐỌC THỬ ================= -->
+<div id="previewPageModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/60 backdrop-blur-sm">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-xl w-full overflow-hidden">
+        <div class="bg-navy-900 text-white p-5 flex items-center justify-between">
+            <h3 id="previewModalTitle" class="font-bold text-base flex items-center gap-2">
+                <i data-lucide="book-open" class="w-5 h-5 text-amber-400"></i> Thêm Trang Đọc Thử
+            </h3>
+            <button type="button" onclick="closePreviewModal()" class="text-slate-400 hover:text-white p-1">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form id="previewPageForm" asp-area="Admin" asp-controller="Book" asp-action="AddPreviewPage" method="post" class="p-6 space-y-4 text-xs">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="bookId" value="@Model.BookId" />
+            <input type="hidden" name="pageId" id="previewPageIdInput" value="0" />
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Số trang <span class="text-rose-500">*</span></label>
+                    <input type="number" name="pageNumber" id="previewPageNumberInput" min="1" max="999" value="@((Model.PreviewPages?.Any() == true ? Model.PreviewPages.Max(p => p.PageNumber) : 0) + 1)" required
+                           class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold" />
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Tiêu đề trang / chương <span class="text-rose-500">*</span></label>
+                    <input type="text" name="title" id="previewPageTitleInput" required placeholder="VD: Chương 1 - Giới thiệu..."
+                           class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl" />
+                </div>
+            </div>
+
+            <div>
+                <label class="block font-bold text-slate-700 uppercase mb-1">Nội dung trích đoạn <span class="text-rose-500">*</span></label>
+                <textarea name="content" id="previewPageContentInput" rows="7" required placeholder="Nhập nội dung trích đoạn của trang đọc thử..."
+                          class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl leading-relaxed"></textarea>
+            </div>
+
+            <div class="pt-3 border-t flex justify-end gap-2">
+                <button type="button" onclick="closePreviewModal()" class="px-4 py-2 font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Hủy</button>
+                <button type="submit" class="px-5 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl font-bold shadow">Lưu Trang Đọc Thử</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         function openAddCopyModal() { document.getElementById('addCopyModal')?.classList.remove('hidden'); lucide.createIcons(); }
@@ -264,5 +385,33 @@
             lucide.createIcons();
         }
         function closeUpdateStatusModal() { document.getElementById('updateStatusModal')?.classList.add('hidden'); }
+
+        function openAddPreviewModal() {
+            const form = document.getElementById('previewPageForm');
+            form.action = '/Admin/Book/AddPreviewPage';
+            document.getElementById('previewModalTitle').innerHTML = '<i data-lucide="book-open" class="w-5 h-5 text-amber-400"></i> Thêm Trang Đọc Thử';
+            document.getElementById('previewPageIdInput').value = '0';
+            document.getElementById('previewPageNumberInput').value = '@((Model.PreviewPages?.Any() == true ? Model.PreviewPages.Max(p => p.PageNumber) : 0) + 1)';
+            document.getElementById('previewPageTitleInput').value = '';
+            document.getElementById('previewPageContentInput').value = '';
+            document.getElementById('previewPageModal')?.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function openEditPreviewModalFromBtn(btn) {
+            const form = document.getElementById('previewPageForm');
+            form.action = '/Admin/Book/UpdatePreviewPage';
+            document.getElementById('previewModalTitle').innerHTML = '<i data-lucide="edit-3" class="w-5 h-5 text-amber-400"></i> Chỉnh Sửa Trang Đọc Thử';
+            document.getElementById('previewPageIdInput').value = btn.getAttribute('data-page-id') || '0';
+            document.getElementById('previewPageNumberInput').value = btn.getAttribute('data-page-number') || '1';
+            document.getElementById('previewPageTitleInput').value = btn.getAttribute('data-page-title') || '';
+            document.getElementById('previewPageContentInput').value = btn.getAttribute('data-page-content') || '';
+            document.getElementById('previewPageModal')?.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closePreviewModal() {
+            document.getElementById('previewPageModal')?.classList.add('hidden');
+        }
     </script>
 }

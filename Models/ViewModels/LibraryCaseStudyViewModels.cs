@@ -70,6 +70,7 @@ namespace BOOK.Models.ViewModels
         public int PublishYear { get; set; }
         public string CoverImageUrl { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+        public int PageCount { get; set; } = 320;
 
         // Thống kê số lượng các cuốn sách
         public int TotalCopies => Copies.Count;
@@ -79,6 +80,7 @@ namespace BOOK.Models.ViewModels
         public int LostCopies => Copies.FindAll(c => c.Status == "Mất").Count;
 
         public List<BookCopyViewModel> Copies { get; set; } = new();
+        public List<BookPreviewPageViewModel> PreviewPages { get; set; } = new();
     }
 
     // ================= 3. LẬP PHIẾU MƯỢN SÁCH =================
@@ -138,6 +140,8 @@ namespace BOOK.Models.ViewModels
         public string DamageDescription { get; set; } = string.Empty;
         public decimal CompensationFee { get; set; } = 0; // Tiền bồi thường
         public bool IsCompensated { get; set; } = false; // Đã thanh toán bồi thường chưa
+        public int OverdueDays { get; set; } = 0;
+        public decimal LateFee { get; set; } = 0;
     }
 
     public class ReturnBookDeskViewModel
@@ -215,5 +219,13 @@ namespace BOOK.Models.ViewModels
         public decimal TotalAmount => UnpaidFines.Sum(f => f.FineAmount);
         public bool HasSearched { get; set; } = false;
         public bool CardFound { get; set; } = false;
+        public string QrImageUrl { get; set; } = string.Empty;
+        public string TransferMemo { get; set; } = string.Empty;
+        public string TierName { get; set; } = string.Empty;
+        public string TierBadgeClass { get; set; } = string.Empty;
+        public string TierDescription { get; set; } = string.Empty;
+        public string BankName { get; set; } = "Vietcombank (VCB)";
+        public string AccountNumber { get; set; } = "102888666999";
+        public string AccountName { get; set; } = "THU VIEN DAI HOC HUFLIT";
     }
 }

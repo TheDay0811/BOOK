@@ -19,6 +19,7 @@ namespace BOOK.Data
         public DbSet<ThongBao> ThongBaos => Set<ThongBao>();
         public DbSet<DanhGia> DanhGias => Set<DanhGia>();
         public DbSet<YeuCauGiaHan> YeuCauGiaHans => Set<YeuCauGiaHan>();
+        public DbSet<TrangDocThu> TrangDocThus => Set<TrangDocThu>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -78,10 +79,19 @@ namespace BOOK.Data
                 .Property(c => c.TienBoiThuong)
                 .HasColumnType("decimal(18,2)");
 
-            // 9. Đánh giá, yêu cầu gia hạn
+            // 9. Đánh giá, yêu cầu gia hạn, trang đọc thử
             modelBuilder.Entity<DanhGia>().HasOne(d => d.Sach).WithMany().HasForeignKey(d => d.MaSach);
             modelBuilder.Entity<DanhGia>().HasOne(d => d.TaiKhoan).WithMany().HasForeignKey(d => d.MaTK);
             modelBuilder.Entity<YeuCauGiaHan>().HasOne(y => y.PhieuMuon).WithMany().HasForeignKey(y => y.MaPhieuMuon);
+
+            modelBuilder.Entity<TrangDocThu>()
+                .HasOne(t => t.Sach)
+                .WithMany(s => s.TrangDocThus)
+                .HasForeignKey(t => t.MaSach)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<TrangDocThu>()
+                .HasIndex(t => new { t.MaSach, t.SoTrang });
         }
     }
 }

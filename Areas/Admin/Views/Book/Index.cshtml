@@ -159,7 +159,10 @@
                                                 class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Chỉnh sửa thông tin">
                                             <i data-lucide="edit-3" class="w-4 h-4"></i>
                                         </button>
-                                        <button onclick="confirmDeleteBook(@book.Id, '@book.Title')" 
+                                        <button type="button"
+                                                data-book-id="@book.Id"
+                                                data-book-title="@book.Title"
+                                                onclick="confirmDeleteBook(this.getAttribute('data-book-id'), this.getAttribute('data-book-title'))" 
                                                 class="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Xóa tựa sách">
                                             <i data-lucide="trash-2" class="w-4 h-4"></i>
                                         </button>
@@ -254,6 +257,17 @@
                 </div>
             </div>
 
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Số trang</label>
+                    <input type="number" name="PageCount" min="10" max="5000" value="320" class="w-full p-2.5 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none focus:border-navy-800" />
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Mô tả / Giới thiệu sách</label>
+                    <input type="text" name="Description" placeholder="Tóm tắt nội dung chính của cuốn sách..." class="w-full p-2.5 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none focus:border-navy-800" />
+                </div>
+            </div>
+
             <!-- Upload Ảnh Bìa Sách -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 bg-slate-50 rounded-2xl border border-slate-200">
                 <div>
@@ -324,6 +338,17 @@
                             <option value="@pub.Value">@pub.Text</option>
                         }
                     </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="sm:col-span-1">
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Số trang</label>
+                    <input type="number" name="PageCount" id="editPageCount" min="10" max="5000" value="320" class="w-full p-2.5 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none focus:border-navy-800" />
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block font-bold text-slate-700 uppercase mb-1">Mô tả / Tóm tắt nội dung</label>
+                    <textarea name="Description" id="editDescription" rows="2" class="w-full p-2 bg-slate-50 border rounded-xl focus:bg-white focus:outline-none focus:border-navy-800" placeholder="Tóm tắt nội dung sách..."></textarea>
                 </div>
             </div>
 
@@ -457,6 +482,8 @@
                     document.getElementById('editPublishYear').value = data.publishYear;
                     document.getElementById('editCategoryId').value = data.categoryId;
                     document.getElementById('editPublisherId').value = data.publisherId;
+                    document.getElementById('editPageCount').value = data.pageCount || 320;
+                    document.getElementById('editDescription').value = data.description || '';
                     
                     const coverUrl = data.coverImageUrl || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=200&auto=format&fit=crop&q=80';
                     document.getElementById('editImagePreview').src = coverUrl;
@@ -503,34 +530,32 @@
         }
 
         async function confirmDeleteBook(id, title) {
-            window.showAppConfirm({
-                title: 'Xóa Tựa Sách Khỏi Kho',
-                message: `Bạn có chắc chắn muốn xóa tựa sách "${title}" và toàn bộ bản sao trong kho? Hành động này không thể hoàn tác nếu không còn sách cho mượn.`,
-                confirmText: 'Xác Nhận Xóa',
-                cancelText: 'Hủy Bỏ',
-                onConfirm: async () => {
-                    try {
-                        const res = await fetch('/Admin/Book/Delete/' + id, {
-                            method: 'POST',
-                            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                        });
-                        const data = await res.json();
-                        if (data.success) {
-                            const row = document.getElementById('row-book-' + id);
-                            if (row) {
-                                row.style.transition = 'all 0.4s ease';
-                                row.style.opacity = '0';
-                                setTimeout(() => row.remove(), 400);
-                            }
-                            window.showAppToast('success', 'Đã xóa', data.message);
-                        } else {
-                            window.showAppToast('error', 'Không thể xóa', data.message || 'Không thể xóa sách.');
-                        }
-                    } catch (err) {
-                        window.showAppToast('error', 'Lỗi', 'Lỗi kết nối máy chủ khi xóa sách.');
+            const confirmed = await window.showAppConfirm(
+                `Bạn có chắc chắn muốn xóa tựa sách "${title}" và toàn bộ bản sao trong kho? Hành động này không thể hoàn tác nếu không còn sách cho mượn.`,
+                'Xóa Tựa Sách Khỏi Kho'
+            );
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch('/Admin/Book/Delete/' + id, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const row = document.getElementById('row-book-' + id);
+                    if (row) {
+                        row.style.transition = 'all 0.4s ease';
+                        row.style.opacity = '0';
+                        setTimeout(() => row.remove(), 400);
                     }
+                    window.showAppToast('success', 'Đã xóa', data.message);
+                } else {
+                    window.showAppToast('error', 'Không thể xóa', data.message || 'Không thể xóa sách.');
                 }
-            });
+            } catch (err) {
+                window.showAppToast('error', 'Lỗi', 'Lỗi kết nối máy chủ khi xóa sách.');
+            }
         }
     </script>
 }

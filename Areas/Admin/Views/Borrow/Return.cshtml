@@ -113,9 +113,9 @@
                         <tr>
                             <th class="py-3 px-4">Tên Sách</th>
                             <th class="py-3 px-4">Số Kiểm Soát</th>
-                            <th class="py-3 px-4">Hạn Trả</th>
+                            <th class="py-3 px-4">Hạn Trả &amp; Trễ Hạn</th>
                             <th class="py-3 px-4">Tình Trạng Khi Nhận Lại</th>
-                            <th class="py-3 px-4">Tiền Bồi Thường (VNĐ)</th>
+                            <th class="py-3 px-4">Phí Hư Hỏng / Mất (VNĐ)</th>
                             <th class="py-3 px-4 text-center">Thu Tiền Tại Quầy</th>
                         </tr>
                     </thead>
@@ -132,7 +132,17 @@
                                     @item.ControlNumber
                                 </td>
                                 <td class="py-3.5 px-4 text-slate-500">
-                                    @item.DueDate.ToString("dd/MM/yyyy")
+                                    <div>@item.DueDate.ToString("dd/MM/yyyy")</div>
+                                    @if (item.OverdueDays > 0)
+                                    {
+                                        <span class="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                                            Trễ @item.OverdueDays ngày (+@item.LateFee.ToString("N0")đ)
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="inline-block mt-1 text-[10px] text-emerald-700 font-semibold">Trong hạn</span>
+                                    }
                                 </td>
                                 <td class="py-3.5 px-4">
                                     <input type="hidden" name="copyIds" value="@item.CopyId" />
@@ -144,11 +154,14 @@
                                     </select>
                                 </td>
                                 <td class="py-3.5 px-4">
-                                    <div class="relative w-40">
-                                        <input type="number" id="feeInput_@i" name="fees" value="0" readonly
-                                               class="w-full py-2 px-3 bg-slate-100 border border-slate-200 rounded-xl font-bold text-xs text-rose-600 focus:outline-none cursor-not-allowed" />
+                                    <div class="relative w-44">
+                                        <input type="number" id="feeInput_@i" name="fees" value="0" data-late-fee="@item.LateFee.ToString(System.Globalization.CultureInfo.InvariantCulture)" readonly
+                                               class="return-fee-input w-full py-2 px-3 bg-slate-100 border border-slate-200 rounded-xl font-bold text-xs text-rose-600 focus:outline-none cursor-not-allowed" />
                                         <span class="absolute right-3 top-2 text-[10px] text-slate-400 pointer-events-none">đ (Quy chế)</span>
                                     </div>
+                                    <p id="rowTotalLabel_@i" class="text-[10px] font-bold mt-1 @(item.LateFee > 0 ? "text-rose-600" : "text-slate-400")">
+                                        Tổng cuốn này: @item.LateFee.ToString("N0") VNĐ
+                                    </p>
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
                                     <label class="inline-flex items-center gap-1.5 cursor-pointer bg-slate-50 hover:bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-slate-200 transition-colors">
@@ -162,13 +175,50 @@
                 </table>
             </div>
 
-            <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
-                <span class="text-xs text-slate-500">Kiểm tra kỹ tình trạng vật lý trước khi xác nhận lưu vào kho.</span>
+            <div class="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex flex-wrap items-center gap-3">
+                    <span class="text-xs text-slate-500">Tổng tiền phạt / bồi thường phiếu:</span>
+                    <span id="returnDeskTotalFine" class="text-lg font-black font-mono text-rose-600">0 VNĐ</span>
+                    <button type="button" id="btnShowReturnQr" onclick="openReturnQrModal()"
+                            class="hidden px-3.5 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer">
+                        <i data-lucide="qr-code" class="w-4 h-4 text-amber-400"></i> Tạo Mã QR Thu Phạt
+                    </button>
+                </div>
                 <button type="submit" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2">
                     <i data-lucide="check-check" class="w-4 h-4"></i> Xác Nhận Nhập Trả Vào Kho
                 </button>
             </div>
         </form>
+
+        <!-- MODAL QR THU PHẠT NGAY TẠI QUẦY TRẢ SÁCH -->
+        <div id="returnQrModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/70 backdrop-blur-sm">
+            <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-md w-full overflow-hidden">
+                <div class="bg-navy-900 text-white p-5 flex items-center justify-between">
+                    <h3 class="font-bold text-sm flex items-center gap-2">
+                        <i data-lucide="qr-code" class="w-5 h-5 text-amber-400"></i> Mã QR Thanh Toán Phạt Tại Quầy
+                    </h3>
+                    <button type="button" onclick="document.getElementById('returnQrModal').classList.add('hidden')" class="text-slate-400 hover:text-white p-1">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="p-6 space-y-4 text-xs text-center">
+                    <div class="flex items-center justify-between bg-slate-50 p-3 rounded-2xl border border-slate-200">
+                        <span class="font-bold text-slate-600">Tổng tiền phạt:</span>
+                        <span id="returnQrAmount" class="text-lg font-black font-mono text-rose-600">0 VNĐ</span>
+                    </div>
+                    <span id="returnQrTierBadge" class="inline-block px-3 py-1 rounded-full text-[11px] font-bold border"></span>
+                    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-inner w-52 h-52 mx-auto flex items-center justify-center">
+                        <img id="returnQrImg" src="" alt="QR Thanh Toán" class="w-full h-full object-contain" />
+                    </div>
+                    <div class="bg-slate-50 rounded-2xl p-3 border border-slate-200 text-left space-y-1.5">
+                        <div class="flex justify-between"><span class="text-slate-500">Ngân hàng:</span><strong id="returnQrBank">Vietcombank</strong></div>
+                        <div class="flex justify-between"><span class="text-slate-500">Số TK:</span><strong id="returnQrAcc" class="font-mono text-navy-900">102888666999</strong></div>
+                        <div class="flex justify-between"><span class="text-slate-500">Nội dung CK:</span><strong id="returnQrMemo" class="font-mono text-emerald-700"></strong></div>
+                    </div>
+                    <p class="text-[11px] text-slate-500">Sau khi sinh viên quét mã thanh toán, vui lòng tích <strong>"Đã thu tiền"</strong> ở các dòng tương ứng rồi bấm Xác Nhận Nhập Trả.</p>
+                </div>
+            </div>
+        </div>
     }
     else
     {
@@ -193,6 +243,30 @@
 
 @section Scripts {
     <script>
+        function getReturnTotalFine() {
+            let total = 0;
+            document.querySelectorAll('.return-fee-input').forEach((inp, idx) => {
+                const base = parseFloat(inp.value || '0');
+                const late = parseFloat(inp.getAttribute('data-late-fee') || '0');
+                const rowSum = base + late;
+                total += rowSum;
+                const rowLabel = document.getElementById('rowTotalLabel_' + idx);
+                if (rowLabel) {
+                    rowLabel.textContent = 'Tổng cuốn này: ' + new Intl.NumberFormat('vi-VN').format(rowSum) + ' VNĐ';
+                    rowLabel.className = 'text-[10px] font-bold mt-1 ' + (rowSum > 0 ? 'text-rose-600' : 'text-slate-400');
+                }
+            });
+
+            const totalEl = document.getElementById('returnDeskTotalFine');
+            const qrBtn = document.getElementById('btnShowReturnQr');
+            if (totalEl) totalEl.textContent = new Intl.NumberFormat('vi-VN').format(total) + ' VNĐ';
+            if (qrBtn) {
+                if (total > 0) qrBtn.classList.remove('hidden');
+                else qrBtn.classList.add('hidden');
+            }
+            return total;
+        }
+
         function handleConditionChange(selectEl, index) {
             const feeInput = document.getElementById('feeInput_' + index);
             const paidCb = document.getElementById('paidCheckbox_' + index);
@@ -204,9 +278,46 @@
                 feeInput.value = 100000;
             } else {
                 feeInput.value = 0;
-                if (paidCb) paidCb.checked = false;
+                if (paidCb && parseFloat(feeInput.getAttribute('data-late-fee') || '0') <= 0) {
+                    paidCb.checked = false;
+                }
+            }
+            getReturnTotalFine();
+        }
+
+        async function openReturnQrModal() {
+            const total = getReturnTotalFine();
+            if (total <= 0) return;
+
+            const studentCode = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StudentCode));
+            const cardNumber = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.CardNumber));
+            const ticketCode = @Html.Raw(System.Text.Json.JsonSerializer.Serialize("PM" + Model.TicketCode));
+
+            try {
+                const res = await fetch(`/Qr/FineInfo?amount=${encodeURIComponent(total)}&studentCode=${encodeURIComponent(studentCode)}&cardNumber=${encodeURIComponent(cardNumber)}&reference=${encodeURIComponent(ticketCode)}`);
+                const data = await res.json();
+                if (!res.ok || !data.success) return;
+
+                document.getElementById('returnQrAmount').textContent = data.formattedAmount;
+                document.getElementById('returnQrImg').src = data.qrImageUrl + '&_t=' + Date.now();
+                document.getElementById('returnQrBank').textContent = data.bankName;
+                document.getElementById('returnQrAcc').textContent = data.accountNumber;
+                document.getElementById('returnQrMemo').textContent = data.transferContent;
+
+                const badge = document.getElementById('returnQrTierBadge');
+                badge.textContent = data.tierName;
+                badge.className = 'inline-block px-3 py-1 rounded-full text-[11px] font-bold border ' + data.tierBadgeClass;
+
+                document.getElementById('returnQrModal')?.classList.remove('hidden');
+                if (window.lucide) lucide.createIcons();
+            } catch (e) {
+                alert('Không thể tạo mã QR thanh toán: ' + e.message);
             }
         }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            getReturnTotalFine();
+        });
 
         async function confirmCounterPayment(cardNumber) {
             if (!confirm(`Xác nhận đã thu toàn bộ phí bồi thường và kích hoạt lại thẻ ${cardNumber}?`)) return;

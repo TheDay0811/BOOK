@@ -42,6 +42,7 @@ namespace BOOK.ViewModels
         public decimal TotalFinesPaid { get; set; } = 0;
         public decimal TotalUnpaidFines { get; set; } = 0;
         public bool HasUnpaidFines => TotalUnpaidFines > 0;
+        public decimal TotalAccruingOverdueFines => ActiveLoans?.Sum(a => a.EstimatedOverdueFine) ?? 0m;
 
         // Model hỗ trợ cập nhật thông tin
         public UpdateProfileInputModel UpdateModel { get; set; } = new();
@@ -53,6 +54,7 @@ namespace BOOK.ViewModels
     public class PendingBorrowItemViewModel
     {
         public int BorrowId { get; set; }
+        public int BookId { get; set; }
         public string BookCode { get; set; } = string.Empty;
         public string ControlNumber { get; set; } = string.Empty;
         public string DisplayCode => $"{BookCode} - Bản {ControlNumber}";
@@ -88,6 +90,7 @@ namespace BOOK.ViewModels
     public class ActiveBorrowItemViewModel
     {
         public int BorrowId { get; set; }
+        public int BookId { get; set; }
         public string BookCode { get; set; } = "MS01"; // Mã sách
         public string ControlNumber { get; set; } = "002"; // Số kiểm soát (Bản sao)
         public string DisplayCode => $"{BookCode} - Bản {ControlNumber}";
@@ -104,6 +107,7 @@ namespace BOOK.ViewModels
         public bool IsOverdue => DateTime.Today > DueDate.Date;
         public bool IsNearDue => !IsOverdue && DaysRemaining <= 2;
         public int OverdueDays => IsOverdue ? (DateTime.Today - DueDate.Date).Days : 0;
+        public decimal EstimatedOverdueFine => OverdueDays * 2000m;
         public bool CanRenew => !IsOverdue && RenewalCount < 2;
 
         public string DueStatusBadgeClass
@@ -131,6 +135,7 @@ namespace BOOK.ViewModels
     public class BorrowHistoryItemViewModel
     {
         public int Id { get; set; }
+        public int BookId { get; set; }
         public string BookCode { get; set; } = string.Empty;
         public string ControlNumber { get; set; } = string.Empty;
         public string BookTitle { get; set; } = string.Empty;

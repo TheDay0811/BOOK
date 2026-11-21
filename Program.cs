@@ -24,6 +24,7 @@ builder.Services.AddSingleton<ILibraryMongoLogService, LibraryMongoLogService>()
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpClient<ILibraryChatService, GeminiService>();
+builder.Services.AddSingleton<FineQrService>();
 
 // Cấu hình Authentication Cookie cho toàn bộ hệ thống
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -58,7 +59,12 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+var contentTypeProvider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+contentTypeProvider.Mappings[".wasm"] = "application/wasm";
+app.UseStaticFiles(new StaticFileOptions
+{
+    ContentTypeProvider = contentTypeProvider
+});
 
 app.UseRouting();
 

@@ -36,11 +36,17 @@ namespace BOOK.Controllers
         // GET: /Home/Index
         public async Task<IActionResult> Index()
         {
-            var rawCategories = await _context.TheLoais
-                .Include(tl => tl.Sachs)
+            var categoriesData = await _context.TheLoais
+                .AsNoTracking()
+                .Select(tl => new
+                {
+                    tl.MaTheLoai,
+                    tl.TenTheLoai,
+                    BookCount = tl.Sachs.Count()
+                })
                 .ToListAsync();
 
-            var categories = rawCategories.Select(tl =>
+            var categories = categoriesData.Select(tl =>
             {
                 var name = tl.TenTheLoai;
                 string icon = "book-open";
@@ -81,70 +87,60 @@ namespace BOOK.Controllers
                 {
                     Id = tl.MaTheLoai,
                     Name = tl.TenTheLoai,
-                    BookCount = tl.Sachs.Count,
+                    BookCount = tl.BookCount,
                     IconName = icon,
                     ColorClass = color
                 };
             }).ToList();
 
-            // Danh sách sách kèm quan hệ
-            var allSachsWithRelations = await _context.Sachs
-                .Include(s => s.TheLoai)
-                .Include(s => s.NhaXuatBan)
-                .Include(s => s.DauSachs)
-                    .ThenInclude(d => d.ChiTietPhieuMuons)
+            // Truy vấn chiếu (SQL Projection) tối ưu hóa: Tính toán trực tiếp trên SQL Server với AsNoTracking
+            var projectedBooks = await _context.Sachs
+                .AsNoTracking()
+                .Select(s => new BookItemViewModel
+                {
+                    Id = s.MaSach,
+                    Title = s.TenSach,
+                    Author = s.TacGia,
+                    CategoryName = s.TheLoai.TenTheLoai,
+                    PublisherName = s.NhaXuatBan.TenNXB,
+                    PublishYear = s.NamXuatBan,
+                    ISBN = s.MaSachCode,
+                    AvailableCopies = s.DauSachs.Count(d => d.TinhTrang == "Còn"),
+                    TotalCopies = s.DauSachs.Count(),
+                    BorrowCount = s.DauSachs.SelectMany(d => d.ChiTietPhieuMuons).Count(),
+                    ReviewCount = _context.DanhGias.Count(r => r.MaSach == s.MaSach),
+                    Rating = _context.DanhGias.Where(r => r.MaSach == s.MaSach).Select(r => (double?)r.SoSao).Average() ?? 0.0,
+                    PreviewPageCount = s.TrangDocThus.Count(),
+                    ShelfLocation = "Kệ " + s.MaSachCode + " - Tầng 2",
+                    CoverImageUrl = !string.IsNullOrEmpty(s.HinhAnh) ? s.HinhAnh : "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&auto=format&fit=crop&q=80"
+                })
                 .ToListAsync();
 
-            // Top sách nổi bật & được mượn nhiều nhất
-            var popularBooks = allSachsWithRelations
-                .OrderByDescending(s => s.DauSachs.SelectMany(d => d.ChiTietPhieuMuons).Count())
-                .ThenByDescending(s => s.DauSachs.Count)
-                .ThenByDescending(s => s.NamXuatBan)
-                .Take(8)
-                .Select(s => new BookItemViewModel
-                {
-                    Id = s.MaSach,
-                    Title = s.TenSach,
-                    Author = s.TacGia,
-                    CategoryName = s.TheLoai.TenTheLoai,
-                    PublisherName = s.NhaXuatBan.TenNXB,
-                    PublishYear = s.NamXuatBan,
-                    ISBN = s.MaSachCode,
-                    AvailableCopies = s.DauSachs.Count(d => d.TinhTrang == "Còn"),
-                    TotalCopies = s.DauSachs.Count,
-                    BorrowCount = s.DauSachs.SelectMany(d => d.ChiTietPhieuMuons).Count(),
-                    ShelfLocation = $"Kệ {s.MaSachCode} - Tầng 2",
-                    CoverImageUrl = !string.IsNullOrEmpty(s.HinhAnh) ? s.HinhAnh : "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&auto=format&fit=crop&q=80"
-                }).ToList();
+            foreach (var b in projectedBooks)
+            {
+                b.Rating = Math.Round(b.Rating, 1);
+            }
 
-            // Sách mới tiếp nhận
-            var newBooks = allSachsWithRelations
-                .OrderByDescending(s => s.NamXuatBan)
-                .ThenByDescending(s => s.MaSach)
+            var popularBooks = projectedBooks
+                .OrderByDescending(b => b.BorrowCount)
+                .ThenByDescending(b => b.TotalCopies)
+                .ThenByDescending(b => b.PublishYear)
+                .Take(8)
+                .ToList();
+
+            var newBooks = projectedBooks
+                .OrderByDescending(b => b.PublishYear)
+                .ThenByDescending(b => b.Id)
                 .Take(4)
-                .Select(s => new BookItemViewModel
-                {
-                    Id = s.MaSach,
-                    Title = s.TenSach,
-                    Author = s.TacGia,
-                    CategoryName = s.TheLoai.TenTheLoai,
-                    PublisherName = s.NhaXuatBan.TenNXB,
-                    PublishYear = s.NamXuatBan,
-                    ISBN = s.MaSachCode,
-                    AvailableCopies = s.DauSachs.Count(d => d.TinhTrang == "Còn"),
-                    TotalCopies = s.DauSachs.Count,
-                    BorrowCount = s.DauSachs.SelectMany(d => d.ChiTietPhieuMuons).Count(),
-                    ShelfLocation = $"Kệ {s.MaSachCode} - Tầng 2",
-                    CoverImageUrl = !string.IsNullOrEmpty(s.HinhAnh) ? s.HinhAnh : "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=400&auto=format&fit=crop&q=80"
-                }).ToList();
+                .ToList();
 
             var viewModel = new HomeIndexViewModel
             {
                 Categories = categories,
                 NewBooks = newBooks,
                 PopularBooks = popularBooks,
-                TotalBooksCount = await _context.Sachs.CountAsync(),
-                TotalCopiesCount = await _context.DauSachs.CountAsync()
+                TotalBooksCount = projectedBooks.Count,
+                TotalCopiesCount = projectedBooks.Sum(b => b.TotalCopies)
             };
 
             return View(viewModel);

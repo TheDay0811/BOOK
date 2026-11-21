@@ -1,0 +1,386 @@
+<!-- ================= MODAL ĐỌC THỬ SÁCH (INTERACTIVE BOOK READER) ================= -->
+<div id="bookPreviewModal" class="hidden fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-5">
+    <div id="previewReaderShell" class="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-5xl max-h-[94vh] flex flex-col overflow-hidden transition-colors duration-200">
+        
+        <!-- READER HEADER -->
+        <div class="bg-navy-950 text-white px-4 sm:px-6 py-3.5 flex items-center justify-between gap-3 flex-shrink-0">
+            <div class="flex items-center gap-3 min-w-0">
+                <img id="previewBookCover" src="/uploads/books/default-book.svg" alt="Cover"
+                     class="w-9 h-12 object-cover rounded-lg border border-white/20 flex-shrink-0 bg-slate-800"
+                     onerror="this.onerror=null;this.src='/uploads/books/default-book.svg';" />
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-400 text-navy-950 uppercase tracking-wide flex-shrink-0">
+                            Đọc thử miễn phí
+                        </span>
+                        <span id="previewBookCodeBadge" class="text-[11px] font-mono text-blue-300 hidden sm:inline"></span>
+                    </div>
+                    <h3 id="previewBookTitle" class="text-sm sm:text-base font-black text-white truncate mt-0.5">Đang tải nội dung đọc thử...</h3>
+                    <p id="previewBookAuthor" class="text-[11px] text-slate-300 truncate"></p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <span id="previewPageBadge" class="px-3 py-1 rounded-xl bg-white/10 border border-white/15 text-xs font-mono font-bold text-amber-300">
+                    Trang 1 / 1
+                </span>
+                <button type="button" onclick="closeBookPreview()" class="p-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-xl transition-colors" title="Đóng trình đọc (Esc)">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- READER TOOLBAR -->
+        <div id="previewToolbar" class="bg-slate-100 border-b border-slate-200 px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs flex-shrink-0">
+            <!-- Chapter / Page Jumper -->
+            <div class="flex items-center gap-2 flex-1 min-w-[200px] max-w-md">
+                <i data-lucide="list" class="w-4 h-4 text-slate-500 flex-shrink-0"></i>
+                <select id="previewPageSelect" onchange="goToPreviewIndex(parseInt(this.value, 10))"
+                        class="w-full py-1.5 px-3 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-navy-800">
+                </select>
+            </div>
+
+            <!-- Controls: Theme, Font Size, Layout -->
+            <div class="flex items-center gap-2 flex-wrap">
+                <!-- Font Size -->
+                <div class="inline-flex items-center bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                    <button type="button" onclick="changePreviewFontSize(-1)" class="px-2.5 py-1.5 font-bold text-slate-700 hover:bg-slate-100 transition-colors" title="Giảm cỡ chữ">A-</button>
+                    <span id="previewFontLabel" class="px-2 text-[11px] font-mono font-bold text-slate-500 border-x border-slate-200">15px</span>
+                    <button type="button" onclick="changePreviewFontSize(1)" class="px-2.5 py-1.5 font-bold text-slate-700 hover:bg-slate-100 transition-colors" title="Tăng cỡ chữ">A+</button>
+                </div>
+
+                <!-- Theme Switcher -->
+                <div class="inline-flex items-center bg-white border border-slate-200 rounded-xl p-0.5 gap-0.5">
+                    <button type="button" data-preview-theme="light" onclick="setPreviewTheme('light')"
+                            class="preview-theme-btn px-2.5 py-1 rounded-lg font-bold text-[11px] bg-navy-800 text-white transition-colors">
+                        Sáng
+                    </button>
+                    <button type="button" data-preview-theme="sepia" onclick="setPreviewTheme('sepia')"
+                            class="preview-theme-btn px-2.5 py-1 rounded-lg font-bold text-[11px] text-amber-900 hover:bg-amber-50 transition-colors">
+                        Giấy sách
+                    </button>
+                    <button type="button" data-preview-theme="dark" onclick="setPreviewTheme('dark')"
+                            class="preview-theme-btn px-2.5 py-1 rounded-lg font-bold text-[11px] text-slate-700 hover:bg-slate-100 transition-colors">
+                        Tối
+                    </button>
+                </div>
+
+                <!-- 1 vs 2 Page toggle on large screens -->
+                <button type="button" id="previewSpreadBtn" onclick="togglePreviewSpread()"
+                        class="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl font-bold text-slate-700 transition-colors">
+                    <i data-lucide="columns-2" class="w-3.5 h-3.5 text-navy-800"></i>
+                    <span id="previewSpreadLabel">2 trang</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- READER PAGE CONTENT AREA -->
+        <div id="previewCanvas" class="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-200/70 transition-colors duration-200">
+            <div id="previewLoadingState" class="py-16 text-center space-y-3">
+                <div class="w-10 h-10 border-4 border-navy-800 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <p class="text-xs font-semibold text-slate-600">Đang mở các trang đọc thử...</p>
+            </div>
+
+            <div id="previewPagesContainer" class="hidden max-w-4xl mx-auto"></div>
+
+            <!-- End of Preview CTA Slide -->
+            <div id="previewEndCta" class="hidden max-w-xl mx-auto my-6 bg-white rounded-3xl border border-slate-200 shadow-xl p-8 text-center space-y-4">
+                <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 border border-amber-200 flex items-center justify-center mx-auto">
+                    <i data-lucide="book-open-check" class="w-8 h-8"></i>
+                </div>
+                <div class="space-y-1.5">
+                    <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-navy-800 border border-blue-200 inline-block">
+                        Kết thúc phần đọc thử
+                    </span>
+                    <h4 class="text-lg font-black text-slate-900">Bạn đã xem hết các trang đọc thử!</h4>
+                    <p id="previewEndSummary" class="text-xs text-slate-600 leading-relaxed"></p>
+                </div>
+                <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+                    <button type="button" onclick="goToPreviewIndex(0)"
+                            class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Đọc lại từ đầu
+                    </button>
+                    <a id="previewBorrowCtaLink" href="#"
+                       class="px-5 py-2.5 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow-md transition-colors flex items-center gap-1.5">
+                        <i data-lucide="bookmark-check" class="w-4 h-4 text-amber-400"></i> Xem &amp; Đặt Mượn Sách
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- READER FOOTER NAVIGATION -->
+        <div class="bg-white border-t border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between gap-3 flex-shrink-0 text-xs">
+            <button type="button" id="previewPrevBtn" onclick="stepPreviewPage(-1)"
+                    class="px-4 py-2 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed text-slate-800 rounded-xl font-bold transition-colors flex items-center gap-1.5">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i> Trang trước
+            </button>
+
+            <div id="previewDots" class="hidden sm:flex items-center gap-1.5"></div>
+
+            <button type="button" id="previewNextBtn" onclick="stepPreviewPage(1)"
+                    class="px-4 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl font-bold shadow-sm transition-colors flex items-center gap-1.5">
+                <span>Trang sau</span> <i data-lucide="chevron-right" class="w-4 h-4 text-amber-400"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        if (window.__bookPreviewInitialized) return;
+        window.__bookPreviewInitialized = true;
+
+        let state = {
+            bookId: 0,
+            data: null,
+            index: 0, // current start page index, or === pages.length when showing CTA
+            fontSize: 15,
+            theme: 'light',
+            twoPage: false
+        };
+
+        function esc(str) {
+            const d = document.createElement('div');
+            d.textContent = str || '';
+            return d.innerHTML;
+        }
+
+        function formatParagraphs(text) {
+            return esc(text).replace(/\n/g, '<br/>');
+        }
+
+        function getThemeClasses() {
+            if (state.theme === 'sepia') {
+                return {
+                    canvas: 'bg-amber-100/70',
+                    page: 'bg-[#fbf4e4] text-[#433422] border-amber-200/80',
+                    meta: 'text-amber-800/70 border-amber-200/70',
+                    title: 'text-[#2b1f10]'
+                };
+            }
+            if (state.theme === 'dark') {
+                return {
+                    canvas: 'bg-slate-900',
+                    page: 'bg-slate-800 text-slate-200 border-slate-700',
+                    meta: 'text-slate-400 border-slate-700',
+                    title: 'text-amber-300'
+                };
+            }
+            return {
+                canvas: 'bg-slate-200/70',
+                page: 'bg-white text-slate-800 border-slate-200',
+                meta: 'text-slate-400 border-slate-100',
+                title: 'text-navy-900'
+            };
+        }
+
+        function renderReader() {
+            if (!state.data) return;
+            const pages = state.data.pages || [];
+            const total = pages.length;
+            const isEndSlide = state.index >= total;
+
+            const canvas = document.getElementById('previewCanvas');
+            const container = document.getElementById('previewPagesContainer');
+            const endCta = document.getElementById('previewEndCta');
+            const badge = document.getElementById('previewPageBadge');
+            const select = document.getElementById('previewPageSelect');
+            const dots = document.getElementById('previewDots');
+            const prevBtn = document.getElementById('previewPrevBtn');
+            const nextBtn = document.getElementById('previewNextBtn');
+
+            const themeCls = getThemeClasses();
+            canvas.className = `flex-1 overflow-y-auto p-4 sm:p-8 transition-colors duration-200 ${themeCls.canvas}`;
+
+            if (isEndSlide) {
+                container.classList.add('hidden');
+                endCta.classList.remove('hidden');
+                badge.textContent = `Hoàn tất (${total}/${total} trang mẫu)`;
+                select.value = String(total);
+                prevBtn.disabled = total === 0;
+                nextBtn.disabled = true;
+                nextBtn.classList.add('opacity-40', 'cursor-not-allowed');
+            } else {
+                endCta.classList.add('hidden');
+                container.classList.remove('hidden');
+
+                const step = (state.twoPage && window.innerWidth >= 1024 && state.index + 1 < total) ? 2 : 1;
+                const slice = pages.slice(state.index, state.index + step);
+
+                container.className = step === 2
+                    ? 'max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-5'
+                    : 'max-w-3xl mx-auto';
+
+                container.innerHTML = slice.map(p => `
+                    <article class="rounded-2xl border shadow-lg p-6 sm:p-9 flex flex-col justify-between min-h-[420px] transition-colors ${themeCls.page}">
+                        <div>
+                            <div class="flex items-center justify-between pb-3 mb-5 border-b text-[11px] font-semibold uppercase tracking-wider ${themeCls.meta}">
+                                <span>${esc(state.data.bookCode)} • Bản đọc thử</span>
+                                <span class="font-mono">Trang ${p.pageNumber}</span>
+                            </div>
+                            <h4 class="text-lg sm:text-xl font-black mb-4 leading-snug ${themeCls.title}">${esc(p.title)}</h4>
+                            <div class="leading-[1.85] font-normal whitespace-normal" style="font-size: ${state.fontSize}px;">
+                                ${formatParagraphs(p.content)}
+                            </div>
+                        </div>
+                        <div class="pt-5 mt-8 border-t flex items-center justify-between text-[11px] font-mono ${themeCls.meta}">
+                            <span>Thư viện HUFLIT • SmartLib</span>
+                            <span>Trang ${p.pageNumber} / ${state.data.totalBookPages}</span>
+                        </div>
+                    </article>
+                `).join('');
+
+                const currentEnd = Math.min(state.index + step, total);
+                badge.textContent = step === 2
+                    ? `Trang ${state.index + 1}-${currentEnd} / ${total}`
+                    : `Trang ${state.index + 1} / ${total}`;
+
+                select.value = String(state.index);
+                prevBtn.disabled = state.index <= 0;
+                nextBtn.disabled = false;
+                nextBtn.classList.remove('opacity-40', 'cursor-not-allowed');
+            }
+
+            if (dots) {
+                let dotsHtml = '';
+                for (let i = 0; i < total; i++) {
+                    const active = !isEndSlide && i >= state.index && i < state.index + ((state.twoPage && window.innerWidth >= 1024) ? 2 : 1);
+                    dotsHtml += `<button type="button" onclick="goToPreviewIndex(${i})" class="h-2 rounded-full transition-all ${active ? 'w-6 bg-navy-800' : 'w-2 bg-slate-300 hover:bg-slate-400'}" title="Trang ${i + 1}"></button>`;
+                }
+                dotsHtml += `<button type="button" onclick="goToPreviewIndex(${total})" class="h-2 rounded-full transition-all ${isEndSlide ? 'w-6 bg-amber-500' : 'w-2 bg-slate-300 hover:bg-slate-400'}" title="Kết thúc đọc thử"></button>`;
+                dots.innerHTML = dotsHtml;
+            }
+
+            if (window.lucide) lucide.createIcons();
+        }
+
+        window.openBookPreview = async function (bookId) {
+            state.bookId = bookId;
+            state.index = 0;
+            state.data = null;
+
+            const modal = document.getElementById('bookPreviewModal');
+            const loading = document.getElementById('previewLoadingState');
+            const container = document.getElementById('previewPagesContainer');
+            const endCta = document.getElementById('previewEndCta');
+
+            modal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+            loading.classList.remove('hidden');
+            container.classList.add('hidden');
+            endCta.classList.add('hidden');
+
+            try {
+                const res = await fetch(`/Book/Preview/${bookId}`);
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    throw new Error(data.message || 'Không thể tải nội dung đọc thử.');
+                }
+
+                state.data = data;
+                document.getElementById('previewBookCover').src = data.coverImageUrl || '/uploads/books/default-book.svg';
+                document.getElementById('previewBookTitle').textContent = data.title;
+                document.getElementById('previewBookAuthor').textContent = `${data.author} • ${data.categoryName}`;
+                document.getElementById('previewBookCodeBadge').textContent = `Mã: ${data.bookCode}`;
+                document.getElementById('previewEndSummary').textContent =
+                    `Bạn vừa đọc thử ${data.previewCount} trang mẫu của cuốn "${data.title}" (tổng ${data.totalBookPages} trang). Hãy đặt mượn tại Thư viện HUFLIT để đọc toàn bộ tài liệu!`;
+
+                const borrowLink = document.getElementById('previewBorrowCtaLink');
+                if (borrowLink) {
+                    borrowLink.href = `/Book/Details/${data.bookId}`;
+                    borrowLink.onclick = function (e) {
+                        if (window.location.pathname.toLowerCase().includes('/book/details')) {
+                            e.preventDefault();
+                            window.closeBookPreview();
+                            if (window.__canBorrowThisBook === true && typeof window.openBorrowModal === 'function') {
+                                window.openBorrowModal();
+                            } else if (window.__isUserAuthenticated === false && typeof window.handleUnauthenticatedBorrow === 'function') {
+                                window.handleUnauthenticatedBorrow();
+                            }
+                        }
+                    };
+                }
+
+                const select = document.getElementById('previewPageSelect');
+                const pages = data.pages || [];
+                select.innerHTML = pages.map((p, idx) =>
+                    `<option value="${idx}">Trang ${p.pageNumber}: ${esc(p.title)}</option>`
+                ).join('') + `<option value="${pages.length}">Hoàn tất đọc thử</option>`;
+
+                loading.classList.add('hidden');
+                renderReader();
+            } catch (err) {
+                loading.innerHTML = `<div class="p-6 text-rose-600 font-bold text-xs">${esc(err.message || 'Có lỗi khi tải đọc thử.')}</div>`;
+            }
+        };
+
+        window.closeBookPreview = function () {
+            document.getElementById('bookPreviewModal')?.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        };
+
+        window.stepPreviewPage = function (delta) {
+            if (!state.data) return;
+            const total = (state.data.pages || []).length;
+            const step = (state.twoPage && window.innerWidth >= 1024) ? 2 : 1;
+            if (delta > 0) {
+                if (state.index < total) {
+                    state.index = Math.min(total, state.index + step);
+                }
+            } else {
+                if (state.index >= total) {
+                    state.index = Math.max(0, total - step);
+                } else {
+                    state.index = Math.max(0, state.index - step);
+                }
+            }
+            renderReader();
+            document.getElementById('previewCanvas').scrollTop = 0;
+        };
+
+        window.goToPreviewIndex = function (idx) {
+            if (!state.data) return;
+            const total = (state.data.pages || []).length;
+            state.index = Math.max(0, Math.min(total, idx));
+            renderReader();
+            document.getElementById('previewCanvas').scrollTop = 0;
+        };
+
+        window.changePreviewFontSize = function (delta) {
+            state.fontSize = Math.max(13, Math.min(21, state.fontSize + delta));
+            document.getElementById('previewFontLabel').textContent = `${state.fontSize}px`;
+            renderReader();
+        };
+
+        window.setPreviewTheme = function (theme) {
+            state.theme = theme;
+            document.querySelectorAll('.preview-theme-btn').forEach(btn => {
+                const active = btn.getAttribute('data-preview-theme') === theme;
+                btn.classList.toggle('bg-navy-800', active);
+                btn.classList.toggle('text-white', active);
+                if (!active) {
+                    btn.classList.remove('bg-navy-800', 'text-white');
+                }
+            });
+            renderReader();
+        };
+
+        window.togglePreviewSpread = function () {
+            state.twoPage = !state.twoPage;
+            document.getElementById('previewSpreadLabel').textContent = state.twoPage ? '1 trang' : '2 trang';
+            renderReader();
+        };
+
+        document.addEventListener('keydown', function (e) {
+            const modal = document.getElementById('bookPreviewModal');
+            if (!modal || modal.classList.contains('hidden')) return;
+            if (e.key === 'Escape') {
+                window.closeBookPreview();
+            } else if (e.key === 'ArrowRight') {
+                window.stepPreviewPage(1);
+            } else if (e.key === 'ArrowLeft') {
+                window.stepPreviewPage(-1);
+            }
+        });
+    })();
+</script>

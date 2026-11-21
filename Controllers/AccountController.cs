@@ -293,6 +293,7 @@ namespace BOOK.Controllers
                 .SelectMany(p => p.ChiTiets.Where(c => c.NgayTraThucTe == null).Select(c => new ActiveBorrowItemViewModel
                 {
                     BorrowId = p.MaPhieuMuon,
+                    BookId = c.DauSach?.MaSach ?? 0,
                     BookCode = c.DauSach?.Sach?.MaSachCode ?? "",
                     ControlNumber = c.DauSach?.SoKiemSoat ?? "",
                     BookTitle = c.DauSach?.Sach?.TenSach ?? "",
@@ -308,6 +309,7 @@ namespace BOOK.Controllers
                 .SelectMany(p => p.ChiTiets.Select(c => new PendingBorrowItemViewModel
                 {
                     BorrowId = p.MaPhieuMuon,
+                    BookId = c.DauSach?.MaSach ?? 0,
                     BookCode = c.DauSach?.Sach?.MaSachCode ?? "",
                     ControlNumber = c.DauSach?.SoKiemSoat ?? "",
                     BookTitle = c.DauSach?.Sach?.TenSach ?? "",
@@ -323,6 +325,7 @@ namespace BOOK.Controllers
                 .SelectMany(p => p.ChiTiets.Where(c => c.NgayTraThucTe != null).Select(c => new BorrowHistoryItemViewModel
                 {
                     Id = c.MaChiTiet,
+                    BookId = c.DauSach?.MaSach ?? 0,
                     BookCode = c.DauSach?.Sach?.MaSachCode ?? "",
                     ControlNumber = c.DauSach?.SoKiemSoat ?? "",
                     BookTitle = c.DauSach?.Sach?.TenSach ?? "",
@@ -730,11 +733,11 @@ namespace BOOK.Controllers
         [HttpPost]
         [Authorize]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> PayFine(int chiTietId)
+        public async Task<IActionResult> PayFine(int chiTietId, string? paymentMethod = "Chuyển khoản QR ngân hàng")
         {
             var studentCode = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var ct = await _context.ChiTietPhieuMuons
-                .Include(c => c.PhieuMuon).ThenInclude(p => p.The)
+                .Include(c => c.PhieuMuon).ThenInclude(p => p.The).ThenInclude(t => t.TaiKhoan)
                 .FirstOrDefaultAsync(c => c.MaChiTiet == chiTietId && c.PhieuMuon.The.TaiKhoan.Username == studentCode);
 
             if (ct == null || ct.TienBoiThuong <= 0 || ct.DaBoiThuong)
@@ -746,15 +749,43 @@ namespace BOOK.Controllers
             ct.DaBoiThuong = true;
             var the = ct.PhieuMuon.The;
 
-            // Hết nợ mất/hỏng thì thẻ có hiệu lực lại
+            // Hết nợ phạt thì thẻ có hiệu lực lại (nếu chưa hết hạn)
             var conNo = await _context.ChiTietPhieuMuons.AnyAsync(c =>
                 c.PhieuMuon.MaThe == the.MaThe && c.MaChiTiet != chiTietId && !c.DaBoiThuong &&
-                c.TienBoiThuong > 0 && (c.TinhTrangTra == "Hỏng" || c.TinhTrangTra == "Mất"));
-            if (!conNo && the.TinhTrangSuDung == "Không sử dụng")
+                (c.TienBoiThuong > 0 || c.TinhTrangTra == "Hỏng" || c.TinhTrangTra == "Mất"));
+            if (!conNo && the.TinhTrangSuDung == "Không sử dụng" && the.NgayHetHan >= DateTime.Today)
+            {
                 the.TinhTrangSuDung = "Sử dụng được";
+            }
+
+            if (the.TaiKhoan != null)
+            {
+                _context.ThongBaos.Add(new ThongBao
+                {
+                    TargetUser = the.TaiKhoan.Username,
+                    Title = "Thanh toán phí phạt thành công",
+                    Message = $"Bạn đã thanh toán {ct.TienBoiThuong:N0} VNĐ ({paymentMethod}) cho phiếu #{ct.MaPhieuMuon}. Trạng thái thẻ: [{the.TinhTrangSuDung}].",
+                    LinkUrl = "/Account/Profile#history",
+                    Type = "Success",
+                    DaDoc = false,
+                    CreatedAt = DateTime.Now
+                });
+            }
 
             await _context.SaveChangesAsync();
-            TempData["Success"] = $"Đã thanh toán {ct.TienBoiThuong:N0} VNĐ.";
+
+            if (User.Identity is ClaimsIdentity identity)
+            {
+                var oldStatusClaim = identity.FindFirst("CardStatus");
+                if (oldStatusClaim != null) identity.RemoveClaim(oldStatusClaim);
+                identity.AddClaim(new Claim("CardStatus", the.TinhTrangSuDung));
+                await HttpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    new ClaimsPrincipal(identity),
+                    new AuthenticationProperties { IsPersistent = true });
+            }
+
+            TempData["Success"] = $"Đã thanh toán {ct.TienBoiThuong:N0} VNĐ thành công! Trạng thái thẻ: [{the.TinhTrangSuDung}].";
             return RedirectToAction(nameof(Profile));
         }
 

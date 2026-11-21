@@ -4,3 +4,4 @@ obj/
 *.user
 appsettings.Development.json
 .mongodb_data*
+rust-wasm/target/

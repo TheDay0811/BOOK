@@ -1,34 +1,516 @@
 ﻿@model BOOK.Models.ViewModels.BookDetailsViewModel
-<section class="max-w-5xl mx-auto px-4 py-8 space-y-4 text-sm">
-    <h3 class="text-lg font-extrabold text-slate-900">Đánh giá &amp; nhận xét (@Model.Reviews.Count)</h3>
+@{
+    var totalReviews = Model.Reviews.Count;
+    var avgRating = Model.Book.Rating;
+    var dist = Model.RatingDistribution ?? new Dictionary<int, int> { { 5, 0 }, { 4, 0 }, { 3, 0 }, { 2, 0 }, { 1, 0 } };
+    var initialStar = Model.CurrentUserRating ?? 5;
+}
 
-    @if (User.Identity?.IsAuthenticated == true)
-    {
-        <form asp-controller="Book" asp-action="AddReview" method="post" class="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-            <input type="hidden" name="bookId" value="@Model.Book.Id" />
-            <select name="rating" class="p-2 border border-slate-200 rounded-xl">
-                @for (var i = 5; i >= 1; i--)
+<section id="reviews" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 lg:p-10 space-y-8">
+        <!-- HEADER & RATING OVERVIEW -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100">
+            <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
+                    <i data-lucide="star" class="w-4 h-4 fill-amber-400 text-amber-500"></i> Đánh Giá &amp; Xếp Hạng Độc Giả
+                </span>
+                <h3 class="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+                    Đánh giá sách (<span id="reviewsTotalCount">@totalReviews</span>)
+                </h3>
+            </div>
+
+            <!-- Filter Pills by Star -->
+            <div class="flex flex-wrap items-center gap-1.5 text-xs" id="reviewFilterPills">
+                <button type="button" data-star-filter="all" onclick="filterReviewsByStar('all')"
+                        class="review-filter-btn px-3 py-1.5 rounded-xl font-bold bg-navy-800 text-white transition-colors">
+                    Tất cả
+                </button>
+                @for (int s = 5; s >= 1; s--)
                 {
-                    <option value="@i">@i sao</option>
+                    <button type="button" data-star-filter="@s" onclick="filterReviewsByStar('@s')"
+                            class="review-filter-btn px-3 py-1.5 rounded-xl font-bold bg-slate-100 hover:bg-amber-50 text-slate-700 border border-slate-200 transition-colors">
+                        @s ★ (<span id="filterCount_@s">@(dist.TryGetValue(s, out var fc) ? fc : 0)</span>)
+                    </button>
                 }
-            </select>
-            <textarea name="content" rows="3" minlength="10" required class="w-full p-2.5 border border-slate-200 rounded-xl" placeholder="Cảm nhận của bạn (tối thiểu 10 ký tự)"></textarea>
-            <button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-xl font-bold">Gửi đánh giá</button>
-        </form>
-    }
-    else
-    {
-        <p class="text-slate-500">Hãy <a asp-controller="Account" asp-action="Login" class="font-bold underline">đăng nhập</a> để đánh giá.</p>
-    }
-
-    @foreach (var r in Model.Reviews)
-    {
-        <div class="p-4 bg-white border border-slate-200 rounded-2xl">
-            <p class="font-bold text-slate-900">
-                @r.UserName <span class="text-amber-500">@(new string('★', r.Rating))</span>
-                <span class="text-xs text-slate-400 font-normal">@r.CreatedAt.ToString("dd/MM/yyyy")</span>
-            </p>
-            <p class="text-slate-700 mt-1">@r.Content</p>
+            </div>
         </div>
-    }
+
+        <!-- RATING SUMMARY + DISTRIBUTION HISTOGRAM -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <!-- Left: Score + Bars -->
+            <div class="lg:col-span-5 bg-slate-50 rounded-2xl border border-slate-200 p-6 space-y-5">
+                <div class="flex items-center gap-5">
+                    <div class="text-center">
+                        <div class="text-4xl font-black text-slate-900 leading-none">
+                            <span id="reviewsAvgScore">@avgRating.ToString("0.0")</span><span class="text-lg text-slate-400 font-bold">/5</span>
+                        </div>
+                        <div id="reviewsAvgStars" class="flex items-center justify-center gap-0.5 mt-2 text-amber-400">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                var filled = avgRating >= i - 0.25;
+                                <i data-lucide="star" class="w-4 h-4 @(filled ? "fill-amber-400 text-amber-400" : "text-slate-300")"></i>
+                            }
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-1"><span id="reviewsSubCount">@totalReviews</span> lượt đánh giá</p>
+                    </div>
+
+                    <div class="flex-1 space-y-2 text-xs">
+                        @for (int star = 5; star >= 1; star--)
+                        {
+                            var count = dist.TryGetValue(star, out var cnt) ? cnt : 0;
+                            var pct = totalReviews > 0 ? (int)Math.Round(count * 100.0 / totalReviews) : 0;
+                            <div class="flex items-center gap-2">
+                                <span class="w-8 font-bold text-slate-700 text-right">@star ★</span>
+                                <div class="flex-1 h-2 bg-slate-200 rounded-full overflow-hidden">
+                                    <div id="distBar_@star" class="h-full bg-amber-400 rounded-full transition-all duration-300" style="width: @pct%"></div>
+                                </div>
+                                <span id="distCount_@star" class="w-7 text-[11px] font-mono text-slate-500 text-right">@count</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Interactive Rating Submission / Edit Box -->
+            <div class="lg:col-span-7">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <form id="reviewForm" asp-controller="Book" asp-action="AddReview" method="post" onsubmit="handleReviewSubmit(event)"
+                          class="bg-slate-50 rounded-2xl border border-slate-200 p-6 space-y-4">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="bookId" id="reviewBookId" value="@Model.Book.Id" />
+                        <input type="hidden" name="rating" id="ratingValueInput" value="@initialStar" />
+
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div>
+                                <h4 id="reviewFormHeading" class="font-extrabold text-slate-900 text-sm">
+                                    @(Model.CurrentUserReviewId.HasValue ? "Cập nhật đánh giá của bạn" : "Gửi đánh giá & xếp hạng của bạn")
+                                </h4>
+                                <p class="text-[11px] text-slate-500">Chọn số sao từ 1 đến 5. Nhận xét chi tiết không bắt buộc.</p>
+                            </div>
+                            @if (Model.CurrentUserReviewId.HasValue)
+                            {
+                                <span id="ownReviewBadge" class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                    Bạn đã đánh giá @Model.CurrentUserRating ★
+                                </span>
+                            }
+                            else
+                            {
+                                <span id="ownReviewBadge" class="hidden px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200"></span>
+                            }
+                        </div>
+
+                        <!-- Interactive 5-Star Picker -->
+                        <div class="flex flex-wrap items-center gap-3 bg-white p-3.5 rounded-xl border border-slate-200">
+                            <div class="flex items-center gap-1" id="starPickerGroup" role="radiogroup" aria-label="Chọn số sao">
+                                @for (int s = 1; s <= 5; s++)
+                                {
+                                    var active = s <= initialStar;
+                                    <button type="button" data-star="@s"
+                                            onclick="selectRatingStar(@s)"
+                                            onmouseenter="hoverRatingStar(@s)"
+                                            onmouseleave="resetHoverRatingStar()"
+                                            class="star-picker-btn p-1 rounded-lg hover:scale-110 transition-transform focus:outline-none"
+                                            title="@s sao">
+                                        <svg class="w-7 h-7 transition-colors @(active ? "text-amber-400 fill-amber-400" : "text-slate-300 fill-slate-100")"
+                                             viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                        </svg>
+                                    </button>
+                                }
+                            </div>
+                            @{
+                                var initialMood = initialStar switch
+                                {
+                                    1 => "1 sao • Không hài lòng",
+                                    2 => "2 sao • Dưới trung bình",
+                                    3 => "3 sao • Bình thường / Tạm ổn",
+                                    4 => "4 sao • Hay & Hữu ích",
+                                    _ => "5 sao • Tuyệt vời"
+                                };
+                            }
+                            <span id="ratingMoodLabel" class="text-xs font-bold text-amber-700 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+                                @initialMood
+                            </span>
+                        </div>
+
+                        <div>
+                            <label for="reviewContentInput" class="block text-xs font-bold text-slate-700 mb-1">Nhận xét của bạn (tùy chọn)</label>
+                            <textarea name="content" id="reviewContentInput" rows="3" maxlength="1000"
+                                      class="w-full p-3 text-xs sm:text-sm bg-white border border-slate-200 rounded-xl focus:border-navy-800 focus:outline-none"
+                                      placeholder="Chia sẻ cảm nhận về nội dung sách, cách trình bày, mức độ hữu ích cho môn học...">@Model.CurrentUserReviewContent</textarea>
+                            <div class="flex justify-between items-center mt-1 text-[11px] text-slate-400">
+                                <span>Mỗi tài khoản lưu 1 đánh giá cho mỗi tựa sách (có thể cập nhật lại bất kỳ lúc nào).</span>
+                                <span id="reviewCharCount">@((Model.CurrentUserReviewContent ?? "").Length)/1000</span>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-end gap-2">
+                            <button type="submit" id="reviewSubmitBtn"
+                                    class="px-5 py-2.5 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow transition-all flex items-center gap-1.5">
+                                <i data-lucide="send" class="w-3.5 h-3.5 text-amber-400"></i>
+                                <span id="reviewSubmitLabel">@(Model.CurrentUserReviewId.HasValue ? "Cập Nhật Đánh Giá" : "Gửi Đánh Giá")</span>
+                            </button>
+                        </div>
+                    </form>
+                }
+                else
+                {
+                    <div class="p-6 rounded-2xl border border-blue-200 bg-blue-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <h4 class="font-bold text-navy-900 text-sm">Bạn đã đọc hoặc mượn cuốn sách này?</h4>
+                            <p class="text-xs text-slate-600">Hãy đăng nhập tài khoản sinh viên HUFLIT để chấm điểm sao và chia sẻ nhận xét với bạn đọc khác.</p>
+                        </div>
+                        <a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Context.Request.Path"
+                           class="px-5 py-2.5 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold whitespace-nowrap shadow transition-colors text-center">
+                            Đăng Nhập Để Đánh Giá
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- REVIEW LIST -->
+        <div id="reviewsListContainer" class="space-y-3 pt-2">
+            @if (Model.Reviews != null && Model.Reviews.Any())
+            {
+                foreach (var r in Model.Reviews)
+                {
+                    <div class="review-item-card p-5 bg-slate-50/60 border border-slate-200 rounded-2xl space-y-2.5 transition-all" data-rating="@r.Rating">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <img src="@r.UserAvatarUrl" alt="@r.UserName"
+                                     class="w-10 h-10 rounded-xl object-cover border border-slate-200 bg-white"
+                                     onerror="this.onerror=null;this.src='/uploads/avatars/default-avatar.svg';" />
+                                <div>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="font-bold text-slate-900 text-sm">@r.UserName</span>
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200/80 text-slate-700">@r.UserRole</span>
+                                        @if (r.IsVerifiedBorrower)
+                                        {
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                                                <i data-lucide="badge-check" class="w-3 h-3"></i> Đã từng mượn
+                                            </span>
+                                        }
+                                        @if (r.IsOwner)
+                                        {
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-navy-800">Đánh giá của bạn</span>
+                                        }
+                                    </div>
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                        <span class="text-amber-500 text-xs tracking-wide">
+                                            @(new string('★', r.Rating))<span class="text-slate-300">@(new string('★', 5 - r.Rating))</span>
+                                        </span>
+                                        <span class="text-[11px] text-slate-400 font-mono">@r.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (r.IsOwner || Model.CanModerateReviews)
+                            {
+                                <form asp-controller="Book" asp-action="DeleteReview" method="post" onsubmit="return handleDeleteReview(event, @r.Id, @Model.Book.Id)">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="reviewId" value="@r.Id" />
+                                    <input type="hidden" name="bookId" value="@Model.Book.Id" />
+                                    <button type="submit" class="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-bold transition-colors flex items-center gap-1" title="Xóa đánh giá này">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Xóa
+                                    </button>
+                                </form>
+                            }
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(r.Content))
+                        {
+                            <p class="text-slate-700 text-xs sm:text-sm leading-relaxed pl-12">@r.Content</p>
+                        }
+                        else
+                        {
+                            <p class="text-slate-400 italic text-xs pl-12">Đã chấm @r.Rating/5 sao (không kèm nhận xét chi tiết).</p>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="p-10 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2">
+                    <i data-lucide="message-square-heart" class="w-8 h-8 text-slate-400 mx-auto"></i>
+                    <p class="font-bold text-slate-700 text-sm">Chưa có đánh giá nào cho cuốn sách này</p>
+                    <p class="text-xs text-slate-500">Hãy là độc giả đầu tiên chấm sao và chia sẻ cảm nhận!</p>
+                </div>
+            }
+        </div>
+    </div>
 </section>
+
+<script>
+    (function () {
+        const moodMap = {
+            1: '1 sao • Không hài lòng',
+            2: '2 sao • Dưới trung bình',
+            3: '3 sao • Bình thường / Tạm ổn',
+            4: '4 sao • Hay & Hữu ích',
+            5: '5 sao • Tuyệt vời'
+        };
+
+        let selectedStar = parseInt(document.getElementById('ratingValueInput')?.value || '5', 10) || 5;
+        let currentFilter = 'all';
+
+        function paintStars(count) {
+            document.querySelectorAll('.star-picker-btn').forEach(btn => {
+                const s = parseInt(btn.getAttribute('data-star'), 10);
+                const svg = btn.querySelector('svg');
+                if (!svg) return;
+                if (s <= count) {
+                    svg.classList.add('text-amber-400', 'fill-amber-400');
+                    svg.classList.remove('text-slate-300', 'fill-slate-100');
+                } else {
+                    svg.classList.remove('text-amber-400', 'fill-amber-400');
+                    svg.classList.add('text-slate-300', 'fill-slate-100');
+                }
+            });
+            const label = document.getElementById('ratingMoodLabel');
+            if (label) label.textContent = moodMap[count] || `${count} sao`;
+        }
+
+        window.selectRatingStar = function (star) {
+            selectedStar = star;
+            const input = document.getElementById('ratingValueInput');
+            if (input) input.value = String(star);
+            paintStars(star);
+        };
+
+        window.hoverRatingStar = function (star) {
+            paintStars(star);
+        };
+
+        window.resetHoverRatingStar = function () {
+            paintStars(selectedStar);
+        };
+
+        const textarea = document.getElementById('reviewContentInput');
+        if (textarea) {
+            textarea.addEventListener('input', () => {
+                const counter = document.getElementById('reviewCharCount');
+                if (counter) counter.textContent = `${textarea.value.length}/1000`;
+            });
+        }
+
+        paintStars(selectedStar);
+
+        window.filterReviewsByStar = function (starFilter) {
+            currentFilter = starFilter;
+            document.querySelectorAll('.review-filter-btn').forEach(btn => {
+                const active = btn.getAttribute('data-star-filter') === String(starFilter);
+                btn.classList.toggle('bg-navy-800', active);
+                btn.classList.toggle('text-white', active);
+                btn.classList.toggle('bg-slate-100', !active);
+                btn.classList.toggle('text-slate-700', !active);
+            });
+
+            document.querySelectorAll('.review-item-card').forEach(card => {
+                const cardStar = card.getAttribute('data-rating');
+                if (starFilter === 'all' || cardStar === String(starFilter)) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+        };
+
+        function escHtml(str) {
+            const d = document.createElement('div');
+            d.textContent = str || '';
+            return d.innerHTML;
+        }
+
+        function applyUpdatedSummary(summary) {
+            if (!summary) return;
+            const avgText = Number(summary.averageRating || 0).toFixed(1);
+            const total = summary.reviewCount || 0;
+
+            document.getElementById('reviewsAvgScore').textContent = avgText;
+            document.getElementById('reviewsTotalCount').textContent = total;
+            document.getElementById('reviewsSubCount').textContent = total;
+
+            // Update top Details hero rating if present
+            const heroAvg = document.getElementById('bookHeroAvgRating');
+            const heroCount = document.getElementById('bookHeroReviewCount');
+            if (heroAvg) heroAvg.textContent = avgText;
+            if (heroCount) heroCount.textContent = total;
+
+            const dist = summary.distribution || {};
+            for (let s = 1; s <= 5; s++) {
+                const cnt = dist[String(s)] || 0;
+                const pct = total > 0 ? Math.round((cnt * 100) / total) : 0;
+                const bar = document.getElementById(`distBar_${s}`);
+                const cntEl = document.getElementById(`distCount_${s}`);
+                const fltEl = document.getElementById(`filterCount_${s}`);
+                if (bar) bar.style.width = `${pct}%`;
+                if (cntEl) cntEl.textContent = cnt;
+                if (fltEl) fltEl.textContent = cnt;
+            }
+
+            const avgStars = document.getElementById('reviewsAvgStars');
+            if (avgStars) {
+                let starsHtml = '';
+                for (let i = 1; i <= 5; i++) {
+                    const filled = (summary.averageRating || 0) >= i - 0.25;
+                    starsHtml += `<i data-lucide="star" class="w-4 h-4 ${filled ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}"></i>`;
+                }
+                avgStars.innerHTML = starsHtml;
+            }
+
+            const ownBadge = document.getElementById('ownReviewBadge');
+            const formHeading = document.getElementById('reviewFormHeading');
+            const submitLabel = document.getElementById('reviewSubmitLabel');
+            if (summary.currentUserRating) {
+                if (ownBadge) {
+                    ownBadge.textContent = `Bạn đã đánh giá ${summary.currentUserRating} ★`;
+                    ownBadge.classList.remove('hidden');
+                }
+                if (formHeading) formHeading.textContent = 'Cập nhật đánh giá của bạn';
+                if (submitLabel) submitLabel.textContent = 'Cập Nhật Đánh Giá';
+                window.selectRatingStar(summary.currentUserRating);
+            } else {
+                if (ownBadge) ownBadge.classList.add('hidden');
+                if (formHeading) formHeading.textContent = 'Gửi đánh giá & xếp hạng của bạn';
+                if (submitLabel) submitLabel.textContent = 'Gửi Đánh Giá';
+                window.selectRatingStar(5);
+                if (textarea) {
+                    textarea.value = '';
+                    const counter = document.getElementById('reviewCharCount');
+                    if (counter) counter.textContent = '0/1000';
+                }
+            }
+
+            const list = document.getElementById('reviewsListContainer');
+            const bookId = document.getElementById('reviewBookId')?.value || '';
+            const token = document.querySelector('#reviewForm input[name="__RequestVerificationToken"]')?.value || '';
+            const reviews = summary.reviews || [];
+
+            if (reviews.length === 0) {
+                list.innerHTML = `
+                    <div class="p-10 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2">
+                        <i data-lucide="message-square-heart" class="w-8 h-8 text-slate-400 mx-auto"></i>
+                        <p class="font-bold text-slate-700 text-sm">Chưa có đánh giá nào cho cuốn sách này</p>
+                        <p class="text-xs text-slate-500">Hãy là độc giả đầu tiên chấm sao và chia sẻ cảm nhận!</p>
+                    </div>`;
+            } else {
+                list.innerHTML = reviews.map(r => {
+                    const filledStars = '★'.repeat(r.rating);
+                    const emptyStars = '★'.repeat(5 - r.rating);
+                    const deleteBtn = r.canDelete
+                        ? `<form action="/Book/DeleteReview" method="post" onsubmit="return handleDeleteReview(event, ${r.id}, ${bookId})">
+                               <input type="hidden" name="__RequestVerificationToken" value="${escHtml(token)}" />
+                               <input type="hidden" name="reviewId" value="${r.id}" />
+                               <input type="hidden" name="bookId" value="${bookId}" />
+                               <button type="submit" class="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-bold transition-colors flex items-center gap-1">
+                                   <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Xóa
+                               </button>
+                           </form>`
+                        : '';
+
+                    const contentHtml = (r.content && r.content.trim().length > 0)
+                        ? `<p class="text-slate-700 text-xs sm:text-sm leading-relaxed pl-12">${escHtml(r.content)}</p>`
+                        : `<p class="text-slate-400 italic text-xs pl-12">Đã chấm ${r.rating}/5 sao (không kèm nhận xét chi tiết).</p>`;
+
+                    return `
+                        <div class="review-item-card p-5 bg-slate-50/60 border border-slate-200 rounded-2xl space-y-2.5 transition-all" data-rating="${r.rating}">
+                            <div class="flex flex-wrap items-start justify-between gap-3">
+                                <div class="flex items-center gap-3">
+                                    <img src="${escHtml(r.userAvatarUrl)}" alt="${escHtml(r.userName)}"
+                                         class="w-10 h-10 rounded-xl object-cover border border-slate-200 bg-white"
+                                         onerror="this.onerror=null;this.src='/uploads/avatars/default-avatar.svg';" />
+                                    <div>
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <span class="font-bold text-slate-900 text-sm">${escHtml(r.userName)}</span>
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200/80 text-slate-700">${escHtml(r.userRole)}</span>
+                                            ${r.isVerifiedBorrower ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1"><i data-lucide="badge-check" class="w-3 h-3"></i> Đã từng mượn</span>' : ''}
+                                            ${r.isOwner ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-navy-800">Đánh giá của bạn</span>' : ''}
+                                        </div>
+                                        <div class="flex items-center gap-2 mt-0.5">
+                                            <span class="text-amber-500 text-xs tracking-wide">${filledStars}<span class="text-slate-300">${emptyStars}</span></span>
+                                            <span class="text-[11px] text-slate-400 font-mono">${escHtml(r.createdAt)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                ${deleteBtn}
+                            </div>
+                            ${contentHtml}
+                        </div>`;
+                }).join('');
+            }
+
+            window.filterReviewsByStar(currentFilter);
+            if (window.lucide) lucide.createIcons();
+        }
+
+        window.handleReviewSubmit = async function (e) {
+            e.preventDefault();
+            const form = e.target;
+            const btn = document.getElementById('reviewSubmitBtn');
+            if (!form) return;
+
+            if (btn) btn.disabled = true;
+            try {
+                const res = await fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    applyUpdatedSummary(data.summary);
+                    if (typeof window.showAppToast === 'function') {
+                        window.showAppToast('success', 'Đánh giá thành công', data.message);
+                    }
+                } else {
+                    if (typeof window.showAppToast === 'function') {
+                        window.showAppToast('error', 'Không thể gửi đánh giá', data.message || 'Vui lòng kiểm tra lại.');
+                    }
+                }
+            } catch {
+                form.submit();
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        };
+
+        window.handleDeleteReview = async function (e, reviewId, bookId) {
+            e.preventDefault();
+            const form = e.target;
+            const ok = typeof window.showAppConfirm === 'function'
+                ? await window.showAppConfirm('Bạn có chắc chắn muốn xóa đánh giá này?', 'Xác Nhận Xóa Đánh Giá')
+                : confirm('Bạn có chắc chắn muốn xóa đánh giá này?');
+            if (!ok) return false;
+
+            try {
+                const res = await fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    applyUpdatedSummary(data.summary);
+                    if (typeof window.showAppToast === 'function') {
+                        window.showAppToast('success', 'Đã xóa', data.message);
+                    }
+                } else {
+                    if (typeof window.showAppToast === 'function') {
+                        window.showAppToast('error', 'Lỗi', data.message || 'Không thể xóa đánh giá.');
+                    }
+                }
+            } catch {
+                form.submit();
+            }
+            return false;
+        };
+    })();
+</script>
