@@ -19,7 +19,7 @@
             try {
                 const t0 = performance.now();
                 const [wasmResp, catalogResp] = await Promise.all([
-                    fetch('/wasm/smartlib_wasm.wasm'),
+                    fetch('/wasm/smartlib_wasm.wasm?v=20261126', { cache: 'no-cache' }),
                     fetch('/Book/WasmCatalog')
                 ]);
 
@@ -114,8 +114,21 @@
         }
 
         const dropdown = document.createElement('div');
-        dropdown.className = 'hidden absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden text-left';
+        dropdown.className = 'hidden absolute right-0 top-full mt-3 w-[26rem] max-w-[92vw] bg-white rounded-2xl shadow-2xl ring-1 ring-slate-900/10 z-50 overflow-hidden text-left';
         wrapper.appendChild(dropdown);
+
+        // Rust Wasm render toàn bộ HTML danh sách gợi ý (đã escape an toàn)
+        const renderWithRust = (q, limit) => {
+            const enc = encoder.encode(q);
+            const ptr = wasmExports.wasm_alloc(enc.length || 1);
+            new Uint8Array(wasmExports.memory.buffer, ptr, enc.length).set(enc);
+            const t0 = performance.now();
+            const len = wasmExports.wasm_render_suggestions(ptr, enc.length, limit);
+            const micros = Math.max(1, Math.round((performance.now() - t0) * 1000));
+            wasmExports.wasm_dealloc(ptr, enc.length || 1);
+            const html = decoder.decode(new Uint8Array(wasmExports.memory.buffer, wasmExports.wasm_output_ptr(), len));
+            return { html, micros };
+        };
 
         const renderSuggestions = async () => {
             const q = inputEl.value.trim();
@@ -127,58 +140,19 @@
             await initRustWasm();
             if (!isReady) return;
 
-            const { results, elapsedMicros } = searchWithRust(q, false, 6);
-
-            if (results.length === 0) {
-                dropdown.innerHTML = `
-                    <div class="px-4 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                        <span class="font-bold text-navy-800 flex items-center gap-1.5">
-                            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                            Rust WebAssembly Engine
-                        </span>
-                        <span class="font-mono text-emerald-700 font-semibold">${elapsedMicros} µs</span>
-                    </div>
-                    <div class="p-4 text-xs text-slate-500 text-center">
-                        Không tìm thấy sách khớp với "<strong>${escapeHtml(q)}</strong>"
-                    </div>
-                `;
-                dropdown.classList.remove('hidden');
-                return;
-            }
-
-            const itemsHtml = results.map(b => {
-                const availBadge = b.available > 0
-                    ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Còn ${b.available}/${b.total}</span>`
-                    : `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">Hết sách</span>`;
-
-                return `
-                    <a href="/Book/Details/${b.id}" class="flex items-center gap-3 p-2.5 hover:bg-blue-50/70 transition-colors border-b border-slate-100 last:border-0">
-                        <img src="${escapeHtml(b.cover)}" alt="${escapeHtml(b.title)}"
-                             class="w-10 h-14 object-cover rounded-lg border border-slate-200 flex-shrink-0 bg-slate-100"
-                             onerror="this.onerror=null;this.src='/uploads/books/default-book.svg';" />
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center justify-between gap-2">
-                                <span class="text-[10px] font-bold uppercase text-blue-600 truncate">${escapeHtml(b.category)}</span>
-                                ${availBadge}
-                            </div>
-                            <h5 class="text-xs font-bold text-slate-900 truncate mt-0.5">${escapeHtml(b.title)}</h5>
-                            <p class="text-[11px] text-slate-500 truncate">${escapeHtml(b.author)} • <span class="font-mono">${escapeHtml(b.isbn)}</span></p>
-                        </div>
-                    </a>
-                `;
-            }).join('');
+            const { html, micros } = renderWithRust(q, 6);
 
             dropdown.innerHTML = `
-                <div class="px-3.5 py-2 bg-gradient-to-r from-navy-950 to-navy-800 text-white flex items-center justify-between text-[11px]">
-                    <span class="font-semibold flex items-center gap-1.5">
+                <div class="px-4 py-2.5 bg-gradient-to-r from-navy-950 to-navy-800 text-white flex items-center justify-between gap-3 text-[11px]">
+                    <span class="font-semibold flex items-center gap-2 whitespace-nowrap">
                         <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                        Rust Wasm Fuzzy Search (Hỗ trợ không dấu & sai chính tả)
+                        Rust Wasm Search
+                        <span class="hidden sm:inline text-blue-200 font-normal">· không dấu &amp; sai chính tả</span>
                     </span>
-                    <span class="font-mono text-amber-300 font-bold">${elapsedMicros} µs</span>
+                    <span class="font-mono text-amber-300 font-bold whitespace-nowrap">${micros} µs</span>
                 </div>
-                <div class="max-h-80 overflow-y-auto divide-y divide-slate-100">
-                    ${itemsHtml}
-                </div>
+                <div class="max-h-96 overflow-y-auto">${html}</div>
+                <a href="/Book?searchQuery=${encodeURIComponent(q)}" class="block px-4 py-2.5 text-center text-xs font-bold text-navy-800 bg-slate-50 hover:bg-slate-100 border-t border-slate-100 transition-colors">Xem tất cả kết quả cho "${escapeHtml(q)}" →</a>
             `;
             dropdown.classList.remove('hidden');
         };

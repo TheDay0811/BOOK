@@ -281,6 +281,87 @@ pub extern "C" fn wasm_index_catalog(ptr: *const u8, len: usize) -> usize {
     count
 }
 
+fn escape_html(s: &str, out: &mut String) {
+    for c in s.chars() {
+        match c {
+            '&' => out.push_str("&amp;"),
+            '<' => out.push_str("&lt;"),
+            '>' => out.push_str("&gt;"),
+            '"' => out.push_str("&quot;"),
+            '\'' => out.push_str("&#39;"),
+            c => out.push(c),
+        }
+    }
+}
+
+/// Render toàn bộ phần thân dropdown gợi ý tìm kiếm trên thanh header bằng Rust (HTML an toàn, đã escape)
+#[no_mangle]
+pub extern "C" fn wasm_render_suggestions(q_ptr: *const u8, q_len: usize, limit: usize) -> usize {
+    let query = unsafe {
+        let bytes = slice::from_raw_parts(q_ptr, q_len);
+        str::from_utf8_unchecked(bytes)
+    };
+    let raw_q = query.trim();
+    let norm_q = normalize_vi(raw_q);
+    let tokens: Vec<&str> = norm_q.split_whitespace().collect();
+
+    let mut html = String::with_capacity(2048);
+
+    CATALOG.with(|cat| {
+        let catalog = cat.borrow();
+        let mut scored: Vec<(u32, usize)> = Vec::new();
+        for (idx, book) in catalog.iter().enumerate() {
+            let sc = score_book(book, &norm_q, &tokens);
+            if sc > 0 {
+                scored.push((sc, idx));
+            }
+        }
+        scored.sort_unstable_by(|a, b| b.0.cmp(&a.0));
+        let take = scored.len().min(if limit == 0 { 6 } else { limit });
+
+        if take == 0 {
+            html.push_str("<div class=\"px-5 py-8 text-center\"><div class=\"mx-auto mb-2 w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-lg\">&#128269;</div><p class=\"text-sm text-slate-500\">Không tìm thấy sách khớp với <strong class=\"text-slate-800\">");
+            escape_html(raw_q, &mut html);
+            html.push_str("</strong></p><p class=\"text-xs text-slate-400 mt-1\">Thử gõ không dấu hoặc rút gọn từ khóa</p></div>");
+            return;
+        }
+
+        html.push_str("<ul class=\"divide-y divide-slate-100\">");
+        for &(_, idx) in scored.iter().take(take) {
+            let b = &catalog[idx];
+            html.push_str("<li><a href=\"/Book/Details/");
+            html.push_str(&b.id.to_string());
+            html.push_str("\" class=\"flex items-center gap-4 px-4 py-3 hover:bg-blue-50/70 transition-colors\"><img src=\"");
+            escape_html(&b.cover, &mut html);
+            html.push_str("\" alt=\"\" class=\"w-11 h-16 object-cover rounded-lg border border-slate-200 shadow-sm flex-shrink-0 bg-slate-100\" onerror=\"this.onerror=null;this.src='/uploads/books/default-book.svg';\"/><div class=\"flex-1 min-w-0\"><div class=\"flex items-center justify-between gap-2 mb-0.5\"><span class=\"text-[10px] font-bold uppercase tracking-wide text-blue-600 truncate\">");
+            escape_html(&b.category, &mut html);
+            html.push_str("</span>");
+            if b.available > 0 {
+                html.push_str("<span class=\"flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200\">Còn ");
+                html.push_str(&b.available.to_string());
+                html.push('/');
+                html.push_str(&b.total.to_string());
+                html.push_str("</span>");
+            } else {
+                html.push_str("<span class=\"flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200\">Hết sách</span>");
+            }
+            html.push_str("</div><h5 class=\"text-sm font-bold text-slate-900 truncate\">");
+            escape_html(&b.title, &mut html);
+            html.push_str("</h5><p class=\"text-xs text-slate-500 truncate\">");
+            escape_html(&b.author, &mut html);
+            html.push_str(" &bull; <span class=\"font-mono\">");
+            escape_html(&b.isbn, &mut html);
+            html.push_str("</span></p></div></a></li>");
+        }
+        html.push_str("</ul>");
+    });
+
+    OUTPUT_BUF.with(|out| {
+        *out.borrow_mut() = html.into_bytes();
+    });
+    wasm_output_len()
+}
+
 /// Tìm kiếm sách siêu tốc bằng Rust Wasm, trả về độ dài chuỗi JSON trong OUTPUT_BUF
 #[no_mangle]
 pub extern "C" fn wasm_search_books(
