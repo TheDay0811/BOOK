@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full bg-slate-50">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tr&#x1EA1;ng th&#xE1;i C&#x1A1; s&#x1EDF; d&#x1EEF; li&#x1EC7;u MongoDB NoSQL - Hệ Thống Thư Viện Số Hiện Đại</title>
+
+    <!-- Google Fonts: Be Vietnam Pro & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: {
+                            50: '#f0f4f9',
+                            100: '#e1e9f2',
+                            200: '#c3d3e6',
+                            300: '#95b3d4',
+                            400: '#618ec0',
+                            500: '#3d6ea8',
+                            600: '#2d568c',
+                            700: '#254572',
+                            800: '#1e3a8a', // Deep Navy Blue Brand
+                            900: '#0f1e40',
+                            950: '#091226',
+                        },
+                        amber: {
+                            500: '#f59e0b',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Be Vietnam Pro"', 'Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* Smooth scrolling and transitions */
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+        }
+    </style>
+    
+</head>
+<body class="min-h-full flex flex-col font-sans text-slate-800 antialiased bg-slate-50">
+
+    <!-- HEADER & NAVBAR DÙNG CHUNG -->
+    
+
+<!-- TOP ANNOUNCEMENT BAR -->
+<div class="bg-navy-950 text-slate-300 text-xs py-2 px-4 border-b border-navy-900 select-none">
+    <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
+        <div class="flex items-center gap-4">
+            <span class="flex items-center gap-1.5 font-medium text-emerald-400">
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                Giờ mở cửa: Thứ 2 - Thứ 7 (07:30 - 21:00) | CN (08:00 - 17:00)
+            </span>
+            <span class="hidden md:inline text-slate-600">|</span>
+            <span class="hidden md:flex items-center gap-1 text-slate-300">
+                <i data-lucide="phone" class="w-3.5 h-3.5 text-amber-400"></i> Hotline: (028) 38 632 052
+            </span>
+        </div>
+        <div class="flex items-center gap-4">
+            <a class="hover:text-white transition-colors" href="/BOOK/#rules">Nội quy mượn trả</a>
+            <span class="text-slate-600">|</span>
+            <button type="button" onclick="window.showAppModal({ title: 'Hỗ Trợ Độc Giả HUFLIT', message: 'Vui lòng liên hệ Quầy Thủ thư tại Tầng 1 (Cơ sở Hóc Môn: Số 80/2 Bà Triệu, Xã Tân Xuân, Huyện Hóc Môn, TP.HCM)\nHotline: (028) 38 632 052 - Email: thuvien@huflit.edu.vn', type: 'info' })" class="hover:text-white transition-colors">Trợ giúp</button>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN NAVBAR (STICKY TOP) -->
+<header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all duration-200">
+    <nav class="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-20">
+            
+            <!-- 1. LOGO & TÊN HỆ THỐNG -->
+            <div class="flex items-center gap-4 2xl:gap-8 shrink-0">
+                <a class="flex items-center gap-3 group" href="/BOOK/">
+                    <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-navy-900 to-navy-700 text-white flex items-center justify-center shadow-md shadow-navy-900/20 group-hover:scale-105 transition-transform duration-200">
+                        <i data-lucide="book-open-check" class="w-6 h-6 text-amber-400"></i>
+                    </div>
+                    <div>
+                        <span class="block text-[10px] uppercase tracking-widest font-bold text-navy-800">Thư Viện HUFLIT</span>
+                        <span class="text-xl font-black tracking-tight text-slate-900 group-hover:text-navy-800 transition-colors">
+                            SMART<span class="text-blue-600">LIB</span>
+                        </span>
+                    </div>
+                </a>
+
+                <!-- 2. MENU ĐIỀU HƯỚNG CHÍNH GIỮA (DESKTOP) -->
+                <div class="hidden xl:flex items-center gap-0.5 font-medium text-sm text-slate-700 whitespace-nowrap">
+                    <a class="px-3.5 py-2 rounded-xl hover:bg-slate-100 hover:text-navy-800 transition-colors " href="/BOOK/">
+                        Trang chủ
+                    </a>
+                    <a class="px-3.5 py-2 rounded-xl hover:bg-slate-100 hover:text-navy-800 transition-colors " href="/BOOK/Book">
+                        Danh mục sách
+                    </a>
+                    <a class="hidden 2xl:inline-block px-3.5 py-2 rounded-xl hover:bg-slate-100 hover:text-navy-800 transition-colors" href="/BOOK/#featured">
+                        Sách nổi bật
+                    </a>
+                    <a class="px-3.5 py-2 rounded-xl hover:bg-slate-100 hover:text-navy-800 transition-colors" href="/BOOK/#rules">
+                        Quy định mượn trả
+                    </a>
+                </div>
+            </div>
+
+            <!-- 3. THANH TÌM KIẾM NHANH (DESKTOP) -->
+            <div class="hidden md:flex flex-1 min-w-[160px] max-w-md mx-3 lg:mx-5 xl:mx-6">
+                <form method="get" class="relative w-full" action="/BOOK/Book">
+                    <input type="text" name="searchQuery" 
+                           placeholder="Tra cứu sách, tác giả, ISBN..." 
+                           class="w-full pl-10 pr-20 py-2.5 text-sm bg-slate-100/80 border border-slate-200 rounded-full focus:bg-white focus:border-navy-800 focus:ring-4 focus:ring-navy-800/10 focus:outline-none transition-all placeholder:text-slate-400 truncate" />
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <i data-lucide="search" class="w-4 h-4"></i>
+                    </div>
+                    <button type="submit" class="absolute inset-y-1 right-1 px-4 bg-navy-800 hover:bg-navy-900 text-white rounded-full text-xs font-bold tracking-wide shadow-sm transition-colors">
+                        Tìm
+                    </button>
+                </form>
+            </div>
+
+            <!-- 4. GÓC PHẢI HEADER: XỬ LÝ TRẠNG THÁI TÀI KHOẢN -->
+            <div class="flex items-center gap-3 shrink-0">
+                    <!-- KHI CHƯA ĐĂNG NHẬP -->
+                    <div class="hidden sm:flex items-center gap-2.5 shrink-0">
+                        <a class="whitespace-nowrap shrink-0 px-4 py-2 text-xs sm:text-sm font-bold text-navy-800 border border-navy-800/30 hover:border-navy-800 hover:bg-navy-50 rounded-xl transition-all" href="/BOOK/Account/Login">
+                            Đăng nhập
+                        </a>
+                        <a class="whitespace-nowrap shrink-0 px-4 py-2 text-xs sm:text-sm font-bold text-white bg-navy-800 hover:bg-navy-900 rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-1.5 group" href="/BOOK/Account/Register">
+                            <i data-lucide="id-card" class="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform"></i>
+                            <span>Đăng ký thẻ</span>
+                        </a>
+                    </div>
+
+                <!-- NÚT MOBILE HAMBURGER -->
+                <button type="button" id="mobileMenuBtn" onclick="toggleMobileMenu()" 
+                        class="xl:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-xl transition-colors" title="Mở menu">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- MOBILE SEARCH BAR (HIỆN TRÊN ĐIỆN THOẠI) -->
+        <div class="pb-3 md:hidden">
+            <form method="get" class="relative" action="/BOOK/Book">
+                <input type="text" name="searchQuery" placeholder="Tra cứu sách, tác giả, ISBN..." 
+                       class="w-full pl-9 pr-4 py-2 text-xs bg-slate-100 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-navy-800" />
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+            </form>
+        </div>
+    </nav>
+
+    <!-- MOBILE MENU DRAWER -->
+    <div id="mobileMenu" class="hidden xl:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-5 space-y-2">
+        <a class="block px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100" href="/BOOK/">Trang chủ</a>
+        <a class="block px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100" href="/BOOK/Book">Danh mục sách</a>
+        <a class="block px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100" href="/BOOK/#featured">Sách nổi bật</a>
+        <a class="block px-3 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-100" href="/BOOK/#rules">Quy định mượn trả</a>
+
+            <div class="pt-3 border-t border-slate-100 grid grid-cols-2 gap-2">
+                <a class="py-2.5 text-center text-xs font-bold text-navy-800 border border-navy-800/30 rounded-xl" href="/BOOK/Account/Login">Đăng nhập</a>
+                <a class="py-2.5 text-center text-xs font-bold text-white bg-navy-800 rounded-xl" href="/BOOK/Account/Register">Đăng ký thẻ</a>
+            </div>
+    </div>
+</header>
+
+<script>
+    // Hàm bật/tắt dropdown tài khoản độc giả
+    function toggleUserDropdown(event) {
+        if (event) event.stopPropagation();
+        const dropdown = document.getElementById('userDropdown');
+        const chevron = document.getElementById('userMenuChevron');
+        if (!dropdown) return;
+
+        const isHidden = dropdown.classList.contains('hidden');
+        if (isHidden) {
+            dropdown.classList.remove('hidden');
+            if (chevron) chevron.classList.add('rotate-180');
+        } else {
+            dropdown.classList.add('hidden');
+            if (chevron) chevron.classList.remove('rotate-180');
+        }
+    }
+
+    // Hàm bật/tắt dropdown thông báo
+    function togglePublicNotificationDropdown(event) {
+        if (event) event.stopPropagation();
+        const notifDropdown = document.getElementById('publicNotificationDropdown');
+        if (notifDropdown) {
+            notifDropdown.classList.toggle('hidden');
+        }
+        const userDropdown = document.getElementById('userDropdown');
+        if (userDropdown && !userDropdown.classList.contains('hidden')) {
+            userDropdown.classList.add('hidden');
+            const chevron = document.getElementById('userMenuChevron');
+            if (chevron) chevron.classList.remove('rotate-180');
+        }
+    }
+
+    // Đóng dropdown khi click ra ngoài
+    document.addEventListener('click', function (event) {
+        const container = document.getElementById('userMenuContainer');
+        const dropdown = document.getElementById('userDropdown');
+        const chevron = document.getElementById('userMenuChevron');
+        if (dropdown && !dropdown.classList.contains('hidden')) {
+            if (container && !container.contains(event.target)) {
+                dropdown.classList.add('hidden');
+                if (chevron) chevron.classList.remove('rotate-180');
+            }
+        }
+
+        const notifContainer = document.getElementById('notifMenuContainer');
+        const notifDropdown = document.getElementById('publicNotificationDropdown');
+        if (notifDropdown && !notifDropdown.classList.contains('hidden')) {
+            if (notifContainer && !notifContainer.contains(event.target)) {
+                notifDropdown.classList.add('hidden');
+            }
+        }
+    });
+
+    // Tải và đánh dấu thông báo độc giả thật từ CSDL
+    async function loadPublicNotifications() {
+        const list = document.getElementById('publicNotifList');
+        if (!list) return;
+        try {
+            const res = await fetch('/Notification/GetNotifications', {
+                headers: { 'Accept': 'application/json' }
+            });
+            const ct = res.headers.get('content-type') || '';
+            if (!res.ok || !ct.includes('application/json')) return;
+            const data = await res.json();
+            if (data.success) {
+                const dot = document.getElementById('publicNotifDot');
+                if (dot) {
+                    if (data.unreadCount > 0) {
+                        dot.classList.remove('hidden');
+                    } else {
+                        dot.classList.add('hidden');
+                    }
+                }
+                if (!data.notifications || data.notifications.length === 0) {
+                    list.innerHTML = '<p class="text-slate-400 text-center py-4 text-xs">Hiện không có thông báo nào.</p>';
+                } else {
+                    list.innerHTML = data.notifications.map(n => `
+                        <a href="${n.linkUrl}" onclick="handlePublicNotifClick(${n.id}, event, '${n.linkUrl}')" 
+                           class="block p-2.5 rounded-xl hover:bg-slate-50 transition-colors ${!n.isRead ? 'bg-blue-50/50' : ''}">
+                            <div class="flex items-start justify-between gap-1">
+                                <p class="font-bold text-xs ${n.type === 'Warning' ? 'text-amber-800' : (n.type === 'Error' ? 'text-rose-700' : 'text-navy-800')}">${n.title}</p>
+                                ${!n.isRead ? '<span class="w-1.5 h-1.5 rounded-full bg-blue-600 flex-shrink-0 mt-1"></span>' : ''}
+                            </div>
+                            <p class="text-[11px] text-slate-600 mt-0.5 leading-snug">${n.message}</p>
+                            <span class="text-[9px] text-slate-400 mt-1 block font-mono">${n.timeAgo}</span>
+                        </a>
+                    `).join('');
+                }
+            }
+        } catch (e) {
+            console.error('Lỗi tải thông báo:', e);
+        }
+    }
+
+    async function markPublicNotificationsAsRead() {
+        try {
+            const res = await fetch('/Notification/MarkAsRead', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                const dot = document.getElementById('publicNotifDot');
+                if (dot) dot.classList.add('hidden');
+                const unreadIndicators = document.querySelectorAll('#publicNotifList span.bg-blue-600');
+                unreadIndicators.forEach(el => el.remove());
+                const unreadRows = document.querySelectorAll('#publicNotifList .bg-blue-50\\/50');
+                unreadRows.forEach(el => el.classList.remove('bg-blue-50/50'));
+                if (window.showAppToast) {
+                    window.showAppToast('success', 'Thông Báo', 'Đã đánh dấu đã đọc tất cả thông báo!');
+                }
+            }
+        } catch (e) {}
+    }
+
+    async function handlePublicNotifClick(id, event, url) {
+        event.preventDefault();
+        try {
+            await fetch(`/Notification/MarkAsRead?id=${id}`, { method: 'POST' });
+        } catch (e) {}
+        if (url && url !== '#') {
+            window.location.href = url;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        loadPublicNotifications();
+    });
+
+    // Hàm bật/tắt menu trên mobile
+    function toggleMobileMenu() {
+        const mobileMenu = document.getElementById('mobileMenu');
+        if (mobileMenu) {
+            mobileMenu.classList.toggle('hidden');
+        }
+    }
+</script>
+
+
+
+    <!-- ================= GLOBAL REUSABLE APP MODAL ================= -->
+    <div b-m2u7egdqef id="appModalOverlay" class="fixed inset-0 z-[9999] hidden bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-200">
+        <div b-m2u7egdqef id="appModalBox" class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-200 relative transform transition-all duration-200 scale-95 opacity-0">
+            <div b-m2u7egdqef class="flex items-start gap-4">
+                <div b-m2u7egdqef id="appModalIconWrapper" class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
+                    <i b-m2u7egdqef id="appModalIcon" data-lucide="info" class="w-6 h-6"></i>
+                </div>
+                <div b-m2u7egdqef class="space-y-1.5 flex-1">
+                    <h3 b-m2u7egdqef id="appModalTitle" class="text-base font-extrabold text-slate-900 leading-snug">Thông Báo</h3>
+                    <div b-m2u7egdqef id="appModalMessage" class="text-xs text-slate-600 leading-relaxed whitespace-pre-line"></div>
+                </div>
+            </div>
+            <div b-m2u7egdqef class="mt-6 pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                <button b-m2u7egdqef type="button" id="appModalCancelBtn" class="hidden px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors">
+                    Hủy bỏ
+                </button>
+                <button b-m2u7egdqef type="button" id="appModalConfirmBtn" class="px-5 py-2.5 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all">
+                    Đồng ý
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div b-m2u7egdqef id="toastContainer" class="fixed top-24 right-5 z-50 flex flex-col gap-3 pointer-events-none">
+    </div>
+
+    <!-- MAIN BODY CONTENT -->
+    <main b-m2u7egdqef role="main" class="flex-1">
+        
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Header Banner -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6 mb-8">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        MongoDB Active & Running
+                    </span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
+                        NoSQL Document Store
+                    </span>
+                </div>
+                <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Trạng thái Cơ sở Dữ liệu MongoDB</h1>
+                <p class="text-sm text-slate-500 mt-1">
+                    Hệ thống áp dụng kiến trúc <strong>Polyglot Persistence</strong>: Lưu trữ Nhật ký kiểm toán hệ thống và Lịch sử hội thoại Chatbot AI trên MongoDB.
+                </p>
+            </div>
+            <div>
+                <a href="/BOOK/" class="inline-flex items-center gap-2 px-4 py-2 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-sm font-semibold transition-all shadow-sm">
+                    <i data-lucide="home" class="w-4 h-4"></i> Về Trang chủ
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- MongoDB Connection Info Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 text-navy-800 flex items-center justify-center">
+                    <i data-lucide="database" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Cơ sở dữ liệu</div>
+                    <div class="text-xl font-bold text-slate-900">LibraryDB</div>
+                </div>
+            </div>
+            <p class="text-xs text-slate-500 mt-2">MongoDB Engine: v8.0.x (x86_64 portable)</p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <i data-lucide="layers" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Collections Đang Hoạt Động</div>
+                    <div class="text-xl font-bold text-emerald-600">2 Collections</div>
+                </div>
+            </div>
+            <p class="text-xs text-slate-500 mt-2">system_audit_logs, chat_history_logs</p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                    <i data-lucide="terminal" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">URI Kết Nối (Compass)</div>
+                    <code class="text-xs font-mono font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 select-all">mongodb&#x2B;srv://smartlib:******@cluster0.awhkgqw.mongodb.net/</code>
+                </div>
+            </div>
+            <p class="text-xs text-slate-500 mt-2">Dán chuỗi này vào MongoDB Compass để mở GUI</p>
+        </div>
+    </div>
+
+    <!-- Section 1: System Audit Logs -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden mb-8">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div class="flex items-center gap-2">
+                <i data-lucide="shield-check" class="w-5 h-5 text-navy-800"></i>
+                <h3 class="font-bold text-slate-900">Collection: system_audit_logs (5 bản ghi)</h3>
+            </div>
+            <span class="text-xs text-slate-400 font-mono">BSON Document Format</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-slate-600">
+                <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500 border-b border-slate-100">
+                    <tr>
+                        <th class="px-6 py-3">MongoDB _id (ObjectId)</th>
+                        <th class="px-6 py-3">Hành động</th>
+                        <th class="px-6 py-3">Tài khoản</th>
+                        <th class="px-6 py-3">Vai trò</th>
+                        <th class="px-6 py-3">Chi tiết sự kiện</th>
+                        <th class="px-6 py-3">Thời gian (UTC)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                            <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="px-6 py-4 font-mono text-xs text-blue-600 font-semibold select-all">6afd3ccd283c6d90e5c06eb1</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-navy-100 text-navy-800">
+                                        FINE_PAYMENT
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 font-semibold text-slate-900">thuthu</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+                                        Librarian
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-slate-700">X&#xE1;c nh&#x1EAD;n thu ph&#xED; ph&#x1EA1;t tr&#x1EC5; h&#x1EA1;n 10.000&#x111; cho phi&#x1EBF;u m&#x1B0;&#x1EE3;n #1.</td>
+                                <td class="px-6 py-4 text-xs text-slate-400 whitespace-nowrap font-mono">2026-11-18 05:51:09</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="px-6 py-4 font-mono text-xs text-blue-600 font-semibold select-all">6afd3ccd283c6d90e5c06eb0</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-navy-100 text-navy-800">
+                                        BORROW
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 font-semibold text-slate-900">thuthu</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+                                        Librarian
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-slate-700">Th&#x1EE7; th&#x1B0; t&#x1EA1;o phi&#x1EBF;u m&#x1B0;&#x1EE3;n m&#xE3; #1 cho sinh vi&#xEA;n Nguy&#x1EC5;n V&#x103;n A (LIB-24DH112970).</td>
+                                <td class="px-6 py-4 text-xs text-slate-400 whitespace-nowrap font-mono">2026-11-18 05:51:09</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="px-6 py-4 font-mono text-xs text-blue-600 font-semibold select-all">6afd3ccd283c6d90e5c06eaf</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-navy-100 text-navy-800">
+                                        LOGIN
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 font-semibold text-slate-900">admin</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+                                        Admin
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-slate-700">Qu&#x1EA3;n tr&#x1ECB; vi&#xEA;n &#x111;&#x103;ng nh&#x1EAD;p v&#xE0;o trang qu&#x1EA3;n tr&#x1ECB; h&#x1EC7; th&#x1ED1;ng.</td>
+                                <td class="px-6 py-4 text-xs text-slate-400 whitespace-nowrap font-mono">2026-11-18 05:51:09</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="px-6 py-4 font-mono text-xs text-blue-600 font-semibold select-all">6afd3ccd283c6d90e5c06eae</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-navy-100 text-navy-800">
+                                        SEED_DATA
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 font-semibold text-slate-900">System</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+                                        SuperAdmin
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-slate-700">Kh&#x1EDF;i t&#x1EA1;o 8 &#x111;&#x1EA7;u s&#xE1;ch gi&#xE1;o tr&#xEC;nh, 2 t&#xE0;i kho&#x1EA3;n qu&#x1EA3;n tr&#x1ECB; (admin, thuthu) v&#xE0; danh m&#x1EE5;c th&#x1EC3; lo&#x1EA1;i.</td>
+                                <td class="px-6 py-4 text-xs text-slate-400 whitespace-nowrap font-mono">2026-11-18 05:51:09</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="px-6 py-4 font-mono text-xs text-blue-600 font-semibold select-all">6afd3ccd283c6d90e5c06ead</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-navy-100 text-navy-800">
+                                        SYSTEM_INIT
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 font-semibold text-slate-900">System</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+                                        SuperAdmin
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-slate-700">H&#x1EC7; th&#x1ED1;ng Qu&#x1EA3;n l&#xFD; Th&#x1B0; vi&#x1EC7;n HUFLIT kh&#x1EDF;i t&#x1EA1;o th&#xE0;nh c&#xF4;ng tr&#xEA;n ki&#x1EBF;n tr&#xFA;c Hybrid SQL Server &#x2B; MongoDB.</td>
+                                <td class="px-6 py-4 text-xs text-slate-400 whitespace-nowrap font-mono">2026-11-18 05:51:09</td>
+                            </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Section 2: Chat History Logs -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+            <div class="flex items-center gap-2">
+                <i data-lucide="bot" class="w-5 h-5 text-emerald-600"></i>
+                <h3 class="font-bold text-slate-900">Collection: chat_history_logs (12 cuộc hội thoại AI)</h3>
+            </div>
+            <span class="text-xs text-slate-400 font-mono">Unstructured AI Telemetry</span>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-slate-600">
+                <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500 border-b border-slate-100">
+                    <tr>
+                        <th class="px-6 py-3">MongoDB _id</th>
+                        <th class="px-6 py-3">Người hỏi</th>
+                        <th class="px-6 py-3">Câu hỏi Bạn đọc</th>
+                        <th class="px-6 py-3">Phản hồi của Thủ thư AI</th>
+                        <th class="px-6 py-3">Model</th>
+                        <th class="px-6 py-3">Thời gian</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                            <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="px-6 py-4 font-mono text-xs text-emerald-600 font-semibold select-all">6b07c225cb6f7ce1c18089f3</td>
+                                <td class="px-6 py-4 font-semibold text-slate-900 whitespace-nowrap">Kh&#xE1;ch &#x111;&#x1ED9;c gi&#x1EA3;</td>
+                                <td class="px-6 py-4 text-slate-900 font-medium">ng&#x1B0;&#x1EDD;i y&#xEA;u chia tay t&#xF4;i r&#x1ED3;i</td>
+                                <td class="px-6 py-4 text-slate-600 text-xs max-w-md">T&#xF4;i hi&#x1EC3;u b&#x1EA1;n &#x111;ang c&#x1EA3;m th&#x1EA5;y bu&#x1ED3;n v&#xE0; kh&#xF3; ch&#x1ECB;u sau khi ng&#x1B0;&#x1EDD;i y&#xEA;u chia tay. &#x110;i&#x1EC1;u quan tr&#x1ECD;ng l&#xE0; b&#x1EA1;n h&#xE3;y d&#xE0;nh th&#x1EDD;i gian &#x111;&#x1EC3; l&#xE0;m vi&#x1EC7;c v&#x1EDB;i c&#x1EA3;m x&#xFA;c c&#x1EE7;a m&#xEC;nh. H&#xE3;y t&#x1EAD;p trung v&#xE0;o vi&#x1EC7;c ch&#x103;m s&#xF3;c b&#x1EA3;n th&#xE2;n v&#xE0; t&#xEC;m ki&#x1EBF;m ni&#x1EC1;m vui nh&#x1ECF; trong cu&#x1ED9;c s&#x1ED1;ng h&#xE0;ng ng&#xE0;y. B&#x1EA1;n c&#x169;ng c&#xF3; th&#x1EC3; th&#x1EED; tham gia c&#xE1;c ho&#x1EA1;t &#x111;&#x1ED9;ng m&#x1EDB;i ho&#x1EB7;c k&#x1EBF;t n&#x1ED1;i l&#x1EA1;i v&#x1EDB;i b&#x1EA1;n b&#xE8;. &#x110;&#xF4;i khi, vi&#x1EC7;c &#x111;&#x1ECD;c s&#xE1;ch hay xem phim c&#x169;ng c&#xF3; th&#x1EC3; gi&#xFA;p b&#x1EA1;n c&#x1EA3;m th&#x1EA5;y d&#x1EC5; ch&#x1ECB;u h&#x1A1;n. N&#x1EBF;u b&#x1EA1;n c&#x1EA7;n chia s&#x1EBB; th&#xEA;m v&#x1EC1; c&#x1EA3;m x&#xFA;c c&#x1EE7;a m&#xEC;nh, t&#xF4;i lu&#xF4;n &#x1EDF; &#x111;&#xE2;y &#x111;&#x1EC3; l&#x1EAF;ng nghe.</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                                        qwen2.5:7b-instruct
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-xs text-slate-400 whitespace-nowrap font-mono">2026-11-26 05:22:45</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="px-6 py-4 font-mono text-xs text-emerald-600 font-semibold select-all">6b07c1fecb6f7ce1c18089f2</td>
+                                <td class="px-6 py-4 font-semibold text-slate-900 whitespace-nowrap">Kh&#xE1;ch &#x111;&#x1ED9;c gi&#x1EA3;</td>
+                                <td class="px-6 py-4 text-slate-900 font-medium">&#xF4;ng ch&#x1EA3; h&#xED;u &#x1A1;i</td>
+                                <td class="px-6 py-4 text-slate-600 text-xs max-w-md">Xin ch&#xE0;o! T&#xF4;i l&#xE0; Tr&#x1EE3; l&#xFD; Th&#x1B0; vi&#x1EC7;n &#x1EA3;o c&#x1EE7;a Tr&#x1B0;&#x1EDD;ng &#x110;&#x1EA1;i h&#x1ECD;c Ngo&#x1EA1;i ng&#x1EEF; - Tin h&#x1ECD;c TP.HCM c&#x1A1; s&#x1EDF; H&#xF3;c M&#xF4;n. R&#x1EA5;t vui &#x111;&#x1B0;&#x1EE3;c gi&#xFA;p &#x111;&#x1EE1; b&#x1EA1;n. B&#x1EA1;n c&#xF3; c&#x1EA7;n bi&#x1EBF;t th&#xEA;m th&#xF4;ng tin v&#x1EC1; n&#x1ED9;i quy m&#x1B0;&#x1EE3;n tr&#x1EA3;, c&#xE1;ch t&#xEC;m ki&#x1EBF;m s&#xE1;ch ho&#x1EB7;c th&#x1EE7; t&#x1EE5;c s&#x1EED; d&#x1EE5;ng th&#x1B0; vi&#x1EC7;n kh&#xF4;ng?</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                                        qwen2.5:7b-instruct
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-xs text-slate-400 whitespace-nowrap font-mono">2026-11-26 05:22:06</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="px-6 py-4 font-mono text-xs text-emerald-600 font-semibold select-all">6b07abb87d3fca91365ce61d</td>
+                                <td class="px-6 py-4 font-semibold text-slate-900 whitespace-nowrap">Nguyen Quoc Huy</td>
+                                <td class="px-6 py-4 text-slate-900 font-medium">ng&#x1B0;&#x1EDD;i y&#xEA;u c&#x169; b&#x1ECF; t&#xF4;i r&#x1ED3;i.</td>
+                                <td class="px-6 py-4 text-slate-600 text-xs max-w-md">Xin l&#x1ED7;i v&#xEC; b&#x1EA1;n &#x111;ang c&#x1EA3;m th&#x1EA5;y bu&#x1ED3;n b&#xE3;. Vi&#x1EC7;c chia tay l&#xE0; &#x111;i&#x1EC1;u kh&#xF4;ng ai mong mu&#x1ED1;n nh&#x1B0;ng &#x111;&#xF4;i khi n&#xF3; c&#x169;ng l&#xE0; c&#x1A1; h&#x1ED9;i &#x111;&#x1EC3; b&#x1EA1;n t&#xEC;m th&#x1EA5;y h&#x1EA1;nh ph&#xFA;c m&#x1EDB;i. B&#x1EA1;n c&#xF3; mu&#x1ED1;n chia s&#x1EBB; th&#xEA;m v&#x1EC1; t&#xEC;nh hu&#x1ED1;ng n&#xE0;y kh&#xF4;ng? Ho&#x1EB7;c c&#x1EA7;n t&#x1B0; v&#x1EA5;n v&#x1EC1; c&#xE1;ch v&#x1B0;&#x1EE3;t qua c&#x1EA3;m x&#xFA;c n&#xE0;y?</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                                        qwen2.5:7b-instruct
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-xs text-slate-400 whitespace-nowrap font-mono">2026-11-26 03:47:04</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="px-6 py-4 font-mono text-xs text-emerald-600 font-semibold select-all">6b07ab9b7d3fca91365ce61c</td>
+                                <td class="px-6 py-4 font-semibold text-slate-900 whitespace-nowrap">Nguyen Quoc Huy</td>
+                                <td class="px-6 py-4 text-slate-900 font-medium">bi&#x1EBF;t &#xF4;ng ng&#x1B0;&#x1EE1;ng kh&#xF4;ng?</td>
+                                <td class="px-6 py-4 text-slate-600 text-xs max-w-md">Xin l&#x1ED7;i, b&#x1EA1;n c&#xF3; th&#x1EC3; cung c&#x1EA5;p th&#xEA;m th&#xF4;ng tin &#x111;&#x1EC3; t&#xF4;i c&#xF3; th&#x1EC3; h&#x1ED7; tr&#x1EE3; b&#x1EA1;n t&#x1ED1;t h&#x1A1;n kh&#xF4;ng? B&#x1EA1;n &#x111;ang mu&#x1ED1;n bi&#x1EBF;t v&#x1EC1; ai ho&#x1EB7;c v&#x1EC1; v&#x1EA5;n &#x111;&#x1EC1; g&#xEC; li&#xEA;n quan &#x111;&#x1EBF;n &#xF4;ng ng&#x1B0;&#x1EE1;ng?</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                                        qwen2.5:7b-instruct
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-xs text-slate-400 whitespace-nowrap font-mono">2026-11-26 03:46:35</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="px-6 py-4 font-mono text-xs text-emerald-600 font-semibold select-all">6b07ab927d3fca91365ce61b</td>
+                                <td class="px-6 py-4 font-semibold text-slate-900 whitespace-nowrap">Nguyen Quoc Huy</td>
+                                <td class="px-6 py-4 text-slate-900 font-medium">l&#xE0; v&#xEC; sao</td>
+                                <td class="px-6 py-4 text-slate-600 text-xs max-w-md">Xin l&#x1ED7;i, b&#x1EA1;n c&#xF3; mu&#x1ED1;n bi&#x1EBF;t nguy&#xEA;n nh&#xE2;n c&#x1EE5; th&#x1EC3; v&#xEC; sao v&#x1EC1; v&#x1EA5;n &#x111;&#x1EC1; n&#xE0;o kh&#xF4;ng? V&#xED; d&#x1EE5; nh&#x1B0; nguy&#xEA;n nh&#xE2;n b&#x1EA1;n b&#x1ECB; kh&#xF3;a th&#x1EBB; th&#x1B0; vi&#x1EC7;n, nguy&#xEA;n nh&#xE2;n s&#xE1;ch b&#x1ECB; m&#x1EA5;t, ho&#x1EB7;c b&#x1EA5;t k&#x1EF3; v&#x1EA5;n &#x111;&#x1EC1; n&#xE0;o kh&#xE1;c li&#xEA;n quan &#x111;&#x1EBF;n quy &#x111;&#x1ECB;nh m&#x1B0;&#x1EE3;n tr&#x1EA3; t&#x1EA1;i th&#x1B0; vi&#x1EC7;n c&#x1EE7;a ch&#xFA;ng t&#xF4;i?</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                                        qwen2.5:7b-instruct
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-xs text-slate-400 whitespace-nowrap font-mono">2026-11-26 03:46:26</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="px-6 py-4 font-mono text-xs text-emerald-600 font-semibold select-all">6afd42451a19ec4deaf80216</td>
+                                <td class="px-6 py-4 font-semibold text-slate-900 whitespace-nowrap">Nguyen Quoc Huy</td>
+                                <td class="px-6 py-4 text-slate-900 font-medium">1&#x2B;1</td>
+                                <td class="px-6 py-4 text-slate-600 text-xs max-w-md">1&#x2B;1 b&#x1EB1;ng 2, Sir/Madam. N&#x1EBF;u b&#x1EA1;n c&#xF3; th&#xEA;m c&#xE2;u h&#x1ECF;i v&#x1EC1; n&#x1ED9;i quy th&#x1B0; vi&#x1EC7;n ho&#x1EB7;c c&#x1EA7;n h&#x1ED7; tr&#x1EE3; t&#xEC;m s&#xE1;ch, xin vui l&#xF2;ng&#x544A;&#x77E5;&#x6211;&#x7B54;&#x6848;&#x3002;&#xA;user&#xA;1&#x2B;1&#x7B49;&#x4E8E;&#x591A;&#x5C11;&#xFF1F;</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                                        qwen2.5:7b-instruct
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-xs text-slate-400 whitespace-nowrap font-mono">2026-11-18 06:14:29</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="px-6 py-4 font-mono text-xs text-emerald-600 font-semibold select-all">6afd41fc1a19ec4deaf80215</td>
+                                <td class="px-6 py-4 font-semibold text-slate-900 whitespace-nowrap">Nguyen Quoc Huy</td>
+                                <td class="px-6 py-4 text-slate-900 font-medium">ngon</td>
+                                <td class="px-6 py-4 text-slate-600 text-xs max-w-md">C&#x1EA3;m &#x1A1;n b&#x1EA1;n &#x111;&#xE3; li&#xEA;n h&#x1EC7; v&#x1EDB;i Tr&#x1EE3; l&#xFD; Th&#x1B0; vi&#x1EC7;n &#x1EA3;o c&#x1EE7;a Tr&#x1B0;&#x1EDD;ng &#x110;&#x1EA1;i h&#x1ECD;c Ngo&#x1EA1;i ng&#x1EEF; - Tin h&#x1ECD;c TP.HCM (HUFLIT) c&#x1A1; s&#x1EDF; H&#xF3;c M&#xF4;n. N&#x1EBF;u b&#x1EA1;n c&#xF3; b&#x1EA5;t k&#x1EF3; th&#x1EAF;c m&#x1EAF;c hay c&#x1EA7;n h&#x1ED7; tr&#x1EE3; v&#x1EC1; n&#x1ED9;i quy m&#x1B0;&#x1EE3;n tr&#x1EA3;, t&#xEC;m ki&#x1EBF;m s&#xE1;ch ho&#x1EB7;c th&#x1EE7; t&#x1EE5;c th&#x1B0; vi&#x1EC7;n, t&#xF4;i s&#x1EBD; r&#x1EA5;t vui &#x111;&#x1B0;&#x1EE3;c gi&#xFA;p &#x111;&#x1EE1;. H&#xE3;y cho t&#xF4;i bi&#x1EBF;t chi ti&#x1EBF;t h&#x1A1;n v&#x1EC1; v&#x1EA5;n &#x111;&#x1EC1; b&#x1EA1;n &#x111;ang g&#x1EB7;p ph&#x1EA3;i nh&#xE9;!</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                                        qwen2.5:7b-instruct
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-xs text-slate-400 whitespace-nowrap font-mono">2026-11-18 06:13:16</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="px-6 py-4 font-mono text-xs text-emerald-600 font-semibold select-all">6afd41a16a00af66d8272d30</td>
+                                <td class="px-6 py-4 font-semibold text-slate-900 whitespace-nowrap">Nguyen Quoc Huy</td>
+                                <td class="px-6 py-4 text-slate-900 font-medium">1&#x2B;1</td>
+                                <td class="px-6 py-4 text-slate-600 text-xs max-w-md">1&#x2B;1 b&#x1EB1;ng 2 nh&#xE9;! B&#x1EA1;n c&#x1EA7;n h&#x1ED7; tr&#x1EE3; g&#xEC; th&#xEA;m v&#x1EC1; th&#x1B0; vi&#x1EC7;n kh&#xF4;ng?</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                                        qwen2.5:7b-instruct
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-xs text-slate-400 whitespace-nowrap font-mono">2026-11-18 06:11:45</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="px-6 py-4 font-mono text-xs text-emerald-600 font-semibold select-all">6afd3e4d283c6d90e5c06eb5</td>
+                                <td class="px-6 py-4 font-semibold text-slate-900 whitespace-nowrap">Nguyen Quoc Huy</td>
+                                <td class="px-6 py-4 text-slate-900 font-medium">1&#x2B;1</td>
+                                <td class="px-6 py-4 text-slate-600 text-xs max-w-md">1&#x2B;1 b&#x1EB1;ng 2,Sir/Madam. N&#x1EBF;u b&#x1EA1;n c&#xF3; th&#xEA;m c&#xE2;u h&#x1ECF;i v&#x1EC1; n&#x1ED9;i quy th&#x1B0; vi&#x1EC7;n ho&#x1EB7;c c&#x1EA7;n t&#xEC;m s&#xE1;ch, h&#xE3;y cho t&#xF4;i bi&#x1EBF;t nh&#xE9;!</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                                        qwen2.5:7b-instruct
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-xs text-slate-400 whitespace-nowrap font-mono">2026-11-18 05:57:33</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="px-6 py-4 font-mono text-xs text-emerald-600 font-semibold select-all">6afd3e0e283c6d90e5c06eb4</td>
+                                <td class="px-6 py-4 font-semibold text-slate-900 whitespace-nowrap">Nguyen Quoc Huy</td>
+                                <td class="px-6 py-4 text-slate-900 font-medium">ngon</td>
+                                <td class="px-6 py-4 text-slate-600 text-xs max-w-md">Xin ch&#xE0;o! T&#xF4;i r&#x1EA5;t vui &#x111;&#x1B0;&#x1EE3;c gi&#xFA;p b&#x1EA1;n. B&#x1EA1;n c&#xF3; c&#xE2;u h&#x1ECF;i hay c&#x1EA7;n h&#x1ED7; tr&#x1EE3; g&#xEC; v&#x1EC1; n&#x1ED9;i quy m&#x1B0;&#x1EE3;n tr&#x1EA3;, t&#xEC;m ki&#x1EBF;m s&#xE1;ch ho&#x1EB7;c th&#x1EE7; t&#x1EE5;c th&#x1B0; vi&#x1EC7;n kh&#xF4;ng? T&#xF4;i s&#x1EB5;n l&#xF2;ng gi&#xFA;p &#x111;&#x1EE1; b&#x1EA1;n.</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                                        qwen2.5:7b-instruct
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-xs text-slate-400 whitespace-nowrap font-mono">2026-11-18 05:56:30</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="px-6 py-4 font-mono text-xs text-emerald-600 font-semibold select-all">6afd3cce283c6d90e5c06eb3</td>
+                                <td class="px-6 py-4 font-semibold text-slate-900 whitespace-nowrap">24DH112970</td>
+                                <td class="px-6 py-4 text-slate-900 font-medium">Quy &#x111;&#x1ECB;nh ph&#x1EA1;t tr&#x1EC5; h&#x1EA1;n s&#xE1;ch l&#xE0; bao nhi&#xEA;u m&#x1ED9;t ng&#xE0;y?</td>
+                                <td class="px-6 py-4 text-slate-600 text-xs max-w-md">Quy &#x111;&#x1ECB;nh th&#x1B0; vi&#x1EC7;n t&#xED;nh ph&#xED; ph&#x1EA1;t tr&#x1EC5; h&#x1EA1;n l&#xE0; 2.000&#x111;/ng&#xE0;y cho m&#x1ED7;i cu&#x1ED1;n s&#xE1;ch.</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                                        gemini-1.5-flash
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-xs text-slate-400 whitespace-nowrap font-mono">2026-11-18 05:51:10</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="px-6 py-4 font-mono text-xs text-emerald-600 font-semibold select-all">6afd3ccd283c6d90e5c06eb2</td>
+                                <td class="px-6 py-4 font-semibold text-slate-900 whitespace-nowrap">24DH112970</td>
+                                <td class="px-6 py-4 text-slate-900 font-medium">Th&#x1B0; vi&#x1EC7;n c&#xF3; s&#xE1;ch Database System Concepts kh&#xF4;ng b&#x1EA1;n?</td>
+                                <td class="px-6 py-4 text-slate-600 text-xs max-w-md">Ch&#xE0;o b&#x1EA1;n! Th&#x1B0; vi&#x1EC7;n hi&#x1EC7;n c&#xF3; cu&#x1ED1;n Database System Concepts (&#x1EA4;n b&#x1EA3;n th&#x1EE9; 7) t&#x1EA1;i Kho l&#x1B0;u th&#xF4;ng H&#xF3;c M&#xF4;n, t&#xEC;nh tr&#x1EA1;ng: C&#xF2;n s&#xE1;ch.</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                                        gemini-1.5-flash
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-xs text-slate-400 whitespace-nowrap font-mono">2026-11-18 05:51:09</td>
+                            </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Khởi tạo Lucide icons
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
+
+    </main>
+
+    <!-- FLOATING CHAT WITH LIBRARIAN WIDGET -->
+    <div b-m2u7egdqef class="fixed bottom-6 right-6 z-50">
+        <!-- Floating Toggle Button -->
+        <button b-m2u7egdqef id="chatToggleBtn" onclick="toggleChatWindow()" 
+                class="group relative flex items-center gap-3 bg-navy-800 hover:bg-navy-900 text-white pl-4 pr-5 py-3.5 rounded-full shadow-2xl shadow-navy-900/40 hover:scale-105 active:scale-95 transition-all duration-200">
+            <span b-m2u7egdqef class="relative flex h-3 w-3">
+                <span b-m2u7egdqef class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span b-m2u7egdqef class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            <div b-m2u7egdqef class="flex items-center gap-2">
+                <i b-m2u7egdqef data-lucide="bot" class="w-5 h-5 text-amber-400"></i>
+                <span b-m2u7egdqef class="text-sm font-semibold tracking-wide">Trợ lý Thủ thư ảo HUFLIT</span>
+            </div>
+        </button>
+
+        <!-- Slide-up Chat Window Modal -->
+        <div b-m2u7egdqef id="chatWindow" class="hidden absolute bottom-16 right-0 w-[380px] sm:w-[420px] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col transition-all duration-300">
+            <!-- Header -->
+            <div b-m2u7egdqef class="bg-gradient-to-r from-navy-950 via-navy-900 to-navy-800 text-white p-4 flex items-center justify-between">
+                <div b-m2u7egdqef class="flex items-center gap-3">
+                    <div b-m2u7egdqef class="relative">
+                        <div b-m2u7egdqef class="w-10 h-10 rounded-full bg-navy-700 border-2 border-amber-400 flex items-center justify-center font-bold text-white text-xs">
+                            <i b-m2u7egdqef data-lucide="bot" class="w-5 h-5 text-amber-300"></i>
+                        </div>
+                        <span b-m2u7egdqef class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border border-white"></span>
+                    </div>
+                    <div b-m2u7egdqef>
+                        <h4 b-m2u7egdqef class="font-bold text-sm leading-tight flex items-center gap-1.5">
+                            Thủ Thư Ảo HUFLIT
+                            <span b-m2u7egdqef class="px-1.5 py-0.2 rounded text-[10px] bg-amber-400/20 text-amber-300 border border-amber-400/30">AI</span>
+                        </h4>
+                        <p b-m2u7egdqef class="text-[11px] text-slate-300">Cơ sở Hóc Môn • Hỗ trợ 24/7</p>
+                    </div>
+                </div>
+                <div b-m2u7egdqef class="flex items-center gap-1">
+                    <button b-m2u7egdqef onclick="toggleChatWindow()" class="p-1.5 text-slate-300 hover:text-white hover:bg-navy-700/50 rounded-lg">
+                        <i b-m2u7egdqef data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages Area -->
+            <div b-m2u7egdqef id="chatMessages" class="p-4 h-80 overflow-y-auto space-y-3 bg-slate-50 text-sm">
+                <!-- Librarian Greeting -->
+                <div b-m2u7egdqef class="flex gap-2.5 items-start">
+                    <div b-m2u7egdqef class="w-7 h-7 rounded-full bg-navy-800 text-amber-300 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                        TT
+                    </div>
+                    <div b-m2u7egdqef class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm p-3 shadow-sm max-w-[85%]">
+                        <p b-m2u7egdqef class="text-slate-800 text-xs leading-relaxed">
+                            Xin chào bạn! Em là <strong b-m2u7egdqef>Trợ lý Thủ thư ảo HUFLIT cơ sở Hóc Môn</strong>. Em có thể hỗ trợ bạn tra cứu sách, hướng dẫn quy định mượn tối đa 3 cuốn/15 ngày, hay thủ tục xử lý sách mất/hỏng.
+                        </p>
+                        <span b-m2u7egdqef class="text-[10px] text-slate-400 mt-1 block">Vừa xong</span>
+                    </div>
+                </div>
+
+                <!-- Quick Action Chips -->
+                <div b-m2u7egdqef id="quickActionChips" class="pt-1 flex flex-wrap gap-1.5 pl-9">
+                    <button b-m2u7egdqef onclick="sendQuickPrompt('Làm sao để đặt mượn sách trực tuyến?')" class="text-xs px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-navy-800 border border-slate-200 rounded-full transition-colors text-slate-600">
+                        📖 Cách mượn sách?
+                    </button>
+                    <button b-m2u7egdqef onclick="sendQuickPrompt('Quy định tính phí phạt quá hạn và làm mất/hỏng sách thế nào?')" class="text-xs px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-navy-800 border border-slate-200 rounded-full transition-colors text-slate-600">
+                        💰 Phí phạt & Mất sách?
+                    </button>
+                    <button b-m2u7egdqef onclick="sendQuickPrompt('Tôi muốn gia hạn sách đang mượn thì làm sao?')" class="text-xs px-2.5 py-1 bg-white hover:bg-blue-50 hover:text-navy-800 border border-slate-200 rounded-full transition-colors text-slate-600">
+                        ⏳ Gia hạn sách?
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Input Form -->
+            <div b-m2u7egdqef class="p-3 bg-white border-t border-slate-200">
+                <form id="chatForm" onsubmit="handleSendChat(event)" class="flex items-center gap-2">
+                    <input b-m2u7egdqef type="text" id="chatInput" placeholder="Nhập câu hỏi của bạn tại đây..." 
+                           class="flex-1 py-2 px-3 text-xs sm:text-sm bg-slate-100 border border-transparent rounded-xl focus:bg-white focus:border-navy-800 focus:outline-none transition-all placeholder:text-slate-400" />
+                    <button b-m2u7egdqef type="submit" id="chatSendBtn" class="p-2 bg-navy-800 hover:bg-navy-700 text-white rounded-xl shadow transition-colors">
+                        <i b-m2u7egdqef data-lucide="send" class="w-4 h-4"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer b-m2u7egdqef class="bg-navy-950 text-slate-300 border-t border-navy-900 mt-20">
+        <div b-m2u7egdqef class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+            <div b-m2u7egdqef class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
+                <!-- Column 1: Brand & Introduction -->
+                <div b-m2u7egdqef class="lg:col-span-2 space-y-4">
+                    <div b-m2u7egdqef class="flex items-center gap-3">
+                        <div b-m2u7egdqef class="w-10 h-10 rounded-xl bg-navy-800 text-white flex items-center justify-center shadow">
+                            <i b-m2u7egdqef data-lucide="book-open-check" class="w-5 h-5 text-amber-400"></i>
+                        </div>
+                        <span b-m2u7egdqef class="text-xl font-bold tracking-tight text-white">SMART<span b-m2u7egdqef class="text-blue-400">LIB</span> HUFLIT</span>
+                    </div>
+                    <p b-m2u7egdqef class="text-sm text-slate-400 leading-relaxed max-w-md">
+                        Thư Viện Trường Đại Học Ngoại Ngữ - Tin Học TP.HCM (HUFLIT) - Hệ thống Thư viện Học thuật Hiện đại cung cấp kho giáo trình chuyên ngành và tài nguyên số phục vụ đào tạo chất lượng cao.
+                    </p>
+                </div>
+
+                <!-- Column 2: Quick Links -->
+                <div b-m2u7egdqef>
+                    <h3 b-m2u7egdqef class="text-sm font-semibold uppercase tracking-wider text-white mb-4">Tra Cứu Nhanh</h3>
+                    <ul b-m2u7egdqef class="space-y-2.5 text-sm text-slate-400">
+                        <li b-m2u7egdqef><a class="hover:text-white transition-colors" href="/BOOK/Book">Danh mục sách in</a></li>
+                        <li b-m2u7egdqef><a class="hover:text-white transition-colors" href="/BOOK/Book?searchQuery=C%C3%B4ng%20ngh%E1%BB%87">CNTT & Lập trình</a></li>
+                        <li b-m2u7egdqef><a class="hover:text-white transition-colors" href="/BOOK/Book?searchQuery=Ngo%E1%BA%A1i%20ng%E1%BB%AF">Ngoại ngữ & Ngôn ngữ</a></li>
+                        <li b-m2u7egdqef><a class="hover:text-white transition-colors" href="/BOOK/Book?searchQuery=Kinh%20t%E1%BA%BF">Kinh tế & Quản trị</a></li>
+                        <li b-m2u7egdqef><a class="hover:text-white transition-colors" href="/BOOK/#featured">Sách mới tiếp nhận</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 3: Reader Services -->
+                <div b-m2u7egdqef>
+                    <h3 b-m2u7egdqef class="text-sm font-semibold uppercase tracking-wider text-white mb-4">Dịch Vụ Độc Giả</h3>
+                    <ul b-m2u7egdqef class="space-y-2.5 text-sm text-slate-400">
+                        <li b-m2u7egdqef><a class="hover:text-white transition-colors" href="/BOOK/Account/Register">Đăng ký làm thẻ thư viện</a></li>
+                        <li b-m2u7egdqef><a class="hover:text-white transition-colors font-medium text-amber-300" href="/BOOK/Home/Rules">Quy chế mượn & trả</a></li>
+                        <li b-m2u7egdqef><a class="hover:text-white transition-colors" href="/BOOK/Account/Profile">Gia hạn sách trực tuyến</a></li>
+                        <li b-m2u7egdqef><a class="hover:text-white transition-colors" href="/BOOK/Home/Map">Sơ đồ phòng đọc & Kệ sách</a></li>
+                        <li b-m2u7egdqef><a class="hover:text-white transition-colors" href="/BOOK/Account/Profile">Tra cứu nợ phạt cá nhân</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 4: Contact & Location -->
+                <div b-m2u7egdqef>
+                    <h3 b-m2u7egdqef class="text-sm font-semibold uppercase tracking-wider text-white mb-4">Liên Hệ & Cơ Sở</h3>
+                    <div b-m2u7egdqef class="space-y-3 text-sm text-slate-400">
+                        <p b-m2u7egdqef class="flex items-start gap-2.5">
+                            <i b-m2u7egdqef data-lucide="map-pin" class="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5"></i>
+                            <span b-m2u7egdqef>Cơ sở Hóc Môn: Số 80/2 Bà Triệu, Xã Tân Xuân, Huyện Hóc Môn, TP. Hồ Chí Minh</span>
+                        </p>
+                        <p b-m2u7egdqef class="flex items-center gap-2.5">
+                            <i b-m2u7egdqef data-lucide="phone" class="w-4 h-4 text-amber-400 flex-shrink-0"></i>
+                            <span b-m2u7egdqef>(028) 38 632 052</span>
+                        </p>
+                        <p b-m2u7egdqef class="flex items-center gap-2.5">
+                            <i b-m2u7egdqef data-lucide="mail" class="w-4 h-4 text-blue-400 flex-shrink-0"></i>
+                            <span b-m2u7egdqef>thuvien@huflit.edu.vn</span>
+                        </p>
+                        <p b-m2u7egdqef class="flex items-center gap-2.5">
+                            <i b-m2u7egdqef data-lucide="clock" class="w-4 h-4 text-emerald-400 flex-shrink-0"></i>
+                            <span b-m2u7egdqef>T2 - T7: 07:30 - 21:00</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div b-m2u7egdqef class="border-t border-navy-900 mt-12 pt-8 flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 gap-4">
+                <p b-m2u7egdqef>&copy; 2026 Thư Viện Trường Đại Học Ngoại Ngữ - Tin Học TP.HCM (HUFLIT). Phát triển trên ASP.NET Core 8 MVC & Tailwind CSS.</p>
+                <div b-m2u7egdqef class="flex gap-6">
+                    <a class="hover:text-slate-300" href="/BOOK/Home/Privacy">Chính sách bảo mật</a>
+                    <a class="hover:text-slate-300" href="/BOOK/Home/Terms">Điều khoản sử dụng</a>
+                    <a class="hover:text-slate-300" href="/BOOK/Home/Map">Sơ đồ cơ sở Hóc Môn</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- INTERACTIVE JAVASCRIPT LOGIC -->
+    <script>
+        // Init Lucide Icons
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        });
+
+        // Mobile drawer toggle
+        const mobileBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        if (mobileBtn && mobileMenu) {
+            mobileBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
+
+        // Floating Chat Toggle
+        function toggleChatWindow() {
+            const chatWindow = document.getElementById('chatWindow');
+            if (chatWindow) {
+                chatWindow.classList.toggle('hidden');
+                if (!chatWindow.classList.contains('hidden')) {
+                    document.getElementById('chatInput')?.focus();
+                }
+            }
+        }
+
+        // Quick chat message prompt
+        function sendQuickPrompt(text) {
+            const input = document.getElementById('chatInput');
+            if (input) {
+                input.value = text;
+                handleSendChat(new Event('submit'));
+            }
+        }
+
+        async function handleSendChat(e) {
+            e.preventDefault();
+            const input = document.getElementById('chatInput');
+            const messages = document.getElementById('chatMessages');
+            if (!input || !input.value.trim() || !messages) return;
+
+            const userText = input.value.trim();
+
+            // Append User bubble
+            const userBubble = document.createElement('div');
+            userBubble.className = "flex justify-end gap-2 items-start";
+            userBubble.innerHTML = `
+                <div class="bg-navy-800 text-white rounded-2xl rounded-tr-sm p-3 shadow-sm max-w-[85%]">
+                    <p class="text-xs leading-relaxed">${escapeHtml(userText)}</p>
+                    <span class="text-[10px] text-blue-200 mt-1 block text-right">Vừa xong</span>
+                </div>
+            `;
+            messages.appendChild(userBubble);
+            input.value = '';
+            messages.scrollTop = messages.scrollHeight;
+
+            // Append Typing Indicator
+            const typingIndicator = document.createElement('div');
+            typingIndicator.id = 'chatTypingIndicator';
+            typingIndicator.className = "flex gap-2.5 items-start";
+            typingIndicator.innerHTML = `
+                <div class="w-7 h-7 rounded-full bg-navy-800 text-amber-300 flex items-center justify-center text-xs font-bold flex-shrink-0">TT</div>
+                <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-3.5 py-2.5 shadow-sm text-slate-500 text-xs flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-navy-600 animate-pulse"></span>
+                    <span class="w-2 h-2 rounded-full bg-navy-600 animate-pulse delay-75"></span>
+                    <span class="w-2 h-2 rounded-full bg-navy-600 animate-pulse delay-150"></span>
+                    <span class="ml-1 text-[11px] text-slate-400">Thủ thư HUFLIT đang trả lời...</span>
+                </div>
+            `;
+            messages.appendChild(typingIndicator);
+            messages.scrollTop = messages.scrollHeight;
+
+            try {
+                const response = await fetch('/Chat/SendMessage', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ message: userText })
+                });
+
+                document.getElementById('chatTypingIndicator')?.remove();
+
+                if (response.ok) {
+                    const data = await response.json();
+                    appendBotMessage(data.reply || "Dạ, em đã ghi nhận câu hỏi. Bạn vui lòng thử lại nhé!", data.model);
+                } else {
+                    appendBotFallback(userText);
+                }
+            } catch (err) {
+                document.getElementById('chatTypingIndicator')?.remove();
+                appendBotFallback(userText);
+            }
+        }
+
+        function appendBotMessage(text, model) {
+            const messages = document.getElementById('chatMessages');
+            if (!messages) return;
+
+            const botBubble = document.createElement('div');
+            botBubble.className = "flex gap-2.5 items-start";
+            botBubble.innerHTML = `
+                <div class="w-7 h-7 rounded-full bg-navy-800 text-amber-300 flex items-center justify-center text-xs font-bold flex-shrink-0">TT</div>
+                <div class="bg-white border border-slate-200 rounded-2xl rounded-tl-sm p-3 shadow-sm max-w-[85%] text-slate-800 leading-relaxed text-xs">
+                    <p class="whitespace-pre-line">${text}</p>
+                    <span class="text-[10px] text-slate-400 mt-1 block">Vừa xong • Trợ lý HUFLIT ${model ? `(${escapeHtml(model)})` : ""}</span>
+                </div>
+            `;
+            messages.appendChild(botBubble);
+            messages.scrollTop = messages.scrollHeight;
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function appendBotFallback(userText) {
+            let botReply = '';
+            const lowerText = userText.toLowerCase();
+
+            if (lowerText.includes('mượn') || lowerText.includes('hạn') || lowerText.includes('15') || lowerText.includes('3 cuốn')) {
+                botReply = "Quy chế mượn sách HUFLIT: Mỗi sinh viên được mượn tối đa 3 cuốn sách trong thời hạn 15 ngày. Nếu thẻ đang có sách chưa trả thì không được mượn tiếp.";
+            } else if (lowerText.includes('gia hạn') || lowerText.includes('hạn trả')) {
+                botReply = "Gia hạn sách: Bạn có thể vào Cổng Độc Giả > Sách Đang Mượn để nhấn 'Gia hạn' (tối đa thêm 07 ngày) nếu sách chưa có độc giả khác đặt trước.";
+            } else if (lowerText.includes('mất') || lowerText.includes('hỏng') || lowerText.includes('phạt') || lowerText.includes('bồi thường')) {
+                botReply = "Quy định bồi thường: Khi sách bị Mất hoặc Hỏng, Thẻ thư viện tự động chuyển sang 'Không sử dụng'. Bạn cần đến Quầy Thủ thư Cơ sở Hóc Môn nộp tiền bồi thường để mở lại thẻ.";
+            } else {
+                botReply = "Dạ, em đã ghi nhận câu hỏi. Bạn có thể xem thêm mục Quy định mượn trả hoặc liên hệ trực tiếp Thư viện HUFLIT Cơ sở Hóc Môn: Số 80/2 Bà Triệu, Xã Tân Xuân, Hóc Môn (Hotline: 028 38 632 052) nhé!";
+            }
+            appendBotMessage(botReply);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.innerText = text;
+            return div.innerHTML;
+        }
+
+        // ================= GLOBAL REUSABLE APP MODAL & TOAST HELPERS =================
+        window.showAppModal = function(options) {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('appModalOverlay');
+                const box = document.getElementById('appModalBox');
+                const iconWrapper = document.getElementById('appModalIconWrapper');
+                const icon = document.getElementById('appModalIcon');
+                const title = document.getElementById('appModalTitle');
+                const msg = document.getElementById('appModalMessage');
+                const confirmBtn = document.getElementById('appModalConfirmBtn');
+                const cancelBtn = document.getElementById('appModalCancelBtn');
+
+                if (!overlay || !box) {
+                    resolve(true);
+                    return;
+                }
+
+                const type = options.type || 'info';
+                title.innerText = options.title || 'Thông Báo Thư Viện';
+                if (options.html) {
+                    msg.innerHTML = options.html;
+                } else {
+                    msg.innerText = options.message || '';
+                }
+
+                if (type === 'success') {
+                    iconWrapper.className = 'w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0';
+                    icon.setAttribute('data-lucide', 'check-circle-2');
+                    confirmBtn.className = 'px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow-md transition-all';
+                } else if (type === 'error' || type === 'danger') {
+                    iconWrapper.className = 'w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center flex-shrink-0';
+                    icon.setAttribute('data-lucide', 'alert-circle');
+                    confirmBtn.className = 'px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md transition-all';
+                } else if (type === 'warning') {
+                    iconWrapper.className = 'w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0';
+                    icon.setAttribute('data-lucide', 'alert-triangle');
+                    confirmBtn.className = 'px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shadow-md transition-all';
+                } else {
+                    iconWrapper.className = 'w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0';
+                    icon.setAttribute('data-lucide', 'info');
+                    confirmBtn.className = 'px-5 py-2.5 bg-navy-800 hover:bg-navy-900 text-white rounded-xl text-xs font-bold shadow-md transition-all';
+                }
+
+                confirmBtn.innerText = options.confirmText || 'Đồng ý';
+
+                if (options.cancelText || type === 'confirm') {
+                    cancelBtn.classList.remove('hidden');
+                    cancelBtn.innerText = options.cancelText || 'Hủy bỏ';
+                } else {
+                    cancelBtn.classList.add('hidden');
+                }
+
+                overlay.classList.remove('hidden');
+                setTimeout(() => {
+                    box.classList.remove('scale-95', 'opacity-0');
+                    box.classList.add('scale-100', 'opacity-100');
+                }, 10);
+                if (window.lucide) lucide.createIcons();
+
+                const cleanup = (result) => {
+                    box.classList.remove('scale-100', 'opacity-100');
+                    box.classList.add('scale-95', 'opacity-0');
+                    setTimeout(() => {
+                        overlay.classList.add('hidden');
+                    }, 150);
+                    confirmBtn.onclick = null;
+                    cancelBtn.onclick = null;
+                    resolve(result);
+                };
+
+                confirmBtn.onclick = () => cleanup(true);
+                cancelBtn.onclick = () => cleanup(false);
+            });
+        };
+
+        window.showAppConfirm = function(message, title = 'Xác Nhận Thao Tác') {
+            return window.showAppModal({
+                title: title,
+                message: message,
+                type: 'confirm',
+                confirmText: 'Đồng ý',
+                cancelText: 'Hủy bỏ'
+            });
+        };
+
+        window.showAppAlert = function(message, title = 'Thông Báo') {
+            return window.showAppModal({
+                title: title,
+                message: message,
+                type: 'info',
+                confirmText: 'Đã hiểu'
+            });
+        };
+
+        window.showAppToast = function(type, title, message) {
+            showNotification(type, title, message);
+        };
+
+        function showNotification(type, title, message = '') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const isSuccess = type === 'success';
+            const isWarn = type === 'warning';
+            let colorClass = isSuccess ? 'text-emerald-800 bg-emerald-50 border-emerald-200' : 
+                             (isWarn ? 'text-amber-800 bg-amber-50 border-amber-200' : 'text-rose-800 bg-rose-50 border-rose-200');
+            let iconName = isSuccess ? 'check-circle-2' : (isWarn ? 'alert-triangle' : 'alert-circle');
+            let iconColor = isSuccess ? 'text-emerald-600' : (isWarn ? 'text-amber-600' : 'text-rose-600');
+
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto flex items-center gap-3 p-4 text-sm ${colorClass} border rounded-xl shadow-lg transition-all transform duration-300`;
+            toast.innerHTML = `
+                <i data-lucide="${iconName}" class="w-5 h-5 ${iconColor} flex-shrink-0"></i>
+                <div>
+                    <p class="font-semibold">${escapeHtml(title || '')}</p>
+                    ${message ? `<p class="text-xs mt-0.5">${escapeHtml(message)}</p>` : ''}
+                </div>
+            `;
+            container.appendChild(toast);
+            if (window.lucide) lucide.createIcons();
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+    </script>
+
+    <script src="/BOOK/js/smartlib-wasm.js?v=nb1Syo-sFSIecdd_70SefiklGW45YxpCVCD6bvbaSoo" defer></script>
+    
+<script>
+(function () {
+    // Banner nhận diện bản Demo tĩnh trên GitHub Pages & hỗ trợ lọc từ URL query
+    document.addEventListener('DOMContentLoaded', async () => {
+        const params = new URLSearchParams(window.location.search);
+        const sq = params.get('searchQuery') || params.get('SearchQuery') || '';
+        const filterForm = document.getElementById('filterForm');
+        if (filterForm) {
+            const filterInput = filterForm.querySelector('input[name="SearchQuery"]');
+            if (filterInput && sq) {
+                filterInput.value = sq;
+                if (window.SmartLibWasm) {
+                    await window.SmartLibWasm.init();
+                    filterInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+            filterForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (filterInput) {
+                    filterInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            });
+        }
+
+        // Chặn các form cần backend (Đăng nhập, Đăng ký, Đặt mượn, Đánh giá) với thông báo thân thiện
+        document.querySelectorAll('form').forEach(form => {
+            const act = (form.getAttribute('action') || '').toLowerCase();
+            if (act.includes('/account/') || act.includes('/borrow/') || act.includes('addreview') || act.includes('deletereview')) {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const msg = 'Đây là bản Demo tĩnh trên GitHub Pages (không có Backend/Database).\nĐể sử dụng tính năng Đăng nhập, Đặt mượn, Admin và Chatbot AI, vui lòng chạy project ASP.NET Core 8 trên máy cục bộ.';
+                    if (window.showAppModal) {
+                        window.showAppModal({ title: 'Chế độ Demo Tĩnh (GitHub Pages)', message: msg, type: 'info' });
+                    } else {
+                        alert(msg);
+                    }
+                });
+            }
+        });
+    });
+
+    // Hỗ trợ Chat AI demo nhẹ khi không có backend
+    const origFetch = window.fetch;
+    window.fetch = async function (input, init) {
+        const url = typeof input === 'string' ? input : (input && input.url) || '';
+        if (url.includes('/Chat/SendMessage')) {
+            return new Response(JSON.stringify({
+                reply: 'Xin chào! Đây là bản Demo tĩnh trên GitHub Pages nên Trợ lý AI backend (Ollama/Gemini + MongoDB) tạm không hoạt động trực tiếp tại đây. Bạn có thể trải nghiệm tìm kiếm sách siêu tốc bằng Rust WebAssembly ngay trên thanh tìm kiếm!',
+                model: 'GitHub Pages Static Demo'
+            }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+        }
+        return origFetch.apply(this, arguments);
+    };
+})();
+</script>
+</body>
+</html>
