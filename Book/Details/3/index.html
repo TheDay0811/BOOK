@@ -1189,7 +1189,7 @@
             endCta.classList.add('hidden');
 
             try {
-                const res = await fetch(`/Book/Preview/${bookId}`);
+                const res = await fetch(`/BOOK/Book/Preview/${bookId}`);
                 const data = await res.json();
                 if (!res.ok || !data.success) {
                     throw new Error(data.message || 'Không thể tải nội dung đọc thử.');
